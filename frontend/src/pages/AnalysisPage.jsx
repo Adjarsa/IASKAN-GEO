@@ -25,6 +25,7 @@ const AnalysisPage = () => {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [polling, setPolling] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (analysisId) {
