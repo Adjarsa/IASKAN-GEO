@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import { ArrowLeft } from "lucide-react";
+import { API } from "@/App";
 
 const LoginPage = () => {
   const handleGoogleLogin = () => {
@@ -12,11 +13,13 @@ const LoginPage = () => {
   };
 
   const handleMicrosoftLogin = () => {
-    handleGoogleLogin();
+    // Redirect to Microsoft OAuth endpoint
+    window.location.href = `${API}/auth/microsoft/login`;
   };
 
   const handleLinkedInLogin = () => {
-    handleGoogleLogin();
+    // Redirect to LinkedIn OAuth endpoint
+    window.location.href = `${API}/auth/linkedin/login`;
   };
 
   return (
