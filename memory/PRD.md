@@ -92,13 +92,22 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 Frontend: React 19 + Tailwind CSS + Framer Motion
 Backend: FastAPI + Motor (async MongoDB)
 Database: MongoDB
-Auth: Emergent Google OAuth
+Auth: Emergent Google OAuth + Microsoft OAuth2 + LinkedIn OAuth2
 AI: Emergent LLM Key (GPT-5.2, Claude, Gemini)
 Payments: Stripe
 PDF: FPDF2 with DejaVu Unicode fonts
+OAuth: Authlib for Microsoft/LinkedIn
 ```
 
 ## Recent Updates (Feb 21, 2026)
+
+### Microsoft & LinkedIn SSO Added
+- Backend endpoints: GET /api/auth/microsoft/login, /api/auth/linkedin/login
+- OAuth2 authorization code flow implementation
+- Automatic user creation and session management
+- Error handling with user-friendly messages
+- Requires API keys configuration (MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET)
+
 ### PDF Report Module Added
 - Backend endpoint: GET /api/analysis/{analysis_id}/pdf
 - 7-page professional PDF report
@@ -107,8 +116,8 @@ PDF: FPDF2 with DejaVu Unicode fonts
 - Unicode support for French characters
 
 ## Next Tasks
-1. Add Microsoft/LinkedIn SSO
-2. Implement Magic Link authentication
-3. Add email notifications
-4. Build competitor comparison view
-5. Add analysis history charts
+1. Implement Magic Link authentication
+2. Add email notifications
+3. Build competitor comparison view
+4. Add analysis history charts
+5. Team/multi-user support
