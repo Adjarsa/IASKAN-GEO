@@ -53,16 +53,19 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 
 ### Integrations
 - ✅ Emergent Google OAuth (SSO)
+- ✅ Microsoft OAuth2 SSO (requires MICROSOFT_CLIENT_ID & MICROSOFT_CLIENT_SECRET)
+- ✅ LinkedIn OAuth2 SSO (requires LINKEDIN_CLIENT_ID & LINKEDIN_CLIENT_SECRET)
 - ✅ Emergent LLM Key (OpenAI GPT-5.2, Claude, Gemini)
 - ✅ Stripe Checkout (payment processing)
 - ✅ MongoDB (data storage)
 - ✅ FPDF2 (PDF generation)
+- ✅ Authlib (OAuth2 client)
 
 ## Prioritized Backlog
 
 ### P0 - Critical (Next Sprint)
-- [ ] Microsoft SSO integration
-- [ ] LinkedIn SSO integration
+- [x] Microsoft SSO integration ✅ (Completed Feb 21, 2026 - requires API keys)
+- [x] LinkedIn SSO integration ✅ (Completed Feb 21, 2026 - requires API keys)
 - [ ] Magic Link email authentication
 - [ ] Email notifications (welcome, analysis complete)
 
