@@ -21,11 +21,12 @@ import {
   Menu,
   X,
   CreditCard,
-  ChevronDown
+  ChevronDown,
+  ArrowLeftRight
 } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
-  const { user, subscription, logout } = useAuth();
+  const { user, subscription, logout, currentProject, clearProject } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -35,10 +36,14 @@ const DashboardLayout = ({ children }) => {
     navigate("/");
   };
 
+  const handleSwitchProject = () => {
+    clearProject();
+    navigate("/projects");
+  };
+
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/analysis", label: "Analyses", icon: BarChart3 },
-    { path: "/projects", label: "Projets", icon: FolderKanban },
     { path: "/recommendations", label: "Recommandations", icon: Target },
     { path: "/settings", label: "Paramètres", icon: Settings },
   ];
@@ -65,9 +70,7 @@ const DashboardLayout = ({ children }) => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 flex items-center justify-between">
-            <Link to="/dashboard" data-testid="sidebar-logo">
-              <Logo />
-            </Link>
+            <Logo />
             <Button 
               variant="ghost" 
               size="icon" 
@@ -77,6 +80,28 @@ const DashboardLayout = ({ children }) => {
               <X className="w-5 h-5" />
             </Button>
           </div>
+
+          {/* Current Project */}
+          {currentProject && (
+            <div className="px-4 mb-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-violet-50 to-cyan-50 border border-violet-100">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-slate-500 uppercase tracking-wide">Projet actif</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={handleSwitchProject}
+                    title="Changer de projet"
+                  >
+                    <ArrowLeftRight className="w-3 h-3 text-slate-400" />
+                  </Button>
+                </div>
+                <p className="font-semibold text-slate-900 truncate">{currentProject.name}</p>
+                <p className="text-sm text-violet-600 truncate">{currentProject.brand_name}</p>
+              </div>
+            </div>
+          )}
 
           {/* Navigation */}
           <nav className="flex-1 px-4 space-y-1">
@@ -96,11 +121,21 @@ const DashboardLayout = ({ children }) => {
                 <span>{item.label}</span>
               </Link>
             ))}
+            
+            {/* Change Project Link */}
+            <button
+              onClick={handleSwitchProject}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-600 hover:text-violet-700 hover:bg-slate-50 w-full"
+              data-testid="nav-projects"
+            >
+              <FolderKanban className="w-5 h-5" />
+              <span>Changer de projet</span>
+            </button>
           </nav>
 
           {/* Subscription Info */}
           <div className="p-4">
-            <div className="rounded-xl p-4 bg-gradient-to-br from-violet-50 to-cyan-50 border border-violet-100">
+            <div className="rounded-xl p-4 bg-white border border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <CreditCard className="w-4 h-4 text-violet-600" />
                 <span className="text-sm font-medium text-slate-900">
@@ -137,10 +172,16 @@ const DashboardLayout = ({ children }) => {
             </Button>
 
             {/* Breadcrumb / Title */}
-            <div className="hidden lg:block">
+            <div className="hidden lg:flex items-center gap-2">
               <h2 className="text-lg font-semibold text-slate-900">
                 {navItems.find(item => isActive(item.path))?.label || "Dashboard"}
               </h2>
+              {currentProject && (
+                <>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-500">{currentProject.brand_name}</span>
+                </>
+              )}
             </div>
 
             {/* User Menu */}
@@ -163,6 +204,10 @@ const DashboardLayout = ({ children }) => {
                   <p className="text-xs text-slate-500">{user?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSwitchProject}>
+                  <FolderKanban className="w-4 h-4 mr-2" />
+                  Changer de projet
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/settings" data-testid="menu-settings">
                     <Settings className="w-4 h-4 mr-2" />
