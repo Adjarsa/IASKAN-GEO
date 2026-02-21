@@ -907,7 +907,7 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
             pdf.multi_cell(0, 5, description)
             
             # Impact/Effort
-            pdf.set_font('DejaVu', 'I', 9)
+            pdf.set_font('DejaVu', '', 9)
             pdf.set_text_color(148, 163, 184)
             pdf.cell(0, 5, f"Impact: {rec.get('impact', 'N/A')} | Effort: {rec.get('effort', 'N/A')}", new_x='LMARGIN', new_y='NEXT')
             pdf.ln(8)
