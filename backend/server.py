@@ -305,6 +305,242 @@ async def logout(request: Request, response: Response):
     response.delete_cookie("session_token", path="/")
     return {"message": "Déconnexion réussie"}
 
+# ================== MICROSOFT & LINKEDIN OAUTH ==================
+
+async def create_oauth_user_session(email: str, name: str, picture: str, provider: str, response: Response):
+    """Helper function to create user session for OAuth providers"""
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    
+    # Check if user exists
+    existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+    if existing_user:
+        user_id = existing_user["user_id"]
+    else:
+        # Create new user
+        user_doc = {
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "auth_provider": provider,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(user_doc)
+        
+        # Create trial subscription
+        trial_sub = {
+            "subscription_id": f"sub_{uuid.uuid4().hex[:12]}",
+            "user_id": user_id,
+            "plan": "starter",
+            "status": "trial",
+            "queries_limit": 300,
+            "queries_used": 0,
+            "trial_ends_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "current_period_start": datetime.now(timezone.utc).isoformat(),
+            "current_period_end": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.subscriptions.insert_one(trial_sub)
+    
+    # Create session
+    session_token = f"sess_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    session_doc = {
+        "session_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    return user_id, session_token
+
+@api_router.get("/auth/microsoft/login")
+async def microsoft_login(request: Request):
+    """Initiate Microsoft OAuth2 login"""
+    if not MICROSOFT_CLIENT_ID or not MICROSOFT_CLIENT_SECRET:
+        raise HTTPException(status_code=501, detail="Microsoft OAuth non configuré. Veuillez contacter l'administrateur.")
+    
+    # Get the frontend URL from referer or use default
+    referer = request.headers.get("referer", "")
+    frontend_url = referer.split("/login")[0] if "/login" in referer else request.headers.get("origin", "")
+    
+    state = secrets.token_urlsafe(32)
+    request.session["oauth_state"] = state
+    request.session["frontend_url"] = frontend_url
+    
+    redirect_uri = str(request.base_url) + "api/auth/microsoft/callback"
+    
+    auth_url = (
+        f"https://login.microsoftonline.com/common/oauth2/v2.0/authorize?"
+        f"client_id={MICROSOFT_CLIENT_ID}&"
+        f"response_type=code&"
+        f"redirect_uri={redirect_uri}&"
+        f"scope=openid profile email&"
+        f"state={state}&"
+        f"response_mode=query"
+    )
+    
+    return RedirectResponse(url=auth_url)
+
+@api_router.get("/auth/microsoft/callback")
+async def microsoft_callback(request: Request, code: str = None, state: str = None, error: str = None):
+    """Handle Microsoft OAuth2 callback"""
+    frontend_url = request.session.get("frontend_url", "")
+    
+    if error:
+        return RedirectResponse(url=f"{frontend_url}/login?error=microsoft_auth_failed")
+    
+    stored_state = request.session.get("oauth_state")
+    if not stored_state or stored_state != state:
+        return RedirectResponse(url=f"{frontend_url}/login?error=invalid_state")
+    
+    redirect_uri = str(request.base_url) + "api/auth/microsoft/callback"
+    
+    # Exchange code for token
+    async with httpx.AsyncClient() as client:
+        token_response = await client.post(
+            "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            data={
+                "client_id": MICROSOFT_CLIENT_ID,
+                "client_secret": MICROSOFT_CLIENT_SECRET,
+                "code": code,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code"
+            }
+        )
+        
+        if token_response.status_code != 200:
+            logger.error(f"Microsoft token error: {token_response.text}")
+            return RedirectResponse(url=f"{frontend_url}/login?error=token_exchange_failed")
+        
+        token_data = token_response.json()
+        access_token = token_data.get("access_token")
+        
+        # Get user info
+        user_response = await client.get(
+            "https://graph.microsoft.com/v1.0/me",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if user_response.status_code != 200:
+            return RedirectResponse(url=f"{frontend_url}/login?error=user_info_failed")
+        
+        user_data = user_response.json()
+    
+    email = user_data.get("mail") or user_data.get("userPrincipalName")
+    name = user_data.get("displayName")
+    picture = None
+    
+    response = RedirectResponse(url=f"{frontend_url}/projects")
+    await create_oauth_user_session(email, name, picture, "microsoft", response)
+    
+    return response
+
+@api_router.get("/auth/linkedin/login")
+async def linkedin_login(request: Request):
+    """Initiate LinkedIn OAuth2 login"""
+    if not LINKEDIN_CLIENT_ID or not LINKEDIN_CLIENT_SECRET:
+        raise HTTPException(status_code=501, detail="LinkedIn OAuth non configuré. Veuillez contacter l'administrateur.")
+    
+    referer = request.headers.get("referer", "")
+    frontend_url = referer.split("/login")[0] if "/login" in referer else request.headers.get("origin", "")
+    
+    state = secrets.token_urlsafe(32)
+    request.session["oauth_state"] = state
+    request.session["frontend_url"] = frontend_url
+    
+    redirect_uri = str(request.base_url) + "api/auth/linkedin/callback"
+    
+    auth_url = (
+        f"https://www.linkedin.com/oauth/v2/authorization?"
+        f"response_type=code&"
+        f"client_id={LINKEDIN_CLIENT_ID}&"
+        f"redirect_uri={redirect_uri}&"
+        f"scope=openid profile email&"
+        f"state={state}"
+    )
+    
+    return RedirectResponse(url=auth_url)
+
+@api_router.get("/auth/linkedin/callback")
+async def linkedin_callback(request: Request, code: str = None, state: str = None, error: str = None):
+    """Handle LinkedIn OAuth2 callback"""
+    frontend_url = request.session.get("frontend_url", "")
+    
+    if error:
+        return RedirectResponse(url=f"{frontend_url}/login?error=linkedin_auth_failed")
+    
+    stored_state = request.session.get("oauth_state")
+    if not stored_state or stored_state != state:
+        return RedirectResponse(url=f"{frontend_url}/login?error=invalid_state")
+    
+    redirect_uri = str(request.base_url) + "api/auth/linkedin/callback"
+    
+    # Exchange code for token
+    async with httpx.AsyncClient() as client:
+        token_response = await client.post(
+            "https://www.linkedin.com/oauth/v2/accessToken",
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": redirect_uri,
+                "client_id": LINKEDIN_CLIENT_ID,
+                "client_secret": LINKEDIN_CLIENT_SECRET
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        
+        if token_response.status_code != 200:
+            logger.error(f"LinkedIn token error: {token_response.text}")
+            return RedirectResponse(url=f"{frontend_url}/login?error=token_exchange_failed")
+        
+        token_data = token_response.json()
+        access_token = token_data.get("access_token")
+        
+        # Get user info using OpenID Connect userinfo endpoint
+        user_response = await client.get(
+            "https://api.linkedin.com/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if user_response.status_code != 200:
+            return RedirectResponse(url=f"{frontend_url}/login?error=user_info_failed")
+        
+        user_data = user_response.json()
+    
+    email = user_data.get("email")
+    name = user_data.get("name") or f"{user_data.get('given_name', '')} {user_data.get('family_name', '')}".strip()
+    picture = user_data.get("picture")
+    
+    response = RedirectResponse(url=f"{frontend_url}/projects")
+    await create_oauth_user_session(email, name, picture, "linkedin", response)
+    
+    return response
+
+@api_router.get("/auth/providers")
+async def get_auth_providers():
+    """Get available authentication providers"""
+    return {
+        "providers": {
+            "google": True,  # Always available via Emergent Auth
+            "microsoft": bool(MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET),
+            "linkedin": bool(LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET)
+        }
+    }
+
 # ================== PROJECT ROUTES ==================
 
 @api_router.post("/projects")
