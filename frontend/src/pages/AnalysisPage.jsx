@@ -146,23 +146,47 @@ const AnalysisPage = () => {
       <DashboardLayout>
         <div className="space-y-8" data-testid="analysis-results">
           {/* Header */}
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/dashboard")} data-testid="back-btn">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Résultats de l'analyse</h1>
-              <p className="text-slate-500 text-sm">
-                {new Date(analysis.created_at).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit"
-                })}
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" onClick={() => navigate("/dashboard")} data-testid="back-btn">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Retour
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900">Résultats de l'analyse</h1>
+                <p className="text-slate-500 text-sm">
+                  {new Date(analysis.created_at).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })}
+                </p>
+              </div>
             </div>
+            
+            {/* Download PDF Button */}
+            {analysis.status === "completed" && (
+              <Button
+                onClick={downloadPDF}
+                disabled={downloading}
+                className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25"
+                data-testid="download-pdf-btn"
+              >
+                {downloading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Génération...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 mr-2" />
+                    Télécharger PDF
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
           {/* Status */}
