@@ -732,13 +732,13 @@ class IAskanPDF(FPDF):
         
         # Score
         self.set_xy(x, y + 2)
-        self.set_font('Helvetica', 'B', 16)
+        self.set_font('DejaVu', 'B', 16)
         self.set_text_color(*text_color)
         self.cell(width, 10, str(round(score)), align='C')
         
         # Label
         self.set_xy(x, y + 12)
-        self.set_font('Helvetica', '', 9)
+        self.set_font('DejaVu', '', 9)
         self.set_text_color(100, 116, 139)
         self.cell(width, 8, label, align='C')
 
@@ -749,11 +749,11 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
     pdf.add_page()
     
     # Project Info
-    pdf.set_font('Helvetica', 'B', 18)
+    pdf.set_font('DejaVu', 'B', 18)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 10, f"Rapport d'Analyse GEO", new_x='LMARGIN', new_y='NEXT')
     
-    pdf.set_font('Helvetica', '', 11)
+    pdf.set_font('DejaVu', '', 11)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(0, 8, f"Projet: {project.get('name', 'N/A')}", new_x='LMARGIN', new_y='NEXT')
     pdf.cell(0, 8, f"Marque: {project.get('brand_name', 'N/A')}", new_x='LMARGIN', new_y='NEXT')
@@ -774,7 +774,7 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
     global_score = analysis.get('global_score', 0)
     
     # Main score display
-    pdf.set_font('Helvetica', 'B', 48)
+    pdf.set_font('DejaVu', 'B', 48)
     if global_score >= 70:
         pdf.set_text_color(22, 163, 74)
     elif global_score >= 40:
@@ -783,14 +783,14 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
         pdf.set_text_color(220, 38, 38)
     pdf.cell(50, 25, str(round(global_score)), align='C')
     
-    pdf.set_font('Helvetica', '', 14)
+    pdf.set_font('DejaVu', '', 14)
     pdf.set_text_color(148, 163, 184)
     pdf.cell(20, 25, '/ 100')
     pdf.ln(30)
     
     # R.A.T.E. Scores
     pdf.section_title("Score R.A.T.E.™")
-    pdf.set_font('Helvetica', '', 10)
+    pdf.set_font('DejaVu', '', 10)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(0, 6, "Relevance • Authority • Truthfulness • Endorsement", new_x='LMARGIN', new_y='NEXT')
     pdf.ln(5)
