@@ -1,0 +1,197 @@
+{
+  "identity": {
+    "persona": "E1: The Anti-AI Designer",
+    "mission": "Create IAskan, a premium, dark-mode GEO SaaS platform that looks authoritative and expensive.",
+    "tone": "Elite, Precision, Intelligent, Future-proof.",
+    "language": "French (fr-FR)"
+  },
+  "visual_language": {
+    "theme_name": "Cyber Slate",
+    "mode": "dark",
+    "core_concept": "Data as Art. Deep voids with glowing precision instruments.",
+    "colors": {
+      "base": {
+        "background": "#030712",
+        "foreground": "#F8FAFC",
+        "card": "#0B0F19",
+        "card_foreground": "#F8FAFC",
+        "border": "rgba(255, 255, 255, 0.08)"
+      },
+      "brand": {
+        "primary": "#4F46E5",
+        "primary_foreground": "#FFFFFF",
+        "secondary": "#1E293B",
+        "secondary_foreground": "#F8FAFC",
+        "accent": "#3B82F6",
+        "accent_glow": "rgba(59, 130, 246, 0.5)"
+      },
+      "status": {
+        "success": "#10B981",
+        "warning": "#F59E0B",
+        "error": "#EF4444",
+        "info": "#0EA5E9"
+      }
+    },
+    "gradients": {
+      "hero_glow": "radial-gradient(circle at 50% 0%, rgba(79, 70, 229, 0.15) 0%, rgba(3, 7, 18, 0) 70%)",
+      "card_surface": "linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%)",
+      "beam_light": "linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent)"
+    },
+    "typography": {
+      "headings": {
+        "font_family": "Plus Jakarta Sans, sans-serif",
+        "weights": ["600", "700", "800"],
+        "letter_spacing": "-0.02em"
+      },
+      "body": {
+        "font_family": "Manrope, sans-serif",
+        "weights": ["400", "500"],
+        "line_height": "1.6"
+      },
+      "mono": {
+        "font_family": "JetBrains Mono, monospace",
+        "usage": "Data points, scores, code snippets"
+      }
+    },
+    "shadows": {
+      "glow": "0 0 20px -5px rgba(79, 70, 229, 0.3)",
+      "card": "0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15)"
+    },
+    "radius": {
+      "base": "0.75rem",
+      "card": "1rem",
+      "button": "9999px"
+    }
+  },
+  "layout_strategy": {
+    "spacing": {
+      "container_padding": "p-6 md:p-8 lg:p-12",
+      "section_gap": "gap-12 md:gap-24",
+      "element_gap": "gap-4 md:gap-6"
+    },
+    "grid_system": {
+      "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6",
+      "marketing": "grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12"
+    },
+    "containers": {
+      "max_width": "max-w-7xl mx-auto",
+      "glass_card": "bg-gray-950/40 backdrop-blur-xl border border-white/10"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_-5px_rgba(79,70,229,0.5)] rounded-full px-8 py-3 font-semibold transition-all hover:scale-105 active:scale-95",
+      "secondary": "bg-white/5 text-white border border-white/10 hover:bg-white/10 rounded-full px-8 py-3 font-medium backdrop-blur-sm transition-all",
+      "ghost": "text-gray-400 hover:text-white hover:bg-white/5 px-4 py-2 rounded-lg transition-colors"
+    },
+    "cards": {
+      "base": "bg-card border border-border/50 shadow-xl rounded-2xl overflow-hidden",
+      "hover_effect": "hover:border-primary/30 transition-colors duration-300"
+    },
+    "inputs": {
+      "base": "bg-gray-900/50 border-gray-800 focus:border-primary focus:ring-1 focus:ring-primary/50 rounded-lg h-12 px-4 transition-all"
+    },
+    "charts": {
+      "library": "Recharts (via Shadcn)",
+      "style": "Minimalist, thin lines, gradient fills",
+      "colors": ["#4F46E5", "#3B82F6", "#10B981", "#F59E0B", "#EF4444"]
+    }
+  },
+  "visual_assets": {
+    "images": [
+      {
+        "category": "hero_background",
+        "url": "https://images.unsplash.com/photo-1626788106664-dd5470a14082?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDV8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMG5ldHdvcmslMjBjb25uZWN0aW9uJTIwYmx1ZSUyMGRhcmslMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc3MTY4NDUyMXww&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract blue light network for hero background"
+      },
+      {
+        "category": "feature_ai_brain",
+        "url": "https://images.pexels.com/photos/17483869/pexels-photo-17483869.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "3D AI Brain visualization for Analysis Engine section"
+      },
+      {
+        "category": "feature_tech_3d",
+        "url": "https://images.pexels.com/photos/28428587/pexels-photo-28428587.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Abstract 3D tech shapes for R.A.T.E score section"
+      },
+      {
+        "category": "data_center",
+        "url": "https://images.pexels.com/photos/5480781/pexels-photo-5480781.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Server room for Infrastructure/Enterprise section"
+      },
+      {
+        "category": "team_meeting",
+        "url": "https://images.pexels.com/photos/7640434/pexels-photo-7640434.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Diverse team discussion for About/Team section"
+      }
+    ],
+    "icons": "Lucide React (default). Use thin strokes (1.5px) for elegance."
+  },
+  "page_specifics": {
+    "landing_page": {
+      "sections": [
+        "Hero: Headline 'Dominez les réponses de l'IA'. Subtext 'La première plateforme GEO pour l'Europe'. CTA 'Essayer Gratuitement'. Background: Abstract Blue Network.",
+        "Social Proof: 'Ils nous font confiance' + Logos (use text placeholders like 'TechCorp', 'InnoSys', 'DataFlow').",
+        "Problem/Solution: Comparison of 'Classic SEO' vs 'GEO'.",
+        "Features: 3-column bento grid showing R.A.T.E score, Multi-AI Analysis, Benchmarking.",
+        "How it works: Step 1 (Analyze), Step 2 (Optimize), Step 3 (Dominate).",
+        "Pricing: Starter (79€), Pro (149€), Business (349€). Highlighting Pro as 'Populaire'.",
+        "Footer: Simple, clean, legal links."
+      ],
+      "copy_language": "French"
+    },
+    "dashboard": {
+      "layout": "Sidebar navigation (left), Top bar (search/profile), Main content area.",
+      "widgets": [
+        "Global GEO Score (Radial Chart)",
+        "AI Visibility Trend (Line Chart)",
+        "Recent Queries Table",
+        "Action Items (Checklist)"
+      ]
+    },
+    "auth": {
+      "style": "Split screen. Left: Login form. Right: Testimonial/Abstract Image.",
+      "sso_buttons": "Google, Microsoft, LinkedIn (Use Lucide icons or simple text buttons)."
+    }
+  },
+  "copywriting_guidelines": {
+    "language": "French",
+    "tone": "Professional, confident, direct.",
+    "key_terms": {
+      "GEO": "Generative Engine Optimization",
+      "Score": "Score R.A.T.E",
+      "AI": "Intelligence Artificielle"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Install 'framer-motion' and 'clsx' and 'tailwind-merge' if not present.",
+    "Use 'Plus Jakarta Sans' for all headings. Import from Google Fonts.",
+    "Use 'Manrope' for body text. Import from Google Fonts.",
+    "Ensure all text is in French.",
+    "Implement the 'Cyber Slate' dark theme by strictly following the color palette.",
+    "Use Shadcn components but override default styles to match the 'glass_card' look.",
+    "For charts, use Recharts with the specified color palette.",
+    "Do NOT use gradients for text (it affects readability). Use gradients for backgrounds and borders.",
+    "Ensure all images have alt text in French.",
+    "Add 'data-testid' to all interactive elements."
+  ],
+  "universal_guidelines": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories = main agent will use placeholder text which is FORBIDDEN.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Create new components that match the style and conventions of existing components when needed.",
+    "Components MUST use named exports (export const ComponentName = ...).",
+    "Pages MUST use default exports (export default function PageName() {...}).",
+    "Use 'sonner' for toasts."
+  ]
+}
