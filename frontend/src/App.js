@@ -8,6 +8,7 @@ import { toast } from "sonner";
 // Pages
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
+import ProjectSelectorPage from "@/pages/ProjectSelectorPage";
 import DashboardPage from "@/pages/DashboardPage";
 import AnalysisPage from "@/pages/AnalysisPage";
 import ProjectsPage from "@/pages/ProjectsPage";
@@ -34,10 +35,9 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentProject, setCurrentProject] = useState(null);
 
   const checkAuth = useCallback(async () => {
-    // CRITICAL: If returning from OAuth callback, skip the /me check
-    // AuthCallback will exchange the session_id and establish the session first
     if (window.location.hash?.includes('session_id=')) {
       setLoading(false);
       return;
@@ -49,9 +49,23 @@ const AuthProvider = ({ children }) => {
       });
       setUser(response.data.user);
       setSubscription(response.data.subscription);
+      
+      // Restore selected project from localStorage
+      const savedProjectId = localStorage.getItem('currentProjectId');
+      if (savedProjectId) {
+        try {
+          const projectResponse = await axios.get(`${API}/projects/${savedProjectId}`, {
+            withCredentials: true
+          });
+          setCurrentProject(projectResponse.data.project);
+        } catch (e) {
+          localStorage.removeItem('currentProjectId');
+        }
+      }
     } catch (error) {
       setUser(null);
       setSubscription(null);
+      setCurrentProject(null);
     } finally {
       setLoading(false);
     }
@@ -74,6 +88,8 @@ const AuthProvider = ({ children }) => {
     }
     setUser(null);
     setSubscription(null);
+    setCurrentProject(null);
+    localStorage.removeItem('currentProjectId');
   };
 
   const refreshSubscription = async () => {
@@ -85,8 +101,33 @@ const AuthProvider = ({ children }) => {
     }
   };
 
+  const selectProject = (project) => {
+    setCurrentProject(project);
+    if (project) {
+      localStorage.setItem('currentProjectId', project.project_id);
+    } else {
+      localStorage.removeItem('currentProjectId');
+    }
+  };
+
+  const clearProject = () => {
+    setCurrentProject(null);
+    localStorage.removeItem('currentProjectId');
+  };
+
   return (
-    <AuthContext.Provider value={{ user, subscription, loading, login, logout, checkAuth, refreshSubscription }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      subscription, 
+      loading, 
+      login, 
+      logout, 
+      checkAuth, 
+      refreshSubscription,
+      currentProject,
+      selectProject,
+      clearProject
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -119,7 +160,7 @@ const AuthCallback = () => {
           
           login(response.data.user, null);
           toast.success("Connexion réussie !");
-          navigate("/dashboard", { replace: true, state: { user: response.data.user } });
+          navigate("/projects", { replace: true });
         } catch (error) {
           console.error("Auth error:", error);
           toast.error("Erreur d'authentification");
@@ -137,13 +178,13 @@ const AuthCallback = () => {
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center">
         <div className="spinner w-12 h-12 mx-auto mb-4"></div>
-        <p className="text-muted-foreground">Authentification en cours...</p>
+        <p className="text-slate-500">Authentification en cours...</p>
       </div>
     </div>
   );
 };
 
-// Protected Route
+// Protected Route - requires auth
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -153,13 +194,12 @@ const ProtectedRoute = ({ children }) => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="spinner w-12 h-12 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Chargement...</p>
+          <p className="text-slate-500">Chargement...</p>
         </div>
       </div>
     );
   }
 
-  // If user data passed from AuthCallback, use it
   if (location.state?.user) {
     return children;
   }
@@ -171,11 +211,38 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Project Required Route - requires auth AND selected project
+const ProjectRequiredRoute = ({ children }) => {
+  const { user, loading, currentProject } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="spinner w-12 h-12 mx-auto mb-4"></div>
+          <p className="text-slate-500">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // If no project selected, redirect to project selector
+  if (!currentProject) {
+    return <Navigate to="/projects" replace state={{ from: location }} />;
+  }
+
+  return children;
+};
+
 // App Router
 const AppRouter = () => {
   const location = useLocation();
 
-  // Check URL fragment for session_id DURING RENDER (not in useEffect)
   if (location.hash?.includes('session_id=')) {
     return <AuthCallback />;
   }
@@ -186,43 +253,43 @@ const AppRouter = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route
-        path="/dashboard"
+        path="/projects"
         element={
           <ProtectedRoute>
-            <DashboardPage />
+            <ProjectSelectorPage />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ProjectRequiredRoute>
+            <DashboardPage />
+          </ProjectRequiredRoute>
         }
       />
       <Route
         path="/analysis"
         element={
-          <ProtectedRoute>
+          <ProjectRequiredRoute>
             <AnalysisPage />
-          </ProtectedRoute>
+          </ProjectRequiredRoute>
         }
       />
       <Route
         path="/analysis/:analysisId"
         element={
-          <ProtectedRoute>
+          <ProjectRequiredRoute>
             <AnalysisPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/projects"
-        element={
-          <ProtectedRoute>
-            <ProjectsPage />
-          </ProtectedRoute>
+          </ProjectRequiredRoute>
         }
       />
       <Route
         path="/recommendations"
         element={
-          <ProtectedRoute>
+          <ProjectRequiredRoute>
             <RecommendationsPage />
-          </ProtectedRoute>
+          </ProjectRequiredRoute>
         }
       />
       <Route
