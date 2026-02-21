@@ -687,7 +687,6 @@ class IAskanPDF(FPDF):
         # Add Unicode font
         self.add_font('DejaVu', '', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', uni=True)
         self.add_font('DejaVu', 'B', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', uni=True)
-        self.add_font('DejaVu', 'I', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf', uni=True)
     
     def header(self):
         # Logo/Brand
@@ -705,9 +704,9 @@ class IAskanPDF(FPDF):
     
     def footer(self):
         self.set_y(-15)
-        self.set_font('DejaVu', 'I', 8)
+        self.set_font('DejaVu', '', 8)
         self.set_text_color(148, 163, 184)
-        self.cell(0, 10, f'IAskan - Rapport généré le {datetime.now().strftime("%d/%m/%Y à %H:%M")} - Page {self.page_no()}', align='C')
+        self.cell(0, 10, f'IAskan - Rapport genere le {datetime.now().strftime("%d/%m/%Y a %H:%M")} - Page {self.page_no()}', align='C')
     
     def section_title(self, title):
         self.set_font('DejaVu', 'B', 14)
