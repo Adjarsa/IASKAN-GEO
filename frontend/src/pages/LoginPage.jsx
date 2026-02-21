@@ -6,7 +6,8 @@ import { ArrowLeft } from "lucide-react";
 
 const LoginPage = () => {
   const handleGoogleLogin = () => {
-    const redirectUrl = window.location.origin + '/dashboard';
+    // Redirect to projects page after auth (user must select project first)
+    const redirectUrl = window.location.origin + '/projects';
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 

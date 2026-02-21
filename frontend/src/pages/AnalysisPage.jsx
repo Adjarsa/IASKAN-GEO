@@ -78,6 +78,11 @@ const AnalysisPage = () => {
       navigate(`/analysis/${response.data.analysis_id}`);
     } catch (error) {
       console.error("Start analysis error:", error);
+      // Handle auth errors specifically
+      if (error.response?.status === 401) {
+        toast.error("Session expirée. Veuillez vous reconnecter.");
+        return;
+      }
       toast.error(error.response?.data?.detail || "Erreur lors du lancement de l'analyse");
     } finally {
       setStarting(false);
