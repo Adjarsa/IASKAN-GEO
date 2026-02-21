@@ -1,11 +1,29 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import { ArrowLeft } from "lucide-react";
 import { API } from "@/App";
+import { toast } from "sonner";
 
 const LoginPage = () => {
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error) {
+      const errorMessages = {
+        "microsoft_auth_failed": "Échec de l'authentification Microsoft",
+        "linkedin_auth_failed": "Échec de l'authentification LinkedIn",
+        "invalid_state": "Session de connexion invalide. Veuillez réessayer.",
+        "token_exchange_failed": "Erreur lors de l'échange de token",
+        "user_info_failed": "Impossible de récupérer les informations utilisateur"
+      };
+      toast.error(errorMessages[error] || "Erreur de connexion");
+    }
+  }, [searchParams]);
+
   const handleGoogleLogin = () => {
     // Redirect to projects page after auth (user must select project first)
     const redirectUrl = window.location.origin + '/projects';
