@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import Logo from "@/components/Logo";
 import { 
-  Brain, 
   BarChart3, 
   Target, 
   Zap, 
@@ -15,22 +15,15 @@ import {
   Sparkles,
   TrendingUp,
   Users,
-  Award
+  Award,
+  LineChart,
+  Bot
 } from "lucide-react";
 
 const LandingPage = () => {
-  const [email, setEmail] = useState("");
-
-  const handleWaitlist = (e) => {
-    e.preventDefault();
-    // Handle waitlist signup
-    alert(`Merci ! ${email} a été ajouté à la liste d'attente.`);
-    setEmail("");
-  };
-
   const features = [
     {
-      icon: Brain,
+      icon: Bot,
       title: "Score R.A.T.E™ Propriétaire",
       description: "Notre algorithme exclusif mesure Relevance, Authority, Truthfulness et Endorsement pour un score GEO précis."
     },
@@ -111,26 +104,23 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
       {/* Hero Background Glow */}
       <div className="absolute inset-0 hero-glow pointer-events-none" />
       
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2" data-testid="nav-logo">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Brain className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-white">IAskan</span>
+          <Link to="/" data-testid="nav-logo">
+            <Logo />
           </Link>
           
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-muted-foreground hover:text-white transition-colors">Fonctionnalités</a>
-            <a href="#pricing" className="text-muted-foreground hover:text-white transition-colors">Tarifs</a>
-            <Link to="/login" className="text-muted-foreground hover:text-white transition-colors" data-testid="nav-login">Connexion</Link>
+            <a href="#features" className="text-slate-600 hover:text-violet-600 transition-colors font-medium">Fonctionnalités</a>
+            <a href="#pricing" className="text-slate-600 hover:text-violet-600 transition-colors font-medium">Tarifs</a>
+            <Link to="/login" className="text-slate-600 hover:text-violet-600 transition-colors font-medium" data-testid="nav-login">Connexion</Link>
             <Link to="/login">
-              <Button className="rounded-full glow-primary" data-testid="nav-cta">
+              <Button className="rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25" data-testid="nav-cta">
                 Essai Gratuit
               </Button>
             </Link>
@@ -147,29 +137,29 @@ const LandingPage = () => {
             transition={{ duration: 0.6 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-50 border border-violet-100 text-violet-700 text-sm font-medium mb-8">
               <Sparkles className="w-4 h-4" />
               La première plateforme GEO pour l'Europe
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight mb-6">
+            <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 leading-tight mb-6">
               Dominez les réponses<br />
               <span className="text-gradient">de l'Intelligence Artificielle</span>
             </h1>
             
-            <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+            <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
               IAskan analyse votre visibilité dans ChatGPT, Claude, Gemini et Perplexity. 
               Optimisez votre présence pour être recommandé par les IA.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/login">
-                <Button size="lg" className="rounded-full px-8 glow-primary text-lg h-14" data-testid="hero-cta">
+                <Button size="lg" className="rounded-full px-8 text-lg h-14 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25" data-testid="hero-cta">
                   Commencer Gratuitement
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="rounded-full px-8 text-lg h-14" data-testid="hero-demo">
+              <Button variant="outline" size="lg" className="rounded-full px-8 text-lg h-14 border-slate-200 text-slate-700 hover:bg-slate-50" data-testid="hero-demo">
                 Voir une démo
               </Button>
             </div>
@@ -184,8 +174,8 @@ const LandingPage = () => {
           >
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-4xl font-bold text-white mb-2">{stat.value}</div>
-                <div className="text-muted-foreground">{stat.label}</div>
+                <div className="text-4xl font-bold text-gradient mb-2">{stat.value}</div>
+                <div className="text-slate-600">{stat.label}</div>
               </div>
             ))}
           </motion.div>
@@ -196,63 +186,63 @@ const LandingPage = () => {
       <section className="py-20 px-6 relative">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="glass rounded-2xl p-8">
-              <div className="text-destructive text-sm font-semibold mb-4">AVANT</div>
-              <h3 className="text-2xl font-bold text-white mb-4">SEO Classique</h3>
-              <ul className="space-y-3 text-muted-foreground">
+            <Card className="p-8 border-red-100 bg-red-50/50">
+              <div className="text-red-600 text-sm font-semibold mb-4">AVANT</div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">SEO Classique</h3>
+              <ul className="space-y-3 text-slate-600">
                 <li className="flex items-start gap-3">
-                  <span className="text-destructive">✗</span>
+                  <span className="text-red-500">✗</span>
                   Optimisation pour Google uniquement
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-destructive">✗</span>
+                  <span className="text-red-500">✗</span>
                   Invisible dans les réponses IA
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-destructive">✗</span>
+                  <span className="text-red-500">✗</span>
                   Perte de trafic vers ChatGPT
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-destructive">✗</span>
+                  <span className="text-red-500">✗</span>
                   Aucune mesure de visibilité IA
                 </li>
               </ul>
-            </div>
+            </Card>
             
-            <div className="glass rounded-2xl p-8 border-primary/30">
-              <div className="text-success text-sm font-semibold mb-4">APRÈS</div>
-              <h3 className="text-2xl font-bold text-white mb-4">GEO avec IAskan</h3>
-              <ul className="space-y-3 text-muted-foreground">
+            <Card className="p-8 border-emerald-100 bg-emerald-50/50">
+              <div className="text-emerald-600 text-sm font-semibold mb-4">APRÈS</div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">GEO avec IAskan</h3>
+              <ul className="space-y-3 text-slate-600">
                 <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                   Visibilité sur tous les moteurs IA
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                   Recommandé dans les réponses IA
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                   Score GEO mesurable et actionnable
                 </li>
                 <li className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                   Avantage concurrentiel stratégique
                 </li>
               </ul>
-            </div>
+            </Card>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-6">
+      <section id="features" className="py-20 px-6 bg-gradient-to-b from-white to-slate-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">
               La plateforme GEO complète
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
               Tout ce dont vous avez besoin pour dominer la visibilité IA
             </p>
           </div>
@@ -266,12 +256,12 @@ const LandingPage = () => {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <Card className="glass p-6 h-full card-hover">
-                  <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-primary" />
+                <Card className="p-6 h-full bg-white border-slate-100 card-hover">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-cyan-100 flex items-center justify-center mb-4">
+                    <feature.icon className="w-6 h-6 text-violet-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
+                  <h3 className="text-xl font-semibold text-slate-900 mb-2">{feature.title}</h3>
+                  <p className="text-slate-600">{feature.description}</p>
                 </Card>
               </motion.div>
             ))}
@@ -283,8 +273,8 @@ const LandingPage = () => {
       <section className="py-20 px-6 relative">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">Comment ça marche</h2>
-            <p className="text-xl text-muted-foreground">3 étapes pour dominer les IA</p>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Comment ça marche</h2>
+            <p className="text-xl text-slate-600">3 étapes pour dominer les IA</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -301,11 +291,11 @@ const LandingPage = () => {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-6">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-violet-500/25">
                   <item.icon className="w-10 h-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-3">{item.title}</h3>
-                <p className="text-muted-foreground">{item.description}</p>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">{item.title}</h3>
+                <p className="text-slate-600">{item.description}</p>
               </motion.div>
             ))}
           </div>
@@ -313,11 +303,11 @@ const LandingPage = () => {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-6">
+      <section id="pricing" className="py-20 px-6 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">Tarifs simples et transparents</h2>
-            <p className="text-xl text-muted-foreground">7 jours d'essai gratuit sur tous les plans</p>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Tarifs simples et transparents</h2>
+            <p className="text-xl text-slate-600">7 jours d'essai gratuit sur tous les plans</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -332,17 +322,17 @@ const LandingPage = () => {
                 <div className={`pricing-card h-full ${plan.popular ? 'featured' : ''}`}>
                   {plan.popular && <div className="pricing-badge">Populaire</div>}
                   
-                  <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
                   <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-5xl font-bold text-white">{plan.price}€</span>
-                    <span className="text-muted-foreground">/mois</span>
+                    <span className="text-5xl font-bold text-slate-900">{plan.price}€</span>
+                    <span className="text-slate-500">/mois</span>
                   </div>
-                  <p className="text-muted-foreground mb-6">{plan.queries} requêtes/mois</p>
+                  <p className="text-slate-500 mb-6">{plan.queries} requêtes/mois</p>
                   
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, fIndex) => (
-                      <li key={fIndex} className="flex items-start gap-3 text-muted-foreground">
-                        <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                      <li key={fIndex} className="flex items-start gap-3 text-slate-600">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                         {feature}
                       </li>
                     ))}
@@ -350,7 +340,7 @@ const LandingPage = () => {
                   
                   <Link to="/login">
                     <Button 
-                      className={`w-full rounded-full ${plan.popular ? 'glow-primary' : ''}`}
+                      className={`w-full rounded-full ${plan.popular ? 'bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25' : ''}`}
                       variant={plan.popular ? 'default' : 'outline'}
                       data-testid={`pricing-${plan.name.toLowerCase()}-cta`}
                     >
@@ -367,45 +357,39 @@ const LandingPage = () => {
       {/* CTA Section */}
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="glass rounded-3xl p-12 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 pointer-events-none" />
+          <Card className="p-12 relative overflow-hidden bg-gradient-to-r from-violet-600 to-cyan-600 border-0">
             <div className="relative">
               <h2 className="text-4xl font-bold text-white mb-4">
                 Prêt à dominer les réponses IA ?
               </h2>
-              <p className="text-xl text-muted-foreground mb-8">
+              <p className="text-xl text-white/80 mb-8">
                 Rejoignez les entreprises qui optimisent leur visibilité GEO
               </p>
               <Link to="/login">
-                <Button size="lg" className="rounded-full px-10 glow-primary text-lg h-14" data-testid="cta-final">
+                <Button size="lg" className="rounded-full px-10 text-lg h-14 bg-white text-violet-600 hover:bg-slate-100" data-testid="cta-final">
                   Démarrer Maintenant
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
             </div>
-          </div>
+          </Card>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-border">
+      <footer className="py-12 px-6 border-t border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Brain className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold text-white">IAskan</span>
+            <Logo size="small" />
+            
+            <div className="flex items-center gap-6 text-sm text-slate-500">
+              <a href="#" className="hover:text-violet-600 transition-colors">Mentions légales</a>
+              <a href="#" className="hover:text-violet-600 transition-colors">Politique de confidentialité</a>
+              <a href="#" className="hover:text-violet-600 transition-colors">CGV</a>
+              <a href="#" className="hover:text-violet-600 transition-colors">Contact</a>
             </div>
             
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-white transition-colors">Mentions légales</a>
-              <a href="#" className="hover:text-white transition-colors">Politique de confidentialité</a>
-              <a href="#" className="hover:text-white transition-colors">CGV</a>
-              <a href="#" className="hover:text-white transition-colors">Contact</a>
-            </div>
-            
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-slate-500">
               © 2025 IAskan. Tous droits réservés.
             </div>
           </div>
