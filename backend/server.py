@@ -310,7 +310,9 @@ async def create_project(request: Request, user: dict = Depends(get_current_user
     doc["created_at"] = doc["created_at"].isoformat()
     await db.projects.insert_one(doc)
     
-    return {"project": doc, "_id": str(doc.get("_id", ""))}
+    # Return project without MongoDB _id
+    project_data = await db.projects.find_one({"project_id": doc["project_id"]}, {"_id": 0})
+    return {"project": project_data}
 
 @api_router.get("/projects")
 async def get_projects(user: dict = Depends(get_current_user)):
