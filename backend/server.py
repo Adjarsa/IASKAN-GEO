@@ -684,13 +684,17 @@ class IAskanPDF(FPDF):
     def __init__(self):
         super().__init__()
         self.set_auto_page_break(auto=True, margin=20)
+        # Add Unicode font
+        self.add_font('DejaVu', '', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', uni=True)
+        self.add_font('DejaVu', 'B', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', uni=True)
+        self.add_font('DejaVu', 'I', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf', uni=True)
     
     def header(self):
         # Logo/Brand
-        self.set_font('Helvetica', 'B', 20)
+        self.set_font('DejaVu', 'B', 20)
         self.set_text_color(124, 58, 237)  # Violet
         self.cell(0, 10, 'IAskan', align='L')
-        self.set_font('Helvetica', '', 10)
+        self.set_font('DejaVu', '', 10)
         self.set_text_color(100, 116, 139)  # Slate
         self.cell(0, 10, 'Rapport GEO', align='R', new_x='LMARGIN', new_y='NEXT')
         self.ln(5)
@@ -701,12 +705,12 @@ class IAskanPDF(FPDF):
     
     def footer(self):
         self.set_y(-15)
-        self.set_font('Helvetica', 'I', 8)
+        self.set_font('DejaVu', 'I', 8)
         self.set_text_color(148, 163, 184)
         self.cell(0, 10, f'IAskan - Rapport généré le {datetime.now().strftime("%d/%m/%Y à %H:%M")} - Page {self.page_no()}', align='C')
     
     def section_title(self, title):
-        self.set_font('Helvetica', 'B', 14)
+        self.set_font('DejaVu', 'B', 14)
         self.set_text_color(15, 23, 42)  # Slate 900
         self.cell(0, 10, title, new_x='LMARGIN', new_y='NEXT')
         self.ln(2)
