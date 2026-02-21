@@ -92,6 +92,38 @@ const AnalysisPage = () => {
     }
   };
 
+  const downloadPDF = async () => {
+    if (!analysis?.analysis_id) return;
+    
+    setDownloading(true);
+    try {
+      const response = await axios.get(
+        `${API}/analysis/${analysis.analysis_id}/pdf`,
+        { 
+          withCredentials: true,
+          responseType: 'blob'
+        }
+      );
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `IAskan_Rapport_${analysis.analysis_id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("Rapport PDF téléchargé !");
+    } catch (error) {
+      console.error("PDF download error:", error);
+      toast.error("Erreur lors du téléchargement du rapport");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const getScoreColor = (score) => {
     if (score >= 70) return "text-emerald-600";
     if (score >= 40) return "text-amber-600";
