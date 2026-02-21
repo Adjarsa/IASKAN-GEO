@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { useAuth, API } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import Logo from "@/components/Logo";
 import {
-  Brain,
   CheckCircle2,
   ArrowLeft,
   Loader2,
@@ -22,7 +22,6 @@ const PricingPage = () => {
   const [loading, setLoading] = useState(null);
 
   useEffect(() => {
-    // Check for payment cancelled
     const paymentStatus = searchParams.get("payment");
     if (paymentStatus === "cancelled") {
       toast.info("Paiement annulé");
@@ -51,7 +50,6 @@ const PricingPage = () => {
         { withCredentials: true }
       );
 
-      // Redirect to Stripe
       window.location.href = response.data.url;
     } catch (error) {
       console.error("Checkout error:", error);
@@ -112,28 +110,22 @@ const PricingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Background */}
-      <div className="absolute inset-0 hero-glow pointer-events-none" />
-
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 glass border-b border-border">
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2" data-testid="pricing-logo">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Brain className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-white">IAskan</span>
+          <Link to={user ? "/dashboard" : "/"} data-testid="pricing-logo">
+            <Logo />
           </Link>
 
           {user ? (
-            <Button variant="ghost" onClick={() => navigate("/dashboard")} data-testid="back-dashboard">
+            <Button variant="ghost" onClick={() => navigate("/dashboard")} className="text-slate-600" data-testid="back-dashboard">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Retour au dashboard
             </Button>
           ) : (
             <Link to="/login">
-              <Button variant="outline" data-testid="pricing-login">
+              <Button variant="outline" className="border-slate-200" data-testid="pricing-login">
                 Connexion
               </Button>
             </Link>
@@ -145,24 +137,24 @@ const PricingPage = () => {
       <div className="max-w-7xl mx-auto px-6 py-16 relative">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
             Tarifs simples et transparents
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
             7 jours d'essai gratuit sur tous les plans. Annulez à tout moment.
           </p>
         </div>
 
         {/* Current Plan Info */}
         {user && subscription && (
-          <Card className="glass p-4 mb-8 max-w-md mx-auto text-center">
-            <p className="text-muted-foreground">
+          <Card className="p-4 mb-8 max-w-md mx-auto text-center bg-violet-50 border-violet-100">
+            <p className="text-slate-600">
               Votre plan actuel :{" "}
-              <span className="text-white font-semibold">
+              <span className="text-violet-700 font-semibold">
                 {subscription.plan?.charAt(0).toUpperCase() + subscription.plan?.slice(1)}
               </span>
               {subscription.status === "trial" && (
-                <span className="ml-2 text-warning">(Essai gratuit)</span>
+                <span className="ml-2 text-amber-600">(Essai gratuit)</span>
               )}
             </p>
           </Card>
@@ -177,14 +169,14 @@ const PricingPage = () => {
             return (
               <Card
                 key={plan.id}
-                className={`relative overflow-hidden ${
+                className={`relative overflow-hidden bg-white ${
                   plan.popular
-                    ? "border-primary/50 shadow-[0_0_40px_-10px_rgba(79,70,229,0.4)]"
-                    : "glass"
+                    ? "border-violet-300 shadow-xl shadow-violet-500/10"
+                    : "border-slate-100"
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute top-0 right-0 bg-gradient-to-r from-primary to-accent text-white text-xs font-semibold px-4 py-1 rounded-bl-lg">
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-xs font-semibold px-4 py-1 rounded-bl-lg">
                     Populaire
                   </div>
                 )}
@@ -192,31 +184,31 @@ const PricingPage = () => {
                 <div className="p-8">
                   <div className="flex items-center gap-3 mb-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      plan.popular ? "bg-primary/20" : "bg-white/5"
+                      plan.popular ? "bg-gradient-to-br from-violet-100 to-cyan-100" : "bg-slate-100"
                     }`}>
-                      <Icon className={`w-6 h-6 ${plan.popular ? "text-primary" : "text-muted-foreground"}`} />
+                      <Icon className={`w-6 h-6 ${plan.popular ? "text-violet-600" : "text-slate-500"}`} />
                     </div>
-                    <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
+                    <h3 className="text-2xl font-bold text-slate-900">{plan.name}</h3>
                   </div>
 
                   <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-5xl font-bold text-white">{plan.price}€</span>
-                    <span className="text-muted-foreground">/mois</span>
+                    <span className="text-5xl font-bold text-slate-900">{plan.price}€</span>
+                    <span className="text-slate-500">/mois</span>
                   </div>
 
-                  <p className="text-muted-foreground mb-6">{plan.queries}</p>
+                  <p className="text-slate-500 mb-6">{plan.queries}</p>
 
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-3 text-muted-foreground">
-                        <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                      <li key={index} className="flex items-start gap-3 text-slate-600">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
 
                   <Button
-                    className={`w-full ${plan.popular ? "glow-primary" : ""}`}
+                    className={`w-full rounded-full ${plan.popular ? "bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25" : "border-slate-200"}`}
                     variant={plan.popular ? "default" : "outline"}
                     disabled={loading !== null || isCurrentPlan}
                     onClick={() => handleCheckout(plan.id)}
@@ -241,13 +233,13 @@ const PricingPage = () => {
 
         {/* FAQ / Trust Signals */}
         <div className="mt-20 text-center">
-          <p className="text-muted-foreground mb-4">
+          <p className="text-slate-500 mb-4">
             Questions ? Contactez-nous à{" "}
-            <a href="mailto:contact@iaskan.com" className="text-primary hover:underline">
+            <a href="mailto:contact@iaskan.com" className="text-violet-600 hover:underline">
               contact@iaskan.com
             </a>
           </p>
-          <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center gap-8 text-sm text-slate-400">
             <span>Paiement sécurisé par Stripe</span>
             <span>•</span>
             <span>Annulation facile</span>
