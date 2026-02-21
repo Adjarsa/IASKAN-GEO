@@ -676,6 +676,335 @@ async def get_analyses(project_id: Optional[str] = None, user: dict = Depends(ge
     analyses = await db.analyses.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
     return {"analyses": analyses}
 
+# ================== PDF REPORT GENERATION ==================
+
+class IAskanPDF(FPDF):
+    """Custom PDF class for IAskan reports"""
+    
+    def __init__(self):
+        super().__init__()
+        self.set_auto_page_break(auto=True, margin=20)
+    
+    def header(self):
+        # Logo/Brand
+        self.set_font('Helvetica', 'B', 20)
+        self.set_text_color(124, 58, 237)  # Violet
+        self.cell(0, 10, 'IAskan', align='L')
+        self.set_font('Helvetica', '', 10)
+        self.set_text_color(100, 116, 139)  # Slate
+        self.cell(0, 10, 'Rapport GEO', align='R', new_x='LMARGIN', new_y='NEXT')
+        self.ln(5)
+        # Line separator
+        self.set_draw_color(226, 232, 240)
+        self.line(10, self.get_y(), 200, self.get_y())
+        self.ln(10)
+    
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Helvetica', 'I', 8)
+        self.set_text_color(148, 163, 184)
+        self.cell(0, 10, f'IAskan - Rapport généré le {datetime.now().strftime("%d/%m/%Y à %H:%M")} - Page {self.page_no()}', align='C')
+    
+    def section_title(self, title):
+        self.set_font('Helvetica', 'B', 14)
+        self.set_text_color(15, 23, 42)  # Slate 900
+        self.cell(0, 10, title, new_x='LMARGIN', new_y='NEXT')
+        self.ln(2)
+    
+    def add_score_box(self, label, score, x, y, width=45, height=25):
+        # Background
+        if score >= 70:
+            self.set_fill_color(220, 252, 231)  # Green 100
+            text_color = (22, 163, 74)  # Green 600
+        elif score >= 40:
+            self.set_fill_color(254, 249, 195)  # Yellow 100
+            text_color = (202, 138, 4)  # Yellow 600
+        else:
+            self.set_fill_color(254, 226, 226)  # Red 100
+            text_color = (220, 38, 38)  # Red 600
+        
+        self.set_xy(x, y)
+        self.rect(x, y, width, height, style='F')
+        
+        # Score
+        self.set_xy(x, y + 2)
+        self.set_font('Helvetica', 'B', 16)
+        self.set_text_color(*text_color)
+        self.cell(width, 10, str(round(score)), align='C')
+        
+        # Label
+        self.set_xy(x, y + 12)
+        self.set_font('Helvetica', '', 9)
+        self.set_text_color(100, 116, 139)
+        self.cell(width, 8, label, align='C')
+
+
+def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
+    """Generate a PDF report for an analysis"""
+    pdf = IAskanPDF()
+    pdf.add_page()
+    
+    # Project Info
+    pdf.set_font('Helvetica', 'B', 18)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(0, 10, f"Rapport d'Analyse GEO", new_x='LMARGIN', new_y='NEXT')
+    
+    pdf.set_font('Helvetica', '', 11)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(0, 8, f"Projet: {project.get('name', 'N/A')}", new_x='LMARGIN', new_y='NEXT')
+    pdf.cell(0, 8, f"Marque: {project.get('brand_name', 'N/A')}", new_x='LMARGIN', new_y='NEXT')
+    
+    created_at = analysis.get('created_at', '')
+    if isinstance(created_at, str):
+        try:
+            created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+            created_at = created_at.strftime('%d/%m/%Y à %H:%M')
+        except:
+            pass
+    pdf.cell(0, 8, f"Date d'analyse: {created_at}", new_x='LMARGIN', new_y='NEXT')
+    pdf.ln(10)
+    
+    # Global Score Section
+    pdf.section_title("Score GEO Global")
+    
+    global_score = analysis.get('global_score', 0)
+    
+    # Main score display
+    pdf.set_font('Helvetica', 'B', 48)
+    if global_score >= 70:
+        pdf.set_text_color(22, 163, 74)
+    elif global_score >= 40:
+        pdf.set_text_color(202, 138, 4)
+    else:
+        pdf.set_text_color(220, 38, 38)
+    pdf.cell(50, 25, str(round(global_score)), align='C')
+    
+    pdf.set_font('Helvetica', '', 14)
+    pdf.set_text_color(148, 163, 184)
+    pdf.cell(20, 25, '/ 100')
+    pdf.ln(30)
+    
+    # R.A.T.E. Scores
+    pdf.section_title("Score R.A.T.E.™")
+    pdf.set_font('Helvetica', '', 10)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(0, 6, "Relevance • Authority • Truthfulness • Endorsement", new_x='LMARGIN', new_y='NEXT')
+    pdf.ln(5)
+    
+    rate_score = analysis.get('rate_score', {})
+    rate_items = [
+        ('Relevance', rate_score.get('relevance', 0)),
+        ('Authority', rate_score.get('authority', 0)),
+        ('Truthfulness', rate_score.get('truthfulness', 0)),
+        ('Endorsement', rate_score.get('endorsement', 0))
+    ]
+    
+    start_x = 15
+    for i, (label, score) in enumerate(rate_items):
+        pdf.add_score_box(label, score, start_x + (i * 48), pdf.get_y())
+    pdf.ln(35)
+    
+    # AI Scores
+    ai_scores = analysis.get('ai_scores', {})
+    if ai_scores:
+        pdf.section_title("Score par Moteur IA")
+        pdf.ln(5)
+        
+        ai_names = {'chatgpt': 'ChatGPT', 'claude': 'Claude', 'gemini': 'Gemini', 'perplexity': 'Perplexity'}
+        start_x = 15
+        for i, (ai, score) in enumerate(ai_scores.items()):
+            pdf.add_score_box(ai_names.get(ai, ai), score, start_x + (i * 48), pdf.get_y())
+        pdf.ln(35)
+    
+    # Query Results
+    query_scores = analysis.get('query_scores', [])
+    if query_scores:
+        pdf.add_page()
+        pdf.section_title("Détail des Requêtes Analysées")
+        pdf.ln(3)
+        
+        for i, query in enumerate(query_scores[:10], 1):
+            query_text = query.get('query_text', '')[:80]
+            avg_score = query.get('avg_score', 0)
+            
+            # Query box
+            pdf.set_fill_color(248, 250, 252)
+            pdf.rect(10, pdf.get_y(), 190, 18, style='F')
+            
+            pdf.set_xy(12, pdf.get_y() + 2)
+            pdf.set_font('Helvetica', 'B', 10)
+            pdf.set_text_color(15, 23, 42)
+            pdf.cell(150, 6, f"{i}. {query_text}")
+            
+            # Score badge
+            if avg_score >= 70:
+                pdf.set_fill_color(220, 252, 231)
+                pdf.set_text_color(22, 163, 74)
+            elif avg_score >= 40:
+                pdf.set_fill_color(254, 249, 195)
+                pdf.set_text_color(202, 138, 4)
+            else:
+                pdf.set_fill_color(254, 226, 226)
+                pdf.set_text_color(220, 38, 38)
+            
+            pdf.set_xy(170, pdf.get_y())
+            pdf.set_font('Helvetica', 'B', 11)
+            pdf.cell(25, 6, str(round(avg_score)), align='C', fill=True)
+            
+            # AI responses
+            pdf.set_xy(12, pdf.get_y() + 8)
+            pdf.set_font('Helvetica', '', 8)
+            pdf.set_text_color(100, 116, 139)
+            
+            responses = query.get('responses', [])
+            response_text = ' | '.join([f"{r.get('ai_type', '?')}: {r.get('role', 'absent')}" for r in responses[:4]])
+            pdf.cell(180, 5, response_text)
+            
+            pdf.ln(20)
+            
+            # Add page break if needed
+            if pdf.get_y() > 250:
+                pdf.add_page()
+    
+    # Recommendations
+    recommendations = analysis.get('recommendations', [])
+    if recommendations:
+        pdf.add_page()
+        pdf.section_title("Recommandations Prioritaires")
+        pdf.ln(5)
+        
+        priority_colors = {
+            'high': (220, 38, 38),
+            'medium': (202, 138, 4),
+            'low': (100, 116, 139)
+        }
+        priority_labels = {
+            'high': 'HAUTE',
+            'medium': 'MOYENNE', 
+            'low': 'FAIBLE'
+        }
+        
+        for rec in recommendations[:8]:
+            priority = rec.get('priority', 'low')
+            
+            # Priority badge
+            pdf.set_font('Helvetica', 'B', 8)
+            pdf.set_text_color(*priority_colors.get(priority, (100, 116, 139)))
+            pdf.cell(25, 6, priority_labels.get(priority, 'N/A'))
+            
+            # Title
+            pdf.set_font('Helvetica', 'B', 11)
+            pdf.set_text_color(15, 23, 42)
+            pdf.cell(0, 6, rec.get('title', ''), new_x='LMARGIN', new_y='NEXT')
+            
+            # Description
+            pdf.set_font('Helvetica', '', 10)
+            pdf.set_text_color(100, 116, 139)
+            description = rec.get('description', '')[:200]
+            pdf.multi_cell(0, 5, description)
+            
+            # Impact/Effort
+            pdf.set_font('Helvetica', 'I', 9)
+            pdf.set_text_color(148, 163, 184)
+            pdf.cell(0, 5, f"Impact: {rec.get('impact', 'N/A')} | Effort: {rec.get('effort', 'N/A')}", new_x='LMARGIN', new_y='NEXT')
+            pdf.ln(8)
+            
+            if pdf.get_y() > 260:
+                pdf.add_page()
+    
+    # Final page - Summary
+    pdf.add_page()
+    pdf.section_title("Synthèse et Prochaines Étapes")
+    pdf.ln(5)
+    
+    pdf.set_font('Helvetica', '', 11)
+    pdf.set_text_color(51, 65, 85)
+    
+    # Generate summary based on scores
+    if global_score >= 70:
+        summary = f"Votre marque '{project.get('brand_name', '')}' bénéficie d'une excellente visibilité dans les réponses IA avec un score de {round(global_score)}/100. Continuez à maintenir votre présence et explorez les opportunités d'amélioration identifiées."
+    elif global_score >= 40:
+        summary = f"Votre marque '{project.get('brand_name', '')}' a une visibilité modérée dans les réponses IA ({round(global_score)}/100). Les recommandations ci-dessus vous aideront à améliorer significativement votre positionnement."
+    else:
+        summary = f"Votre marque '{project.get('brand_name', '')}' a une visibilité limitée dans les réponses IA ({round(global_score)}/100). Une action prioritaire sur les recommandations est nécessaire pour améliorer votre présence."
+    
+    pdf.multi_cell(0, 6, summary)
+    pdf.ln(10)
+    
+    # Key metrics summary
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(0, 8, "Métriques Clés:", new_x='LMARGIN', new_y='NEXT')
+    
+    pdf.set_font('Helvetica', '', 10)
+    pdf.set_text_color(51, 65, 85)
+    
+    metrics = [
+        f"• Score GEO Global: {round(global_score)}/100",
+        f"• Relevance: {round(rate_score.get('relevance', 0))}%",
+        f"• Authority: {round(rate_score.get('authority', 0))}%",
+        f"• Truthfulness: {round(rate_score.get('truthfulness', 0))}%",
+        f"• Endorsement: {round(rate_score.get('endorsement', 0))}%",
+        f"• Requêtes analysées: {len(query_scores)}",
+        f"• Moteurs IA testés: {len(ai_scores)}"
+    ]
+    
+    for metric in metrics:
+        pdf.cell(0, 6, metric, new_x='LMARGIN', new_y='NEXT')
+    
+    pdf.ln(15)
+    
+    # CTA
+    pdf.set_fill_color(238, 242, 255)  # Violet 50
+    pdf.rect(10, pdf.get_y(), 190, 25, style='F')
+    pdf.set_xy(15, pdf.get_y() + 5)
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_text_color(124, 58, 237)
+    pdf.cell(0, 6, "Besoin d'aide pour améliorer votre score GEO?", new_x='LMARGIN', new_y='NEXT')
+    pdf.set_xy(15, pdf.get_y())
+    pdf.set_font('Helvetica', '', 10)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(0, 6, "Contactez notre équipe pour un accompagnement personnalisé.")
+    
+    # Output PDF
+    return bytes(pdf.output())
+
+
+@api_router.get("/analysis/{analysis_id}/pdf")
+async def download_analysis_pdf(analysis_id: str, user: dict = Depends(get_current_user)):
+    """Generate and download PDF report for an analysis"""
+    # Get analysis
+    analysis = await db.analyses.find_one(
+        {"analysis_id": analysis_id, "user_id": user["user_id"]},
+        {"_id": 0}
+    )
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analyse non trouvée")
+    
+    if analysis.get("status") != "completed":
+        raise HTTPException(status_code=400, detail="L'analyse n'est pas encore terminée")
+    
+    # Get project
+    project = await db.projects.find_one(
+        {"project_id": analysis.get("project_id")},
+        {"_id": 0}
+    )
+    if not project:
+        project = {"name": "Projet", "brand_name": "Marque"}
+    
+    # Generate PDF
+    pdf_bytes = generate_analysis_pdf(analysis, project)
+    
+    # Create filename
+    project_name = project.get('name', 'analyse').replace(' ', '_')
+    filename = f"IAskan_Rapport_{project_name}_{analysis_id}.pdf"
+    
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 # ================== SUBSCRIPTION & PAYMENT ROUTES ==================
 
 @api_router.get("/subscription/plans")
