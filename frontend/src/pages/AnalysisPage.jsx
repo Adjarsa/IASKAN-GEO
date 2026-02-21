@@ -11,7 +11,9 @@ import {
   Play,
   Loader2,
   XCircle,
-  ArrowLeft
+  ArrowLeft,
+  Download,
+  FileText
 } from "lucide-react";
 
 const AnalysisPage = () => {
