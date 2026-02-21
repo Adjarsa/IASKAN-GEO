@@ -137,11 +137,6 @@ const LandingPage = () => {
             transition={{ duration: 0.6 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-50 border border-violet-100 text-violet-700 text-sm font-medium mb-8">
-              <Sparkles className="w-4 h-4" />
-              La première plateforme GEO pour l'Europe
-            </div>
-            
             <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 leading-tight mb-6">
               Dominez les réponses<br />
               <span className="text-gradient">de l'Intelligence Artificielle</span>
