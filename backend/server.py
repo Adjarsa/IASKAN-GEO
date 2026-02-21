@@ -836,7 +836,7 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
             pdf.rect(10, pdf.get_y(), 190, 18, style='F')
             
             pdf.set_xy(12, pdf.get_y() + 2)
-            pdf.set_font('Helvetica', 'B', 10)
+            pdf.set_font('DejaVu', 'B', 10)
             pdf.set_text_color(15, 23, 42)
             pdf.cell(150, 6, f"{i}. {query_text}")
             
@@ -852,12 +852,12 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
                 pdf.set_text_color(220, 38, 38)
             
             pdf.set_xy(170, pdf.get_y())
-            pdf.set_font('Helvetica', 'B', 11)
+            pdf.set_font('DejaVu', 'B', 11)
             pdf.cell(25, 6, str(round(avg_score)), align='C', fill=True)
             
             # AI responses
             pdf.set_xy(12, pdf.get_y() + 8)
-            pdf.set_font('Helvetica', '', 8)
+            pdf.set_font('DejaVu', '', 8)
             pdf.set_text_color(100, 116, 139)
             
             responses = query.get('responses', [])
@@ -892,23 +892,23 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
             priority = rec.get('priority', 'low')
             
             # Priority badge
-            pdf.set_font('Helvetica', 'B', 8)
+            pdf.set_font('DejaVu', 'B', 8)
             pdf.set_text_color(*priority_colors.get(priority, (100, 116, 139)))
             pdf.cell(25, 6, priority_labels.get(priority, 'N/A'))
             
             # Title
-            pdf.set_font('Helvetica', 'B', 11)
+            pdf.set_font('DejaVu', 'B', 11)
             pdf.set_text_color(15, 23, 42)
             pdf.cell(0, 6, rec.get('title', ''), new_x='LMARGIN', new_y='NEXT')
             
             # Description
-            pdf.set_font('Helvetica', '', 10)
+            pdf.set_font('DejaVu', '', 10)
             pdf.set_text_color(100, 116, 139)
             description = rec.get('description', '')[:200]
             pdf.multi_cell(0, 5, description)
             
             # Impact/Effort
-            pdf.set_font('Helvetica', 'I', 9)
+            pdf.set_font('DejaVu', 'I', 9)
             pdf.set_text_color(148, 163, 184)
             pdf.cell(0, 5, f"Impact: {rec.get('impact', 'N/A')} | Effort: {rec.get('effort', 'N/A')}", new_x='LMARGIN', new_y='NEXT')
             pdf.ln(8)
@@ -921,7 +921,7 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
     pdf.section_title("Synthèse et Prochaines Étapes")
     pdf.ln(5)
     
-    pdf.set_font('Helvetica', '', 11)
+    pdf.set_font('DejaVu', '', 11)
     pdf.set_text_color(51, 65, 85)
     
     # Generate summary based on scores
@@ -936,11 +936,11 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
     pdf.ln(10)
     
     # Key metrics summary
-    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_font('DejaVu', 'B', 11)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 8, "Métriques Clés:", new_x='LMARGIN', new_y='NEXT')
     
-    pdf.set_font('Helvetica', '', 10)
+    pdf.set_font('DejaVu', '', 10)
     pdf.set_text_color(51, 65, 85)
     
     metrics = [
@@ -962,11 +962,11 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
     pdf.set_fill_color(238, 242, 255)  # Violet 50
     pdf.rect(10, pdf.get_y(), 190, 25, style='F')
     pdf.set_xy(15, pdf.get_y() + 5)
-    pdf.set_font('Helvetica', 'B', 11)
+    pdf.set_font('DejaVu', 'B', 11)
     pdf.set_text_color(124, 58, 237)
     pdf.cell(0, 6, "Besoin d'aide pour améliorer votre score GEO?", new_x='LMARGIN', new_y='NEXT')
     pdf.set_xy(15, pdf.get_y())
-    pdf.set_font('Helvetica', '', 10)
+    pdf.set_font('DejaVu', '', 10)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(0, 6, "Contactez notre équipe pour un accompagnement personnalisé.")
     
