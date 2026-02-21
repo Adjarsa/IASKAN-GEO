@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useAuth, API } from "@/App";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -21,7 +20,7 @@ import {
 } from "lucide-react";
 
 const DashboardPage = () => {
-  const { user, subscription, refreshSubscription } = useAuth();
+  const { user, subscription, refreshSubscription, currentProject } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [stats, setStats] = useState(null);
@@ -37,7 +36,7 @@ const DashboardPage = () => {
     }
 
     fetchDashboardStats();
-  }, [searchParams]);
+  }, [searchParams, currentProject]);
 
   const pollPaymentStatus = async (sessionId, attempts = 0) => {
     setCheckingPayment(true);
@@ -70,11 +69,30 @@ const DashboardPage = () => {
   };
 
   const fetchDashboardStats = async () => {
+    if (!currentProject) return;
+    
     try {
-      const response = await axios.get(`${API}/dashboard/stats`, {
+      // Get analyses for current project
+      const analysesResponse = await axios.get(`${API}/analyses?project_id=${currentProject.project_id}`, {
         withCredentials: true
       });
-      setStats(response.data);
+      
+      const analyses = analysesResponse.data.analyses || [];
+      const completedAnalyses = analyses.filter(a => a.status === "completed");
+      
+      let latestAnalysis = null;
+      if (completedAnalyses.length > 0) {
+        const latestResponse = await axios.get(`${API}/analysis/${completedAnalyses[0].analysis_id}`, {
+          withCredentials: true
+        });
+        latestAnalysis = latestResponse.data.analysis;
+      }
+      
+      setStats({
+        latest_analysis: latestAnalysis,
+        analyses_history: completedAnalyses.slice(0, 10),
+        global_score: latestAnalysis?.global_score || 0
+      });
     } catch (error) {
       console.error("Stats error:", error);
       toast.error("Erreur lors du chargement des statistiques");
@@ -112,10 +130,10 @@ const DashboardPage = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">
-              Bonjour, {user?.name?.split(" ")[0] || ""}
+              {currentProject?.brand_name || "Dashboard"}
             </h1>
             <p className="text-slate-500">
-              Voici un aperçu de votre visibilité GEO
+              Analyse de visibilité GEO pour votre marque
             </p>
           </div>
           <div className="flex gap-3">
@@ -227,11 +245,11 @@ const DashboardPage = () => {
               {!latestAnalysis && (
                 <div className="flex-1 text-center">
                   <p className="text-slate-500 mb-4">
-                    Aucune analyse effectuée
+                    Aucune analyse effectuée pour ce projet
                   </p>
-                  <Link to="/projects">
-                    <Button className="bg-gradient-to-r from-violet-600 to-cyan-600" data-testid="create-first-project">
-                      Créer votre premier projet
+                  <Link to="/analysis">
+                    <Button className="bg-gradient-to-r from-violet-600 to-cyan-600" data-testid="start-first-analysis">
+                      Lancer votre première analyse
                     </Button>
                   </Link>
                 </div>
