@@ -1385,6 +1385,132 @@ async def get_analyses(project_id: Optional[str] = None, user: dict = Depends(ge
     analyses = await db.analyses.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
     return {"analyses": analyses}
 
+@api_router.get("/analyses/history/{project_id}")
+async def get_analysis_history(project_id: str, user: dict = Depends(get_current_user)):
+    """Get analysis history with trends for charts"""
+    # Verify project belongs to user
+    project = await db.projects.find_one(
+        {"project_id": project_id, "user_id": user["user_id"]},
+        {"_id": 0}
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    # Get completed analyses
+    analyses = await db.analyses.find(
+        {"project_id": project_id, "user_id": user["user_id"], "status": "completed"},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(100)
+    
+    # Format data for charts
+    history = {
+        "score_evolution": [],
+        "rate_evolution": [],
+        "ai_evolution": {
+            "chatgpt": [],
+            "claude": [],
+            "gemini": [],
+            "perplexity": []
+        },
+        "summary": {
+            "total_analyses": len(analyses),
+            "first_analysis": analyses[0]["created_at"] if analyses else None,
+            "last_analysis": analyses[-1]["created_at"] if analyses else None,
+            "score_change": 0,
+            "trend": "stable"
+        }
+    }
+    
+    for analysis in analyses:
+        created_at = analysis.get("created_at", "")
+        
+        # Score evolution
+        history["score_evolution"].append({
+            "date": created_at,
+            "score": round(analysis.get("global_score", 0), 1),
+            "analysis_id": analysis.get("analysis_id")
+        })
+        
+        # R.A.T.E. evolution
+        rate_score = analysis.get("rate_score", {})
+        history["rate_evolution"].append({
+            "date": created_at,
+            "relevance": round(rate_score.get("relevance", 0), 1),
+            "authority": round(rate_score.get("authority", 0), 1),
+            "truthfulness": round(rate_score.get("truthfulness", 0), 1),
+            "endorsement": round(rate_score.get("endorsement", 0), 1)
+        })
+        
+        # AI evolution
+        ai_scores = analysis.get("ai_scores", {})
+        for ai in ["chatgpt", "claude", "gemini", "perplexity"]:
+            history["ai_evolution"][ai].append({
+                "date": created_at,
+                "score": round(ai_scores.get(ai, 0), 1)
+            })
+    
+    # Calculate trend
+    if len(analyses) >= 2:
+        first_score = analyses[0].get("global_score", 0)
+        last_score = analyses[-1].get("global_score", 0)
+        history["summary"]["score_change"] = round(last_score - first_score, 1)
+        
+        if history["summary"]["score_change"] > 5:
+            history["summary"]["trend"] = "up"
+        elif history["summary"]["score_change"] < -5:
+            history["summary"]["trend"] = "down"
+        else:
+            history["summary"]["trend"] = "stable"
+    
+    return {"history": history, "project": project}
+
+@api_router.get("/comparisons/history/{project_id}")
+async def get_comparison_history(project_id: str, user: dict = Depends(get_current_user)):
+    """Get competitor comparison history for charts"""
+    # Get completed comparisons
+    comparisons = await db.competitor_comparisons.find(
+        {"project_id": project_id, "user_id": user["user_id"], "status": "completed"},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(50)
+    
+    history = {
+        "ranking_evolution": [],
+        "dominance_evolution": [],
+        "brand_evolution": {}
+    }
+    
+    for comp in comparisons:
+        created_at = comp.get("created_at", "")
+        results = comp.get("results", {})
+        summary = results.get("summary", {})
+        rankings = results.get("rankings", {})
+        
+        # Ranking evolution
+        history["ranking_evolution"].append({
+            "date": created_at,
+            "rank": summary.get("user_rank", 0),
+            "score": summary.get("user_score", 0)
+        })
+        
+        # Dominance evolution
+        history["dominance_evolution"].append({
+            "date": created_at,
+            "dominance": summary.get("dominance_index", 0)
+        })
+        
+        # Brand evolution
+        for brand, data in rankings.items():
+            if brand not in history["brand_evolution"]:
+                history["brand_evolution"][brand] = []
+            history["brand_evolution"][brand].append({
+                "date": created_at,
+                "score": data.get("score", 0),
+                "rank": data.get("rank", 0),
+                "is_user": data.get("is_user_brand", False)
+            })
+    
+    return {"history": history}
+
 # ================== PDF REPORT GENERATION ==================
 
 class IAskanPDF(FPDF):
