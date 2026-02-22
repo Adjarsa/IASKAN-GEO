@@ -297,6 +297,14 @@ const AppRouter = () => {
         }
       />
       <Route
+        path="/competitors"
+        element={
+          <ProjectRequiredRoute>
+            <CompetitorComparisonPage />
+          </ProjectRequiredRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
           <ProtectedRoute>
