@@ -15,6 +15,9 @@ import ProjectsPage from "@/pages/ProjectsPage";
 import RecommendationsPage from "@/pages/RecommendationsPage";
 import PricingPage from "@/pages/PricingPage";
 import SettingsPage from "@/pages/SettingsPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import MagicLinkPage from "@/pages/MagicLinkPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
