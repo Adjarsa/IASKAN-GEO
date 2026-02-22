@@ -60,14 +60,15 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 - ✅ MongoDB (data storage)
 - ✅ FPDF2 (PDF generation)
 - ✅ Authlib (OAuth2 client)
+- ✅ Resend (email service - requires RESEND_API_KEY)
 
 ## Prioritized Backlog
 
 ### P0 - Critical (Next Sprint)
 - [x] Microsoft SSO integration ✅ (Completed Feb 21, 2026 - requires API keys)
 - [x] LinkedIn SSO integration ✅ (Completed Feb 21, 2026 - requires API keys)
-- [ ] Magic Link email authentication
-- [ ] Email notifications (welcome, analysis complete)
+- [x] Magic Link email authentication ✅ (Completed Feb 22, 2026)
+- [x] Email notifications (welcome, password reset) ✅ (Completed Feb 22, 2026 - requires RESEND_API_KEY)
 
 ### P1 - High Priority
 - [ ] Competitor comparison detailed view
