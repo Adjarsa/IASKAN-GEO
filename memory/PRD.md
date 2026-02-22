@@ -73,7 +73,7 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 ### P1 - High Priority
 - [x] Competitor comparison detailed view ✅ (Completed Feb 22, 2026)
 - [x] PDF report generation ✅ (Completed Feb 21, 2026)
-- [ ] Analysis history charts
+- [x] Analysis history charts ✅ (Completed Feb 22, 2026)
 - [ ] Team/multi-user support
 
 ### P2 - Medium Priority
