@@ -18,6 +18,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import MagicLinkPage from "@/pages/MagicLinkPage";
+import CompetitorComparisonPage from "@/pages/CompetitorComparisonPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
