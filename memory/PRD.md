@@ -122,6 +122,22 @@ Email: Resend API
   - /reset-password?token=xxx - Set new password
   - /auth/magic?token=xxx - Magic link verification
 
+### Feb 22, 2026 - Competitor Comparison
+- **Backend Endpoints:**
+  - POST /api/analysis/compare - Start competitor comparison
+  - GET /api/analysis/compare/{comparison_id} - Get comparison results
+  - GET /api/analysis/comparisons/{project_id} - List all comparisons
+- **Features:**
+  - Analyze brand visibility vs competitors across ChatGPT, Claude, Gemini
+  - Calculate dominance index and rankings
+  - Detailed breakdown by AI engine
+  - Professional insights and recommendations
+- **Frontend:**
+  - /competitors - Competitor comparison page
+  - Add/remove competitors dynamically
+  - Visual ranking with medals and scores
+  - AI breakdown table
+
 ### Feb 21, 2026 - Microsoft & LinkedIn SSO
 - Backend endpoints: GET /api/auth/microsoft/login, /api/auth/linkedin/login
 - OAuth2 authorization code flow implementation
@@ -134,7 +150,7 @@ Email: Resend API
 - Includes: Score GEO Global, R.A.T.E.™ breakdown, AI scores, query details, recommendations
 
 ## Next Tasks
-1. Build competitor comparison view
-2. Add analysis history charts
-3. Team/multi-user support
-4. Analysis completion notification email
+1. Add analysis history charts
+2. Team/multi-user support
+3. Analysis completion notification email
+4. API access for Business plan
