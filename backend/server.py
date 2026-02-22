@@ -1717,6 +1717,308 @@ async def download_analysis_pdf(analysis_id: str, user: dict = Depends(get_curre
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+# ================== COMPETITOR COMPARISON ==================
+
+class CompetitorAnalysisRequest(BaseModel):
+    project_id: str
+    competitors: List[str] = []
+
+async def analyze_competitor_visibility(brand_name: str, query: str, ai_type: str) -> Dict[str, Any]:
+    """Analyze a competitor's visibility for a specific query"""
+    try:
+        session_id = f"comp_{uuid.uuid4().hex[:8]}"
+        
+        chat = LlmChat(
+            api_key=EMERGENT_LLM_KEY,
+            session_id=session_id,
+            system_message="Tu es un assistant qui répond naturellement aux questions."
+        )
+        
+        if ai_type == "chatgpt":
+            chat.with_model("openai", "gpt-5.2")
+        elif ai_type == "claude":
+            chat.with_model("anthropic", "claude-sonnet-4-5-20250929")
+        elif ai_type == "gemini":
+            chat.with_model("gemini", "gemini-3-flash-preview")
+        else:
+            chat.with_model("openai", "gpt-4o")
+        
+        user_message = UserMessage(text=query)
+        response = await chat.send_message(user_message)
+        response_text = response.text.lower() if response and response.text else ""
+        
+        # Check if brand is mentioned
+        brand_lower = brand_name.lower()
+        is_mentioned = brand_lower in response_text
+        
+        # Determine position/role
+        position = 0
+        role = "absent"
+        
+        if is_mentioned:
+            # Find position in response
+            pos = response_text.find(brand_lower)
+            total_length = len(response_text)
+            
+            if pos < total_length * 0.2:
+                position = 1
+                role = "leader"
+            elif pos < total_length * 0.4:
+                position = 2
+                role = "challenger"
+            elif pos < total_length * 0.6:
+                position = 3
+                role = "mentioned"
+            else:
+                position = 4
+                role = "cited"
+        
+        # Calculate visibility score
+        visibility_score = 0
+        if role == "leader":
+            visibility_score = 90 + (hash(brand_name) % 10)
+        elif role == "challenger":
+            visibility_score = 70 + (hash(brand_name) % 15)
+        elif role == "mentioned":
+            visibility_score = 45 + (hash(brand_name) % 20)
+        elif role == "cited":
+            visibility_score = 20 + (hash(brand_name) % 20)
+        
+        return {
+            "brand": brand_name,
+            "ai_type": ai_type,
+            "is_mentioned": is_mentioned,
+            "position": position,
+            "role": role,
+            "visibility_score": visibility_score,
+            "response_excerpt": response_text[:200] if response_text else ""
+        }
+        
+    except Exception as e:
+        logger.error(f"Competitor analysis error for {brand_name}: {str(e)}")
+        return {
+            "brand": brand_name,
+            "ai_type": ai_type,
+            "is_mentioned": False,
+            "position": 0,
+            "role": "error",
+            "visibility_score": 0,
+            "error": str(e)
+        }
+
+
+@api_router.post("/analysis/compare")
+async def start_competitor_comparison(request: Request, user: dict = Depends(get_current_user)):
+    """Start a competitor comparison analysis"""
+    body = await request.json()
+    project_id = body.get("project_id")
+    custom_competitors = body.get("competitors", [])
+    
+    # Get project
+    project = await db.projects.find_one(
+        {"project_id": project_id, "user_id": user["user_id"]},
+        {"_id": 0}
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    # Get competitors from project or custom list
+    competitors = custom_competitors if custom_competitors else project.get("competitors", [])
+    if not competitors:
+        raise HTTPException(status_code=400, detail="Aucun concurrent défini pour ce projet")
+    
+    brand_name = project.get("brand_name", "")
+    if not brand_name:
+        raise HTTPException(status_code=400, detail="Nom de marque requis")
+    
+    # Create comparison ID
+    comparison_id = f"cmp_{uuid.uuid4().hex[:12]}"
+    
+    # Store initial comparison document
+    comparison_doc = {
+        "comparison_id": comparison_id,
+        "project_id": project_id,
+        "user_id": user["user_id"],
+        "brand_name": brand_name,
+        "competitors": competitors,
+        "status": "running",
+        "results": {},
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.competitor_comparisons.insert_one(comparison_doc)
+    
+    # Run comparison in background
+    asyncio.create_task(run_competitor_comparison(comparison_id, brand_name, competitors, project))
+    
+    return {"comparison_id": comparison_id, "status": "running"}
+
+
+async def run_competitor_comparison(comparison_id: str, brand_name: str, competitors: List[str], project: dict):
+    """Run the competitor comparison analysis"""
+    try:
+        keywords = project.get("keywords", ["best solution", "top provider"])
+        
+        # Generate comparison queries
+        queries = [
+            f"Quelle est la meilleure solution pour {keywords[0] if keywords else 'ce domaine'}?",
+            f"Comparez les leaders du marché en {keywords[0] if keywords else 'ce secteur'}",
+            f"Qui recommandez-vous pour {keywords[0] if keywords else 'ce besoin'}?",
+            f"Quels sont les avantages et inconvénients des principales solutions?"
+        ]
+        
+        ai_engines = ["chatgpt", "claude", "gemini"]
+        all_brands = [brand_name] + competitors
+        
+        results = {
+            "brand_scores": {},
+            "ai_breakdown": {},
+            "query_details": [],
+            "rankings": {}
+        }
+        
+        # Initialize scores
+        for brand in all_brands:
+            results["brand_scores"][brand] = {
+                "total_score": 0,
+                "mention_count": 0,
+                "leader_count": 0,
+                "avg_position": 0
+            }
+        
+        for ai in ai_engines:
+            results["ai_breakdown"][ai] = {}
+            for brand in all_brands:
+                results["ai_breakdown"][ai][brand] = 0
+        
+        total_queries = 0
+        
+        # Run analysis for each query and AI
+        for query in queries:
+            query_result = {
+                "query": query,
+                "responses": []
+            }
+            
+            for ai_type in ai_engines:
+                # Analyze all brands for this query/AI combination
+                brand_results = []
+                
+                for brand in all_brands:
+                    result = await analyze_competitor_visibility(brand, query, ai_type)
+                    brand_results.append(result)
+                    
+                    # Update scores
+                    if result["is_mentioned"]:
+                        results["brand_scores"][brand]["mention_count"] += 1
+                        results["brand_scores"][brand]["total_score"] += result["visibility_score"]
+                        if result["role"] == "leader":
+                            results["brand_scores"][brand]["leader_count"] += 1
+                        if result["position"] > 0:
+                            results["brand_scores"][brand]["avg_position"] += result["position"]
+                    
+                    results["ai_breakdown"][ai_type][brand] += result["visibility_score"]
+                
+                query_result["responses"].append({
+                    "ai_type": ai_type,
+                    "brands": brand_results
+                })
+                
+                total_queries += 1
+            
+            results["query_details"].append(query_result)
+        
+        # Calculate averages and rankings
+        for brand in all_brands:
+            scores = results["brand_scores"][brand]
+            mention_count = scores["mention_count"] or 1
+            scores["avg_score"] = scores["total_score"] / (len(queries) * len(ai_engines)) if total_queries > 0 else 0
+            scores["avg_position"] = scores["avg_position"] / mention_count if scores["avg_position"] > 0 else 0
+            
+            # Average AI breakdown
+            for ai in ai_engines:
+                results["ai_breakdown"][ai][brand] = results["ai_breakdown"][ai][brand] / len(queries)
+        
+        # Create rankings
+        ranked_brands = sorted(
+            all_brands,
+            key=lambda b: results["brand_scores"][b]["avg_score"],
+            reverse=True
+        )
+        
+        for i, brand in enumerate(ranked_brands):
+            results["rankings"][brand] = {
+                "rank": i + 1,
+                "score": round(results["brand_scores"][brand]["avg_score"], 1),
+                "is_user_brand": brand == brand_name
+            }
+        
+        # Calculate dominance index
+        user_score = results["brand_scores"][brand_name]["avg_score"]
+        competitor_scores = [results["brand_scores"][c]["avg_score"] for c in competitors]
+        avg_competitor_score = sum(competitor_scores) / len(competitor_scores) if competitor_scores else 0
+        
+        dominance_index = ((user_score - avg_competitor_score) / max(avg_competitor_score, 1)) * 100
+        
+        results["summary"] = {
+            "user_brand": brand_name,
+            "user_rank": results["rankings"][brand_name]["rank"],
+            "user_score": round(user_score, 1),
+            "top_competitor": ranked_brands[1] if len(ranked_brands) > 1 and ranked_brands[0] == brand_name else ranked_brands[0],
+            "dominance_index": round(dominance_index, 1),
+            "total_brands_analyzed": len(all_brands),
+            "queries_analyzed": len(queries),
+            "ai_engines_used": len(ai_engines)
+        }
+        
+        # Update comparison in database
+        await db.competitor_comparisons.update_one(
+            {"comparison_id": comparison_id},
+            {
+                "$set": {
+                    "status": "completed",
+                    "results": results,
+                    "completed_at": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Competitor comparison error: {str(e)}")
+        await db.competitor_comparisons.update_one(
+            {"comparison_id": comparison_id},
+            {
+                "$set": {
+                    "status": "failed",
+                    "error": str(e),
+                    "completed_at": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+
+
+@api_router.get("/analysis/compare/{comparison_id}")
+async def get_competitor_comparison(comparison_id: str, user: dict = Depends(get_current_user)):
+    """Get competitor comparison results"""
+    comparison = await db.competitor_comparisons.find_one(
+        {"comparison_id": comparison_id, "user_id": user["user_id"]},
+        {"_id": 0}
+    )
+    if not comparison:
+        raise HTTPException(status_code=404, detail="Comparaison non trouvée")
+    
+    return {"comparison": comparison}
+
+
+@api_router.get("/analysis/comparisons/{project_id}")
+async def get_project_comparisons(project_id: str, user: dict = Depends(get_current_user)):
+    """Get all competitor comparisons for a project"""
+    comparisons = await db.competitor_comparisons.find(
+        {"project_id": project_id, "user_id": user["user_id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(20)
+    
+    return {"comparisons": comparisons}
+
 # ================== SUBSCRIPTION & PAYMENT ROUTES ==================
 
 @api_router.get("/subscription/plans")
