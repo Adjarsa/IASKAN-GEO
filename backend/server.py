@@ -320,9 +320,11 @@ async def create_oauth_user_session(email: str, name: str, picture: str, provide
     
     # Check if user exists
     existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+    is_new_user = False
     if existing_user:
         user_id = existing_user["user_id"]
     else:
+        is_new_user = True
         # Create new user
         user_doc = {
             "user_id": user_id,
@@ -371,6 +373,11 @@ async def create_oauth_user_session(email: str, name: str, picture: str, provide
         path="/",
         max_age=7 * 24 * 60 * 60
     )
+    
+    # Send welcome email for new users (non-blocking)
+    if is_new_user and RESEND_API_KEY:
+        frontend_url = "https://analyze-visibility.preview.emergentagent.com"
+        asyncio.create_task(send_welcome_email(email, name, frontend_url))
     
     return user_id, session_token
 
