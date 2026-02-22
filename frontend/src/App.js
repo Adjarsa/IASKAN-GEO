@@ -306,6 +306,14 @@ const AppRouter = () => {
         }
       />
       <Route
+        path="/history"
+        element={
+          <ProjectRequiredRoute>
+            <HistoryChartsPage />
+          </ProjectRequiredRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
           <ProtectedRoute>
