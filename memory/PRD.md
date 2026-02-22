@@ -149,8 +149,24 @@ Email: Resend API
 - 7-page professional PDF report
 - Includes: Score GEO Global, R.A.T.E.™ breakdown, AI scores, query details, recommendations
 
+### Feb 22, 2026 - History Charts
+- **Backend Endpoints:**
+  - GET /api/analyses/history/{project_id} - Analysis history with trends
+  - GET /api/comparisons/history/{project_id} - Comparison history
+- **Charts (Recharts):**
+  - Score GEO Global evolution (Area chart)
+  - R.A.T.E.™ scores evolution (Line chart with 4 lines)
+  - AI engines breakdown (Bar chart)
+  - Competitor ranking evolution (Line chart)
+  - Dominance index evolution (Area chart)
+- **Features:**
+  - Tab navigation between chart types
+  - Summary cards (total analyses, trend, current score)
+  - Custom tooltips with French date formatting
+  - Responsive design
+
 ## Next Tasks
-1. Add analysis history charts
-2. Team/multi-user support
-3. Analysis completion notification email
-4. API access for Business plan
+1. Team/multi-user support
+2. Analysis completion notification email
+3. API access for Business plan
+4. Mobile optimization
