@@ -303,6 +303,10 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       />
+      {/* Password Reset & Magic Link Routes */}
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/auth/magic" element={<MagicLinkPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
