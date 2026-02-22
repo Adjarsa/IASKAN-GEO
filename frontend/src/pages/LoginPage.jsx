@@ -1,11 +1,85 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import Logo from "@/components/Logo";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Mail, Loader2, CheckCircle } from "lucide-react";
 import { API } from "@/App";
 import { toast } from "sonner";
+import axios from "axios";
+
+// Magic Link Form Component
+const MagicLinkForm = () => {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Veuillez entrer votre email");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axios.post(`${API}/auth/magic-link`, { email }, { withCredentials: true });
+      setSent(true);
+      toast.success("Lien de connexion envoyé !");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Erreur lors de l'envoi");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <div className="bg-emerald-50 rounded-lg p-4 text-center">
+        <CheckCircle className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
+        <p className="text-emerald-700 text-sm">
+          Lien de connexion envoyé à <strong>{email}</strong>
+        </p>
+        <p className="text-emerald-600 text-xs mt-1">
+          Vérifiez votre boîte mail.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="relative">
+        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Input
+          type="email"
+          placeholder="Connexion par email (Magic Link)"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="pl-10 h-11"
+          data-testid="magic-link-email"
+        />
+      </div>
+      <Button
+        type="submit"
+        variant="outline"
+        disabled={loading}
+        className="w-full"
+        data-testid="magic-link-submit"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Envoi...
+          </>
+        ) : (
+          "Recevoir un lien de connexion"
+        )}
+      </Button>
+    </form>
+  );
+};
 
 const LoginPage = () => {
   const [searchParams] = useSearchParams();
