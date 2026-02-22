@@ -126,8 +126,17 @@ const LoginPage = () => {
             </div>
 
             {/* Magic Link */}
-            <div className="text-center text-slate-500 text-sm">
-              <p>Connexion via Magic Link bientôt disponible</p>
+            <MagicLinkForm />
+
+            {/* Forgot Password Link */}
+            <div className="text-center mt-4">
+              <Link 
+                to="/forgot-password" 
+                className="text-sm text-violet-600 hover:text-violet-700 hover:underline"
+                data-testid="forgot-password-link"
+              >
+                Mot de passe oublié ?
+              </Link>
             </div>
 
             {/* Terms */}
