@@ -7,7 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -20,6 +20,7 @@ from fpdf import FPDF
 from authlib.integrations.starlette_client import OAuth
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+import resend
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -38,6 +39,12 @@ MICROSOFT_CLIENT_ID = os.environ.get('MICROSOFT_CLIENT_ID', '')
 MICROSOFT_CLIENT_SECRET = os.environ.get('MICROSOFT_CLIENT_SECRET', '')
 LINKEDIN_CLIENT_ID = os.environ.get('LINKEDIN_CLIENT_ID', '')
 LINKEDIN_CLIENT_SECRET = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
+
+# Email Configuration
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@iaskan.com')
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
 
 # Create the main app
 app = FastAPI(title="IAskan API", version="1.0.0")
