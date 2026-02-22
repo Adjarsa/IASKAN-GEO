@@ -98,27 +98,43 @@ AI: Emergent LLM Key (GPT-5.2, Claude, Gemini)
 Payments: Stripe
 PDF: FPDF2 with DejaVu Unicode fonts
 OAuth: Authlib for Microsoft/LinkedIn
+Email: Resend API
 ```
 
-## Recent Updates (Feb 21, 2026)
+## Recent Updates
 
-### Microsoft & LinkedIn SSO Added
+### Feb 22, 2026 - Email Notifications & Magic Link
+- **Email Service (Resend):**
+  - Welcome email template with IAskan branding
+  - Password reset email with secure token
+  - Magic Link login email
+  - All emails in French with professional HTML design
+- **Magic Link Authentication:**
+  - POST /api/auth/magic-link - Request login link
+  - GET /api/auth/magic-verify - Verify and authenticate
+  - Auto-creates user if not exists (with trial subscription)
+- **Password Reset Flow:**
+  - POST /api/auth/forgot-password - Request reset link
+  - POST /api/auth/reset-password - Set new password
+  - Token expires after 1 hour
+- **Frontend Pages:**
+  - /forgot-password - Password reset request
+  - /reset-password?token=xxx - Set new password
+  - /auth/magic?token=xxx - Magic link verification
+
+### Feb 21, 2026 - Microsoft & LinkedIn SSO
 - Backend endpoints: GET /api/auth/microsoft/login, /api/auth/linkedin/login
 - OAuth2 authorization code flow implementation
 - Automatic user creation and session management
 - Error handling with user-friendly messages
-- Requires API keys configuration (MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET)
 
-### PDF Report Module Added
+### Feb 21, 2026 - PDF Report Module
 - Backend endpoint: GET /api/analysis/{analysis_id}/pdf
 - 7-page professional PDF report
-- Includes: Score GEO Global, R.A.T.E.™ breakdown, AI scores, query details, recommendations, synthesis
-- Frontend download button on analysis results page
-- Unicode support for French characters
+- Includes: Score GEO Global, R.A.T.E.™ breakdown, AI scores, query details, recommendations
 
 ## Next Tasks
-1. Implement Magic Link authentication
-2. Add email notifications
-3. Build competitor comparison view
-4. Add analysis history charts
-5. Team/multi-user support
+1. Build competitor comparison view
+2. Add analysis history charts
+3. Team/multi-user support
+4. Analysis completion notification email
