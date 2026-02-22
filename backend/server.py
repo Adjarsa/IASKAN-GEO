@@ -548,6 +548,453 @@ async def get_auth_providers():
         }
     }
 
+# ================== EMAIL SERVICE ==================
+
+def get_email_template_welcome(name: str, login_url: str) -> str:
+    """Generate welcome email HTML template"""
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 40px 20px;">
+            <tr>
+                <td align="center">
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+                        <!-- Header -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); padding: 40px; text-align: center;">
+                                <h1 style="color: #ffffff; font-size: 28px; margin: 0; font-weight: 700;">IAskan</h1>
+                                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Generative Engine Optimization</p>
+                            </td>
+                        </tr>
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding: 40px;">
+                                <h2 style="color: #1e293b; font-size: 24px; margin: 0 0 20px 0;">Bienvenue {name} !</h2>
+                                <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                                    Merci de rejoindre IAskan ! Vous êtes maintenant prêt à analyser et optimiser 
+                                    votre visibilité dans les réponses des intelligences artificielles.
+                                </p>
+                                <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                                    Avec IAskan, vous pouvez :
+                                </p>
+                                <ul style="color: #64748b; font-size: 16px; line-height: 1.8; margin: 0 0 30px 20px; padding: 0;">
+                                    <li>Analyser votre présence sur ChatGPT, Claude, Gemini et Perplexity</li>
+                                    <li>Obtenir votre score R.A.T.E.™ détaillé</li>
+                                    <li>Recevoir des recommandations personnalisées</li>
+                                    <li>Télécharger des rapports PDF professionnels</li>
+                                </ul>
+                                <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                                    <tr>
+                                        <td style="background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); border-radius: 8px;">
+                                            <a href="{login_url}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                                                Accéder à mon dashboard
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                                <p style="color: #94a3b8; font-size: 14px; margin: 0;">
+                                    © 2026 IAskan. Tous droits réservés.
+                                </p>
+                                <p style="color: #94a3b8; font-size: 12px; margin: 10px 0 0 0;">
+                                    Vous recevez cet email car vous avez créé un compte sur IAskan.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+
+
+def get_email_template_password_reset(name: str, reset_url: str, expires_in: str = "1 heure") -> str:
+    """Generate password reset email HTML template"""
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 40px 20px;">
+            <tr>
+                <td align="center">
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+                        <!-- Header -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); padding: 40px; text-align: center;">
+                                <h1 style="color: #ffffff; font-size: 28px; margin: 0; font-weight: 700;">IAskan</h1>
+                                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Réinitialisation de mot de passe</p>
+                            </td>
+                        </tr>
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding: 40px;">
+                                <h2 style="color: #1e293b; font-size: 24px; margin: 0 0 20px 0;">Bonjour {name},</h2>
+                                <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                                    Vous avez demandé à réinitialiser votre mot de passe. 
+                                    Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.
+                                </p>
+                                <table cellpadding="0" cellspacing="0" style="margin: 30px auto;">
+                                    <tr>
+                                        <td style="background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); border-radius: 8px;">
+                                            <a href="{reset_url}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                                                Réinitialiser mon mot de passe
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <p style="color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0; padding: 20px; background-color: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                                    <strong style="color: #92400e;">Important :</strong> Ce lien expire dans {expires_in}. 
+                                    Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+                                </p>
+                            </td>
+                        </tr>
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                                <p style="color: #94a3b8; font-size: 14px; margin: 0;">
+                                    © 2026 IAskan. Tous droits réservés.
+                                </p>
+                                <p style="color: #94a3b8; font-size: 12px; margin: 10px 0 0 0;">
+                                    Pour des raisons de sécurité, ce lien n'est valide qu'une seule fois.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+
+
+def get_email_template_magic_link(name: str, magic_link: str, expires_in: str = "15 minutes") -> str:
+    """Generate magic link email HTML template"""
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 40px 20px;">
+            <tr>
+                <td align="center">
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+                        <!-- Header -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); padding: 40px; text-align: center;">
+                                <h1 style="color: #ffffff; font-size: 28px; margin: 0; font-weight: 700;">IAskan</h1>
+                                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Connexion sécurisée</p>
+                            </td>
+                        </tr>
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding: 40px;">
+                                <h2 style="color: #1e293b; font-size: 24px; margin: 0 0 20px 0;">Bonjour {name},</h2>
+                                <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                                    Cliquez sur le bouton ci-dessous pour vous connecter à votre compte IAskan.
+                                    Aucun mot de passe requis !
+                                </p>
+                                <table cellpadding="0" cellspacing="0" style="margin: 30px auto;">
+                                    <tr>
+                                        <td style="background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%); border-radius: 8px;">
+                                            <a href="{magic_link}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                                                Se connecter à IAskan
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <p style="color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0; text-align: center;">
+                                    Ce lien expire dans {expires_in} et ne peut être utilisé qu'une seule fois.
+                                </p>
+                            </td>
+                        </tr>
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                                <p style="color: #94a3b8; font-size: 14px; margin: 0;">
+                                    © 2026 IAskan. Tous droits réservés.
+                                </p>
+                                <p style="color: #94a3b8; font-size: 12px; margin: 10px 0 0 0;">
+                                    Si vous n'avez pas demandé ce lien, ignorez cet email.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+
+
+async def send_email_async(to_email: str, subject: str, html_content: str) -> dict:
+    """Send email using Resend API (non-blocking)"""
+    if not RESEND_API_KEY:
+        logger.warning(f"Email not sent (no API key): {subject} to {to_email}")
+        return {"status": "skipped", "reason": "No Resend API key configured"}
+    
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [to_email],
+        "subject": subject,
+        "html": html_content
+    }
+    
+    try:
+        email = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Email sent: {subject} to {to_email}")
+        return {"status": "success", "email_id": email.get("id")}
+    except Exception as e:
+        logger.error(f"Failed to send email: {str(e)}")
+        return {"status": "error", "error": str(e)}
+
+
+async def send_welcome_email(email: str, name: str, frontend_url: str):
+    """Send welcome email to new user"""
+    login_url = f"{frontend_url}/login"
+    html = get_email_template_welcome(name or "cher utilisateur", login_url)
+    return await send_email_async(email, "Bienvenue sur IAskan ! 🚀", html)
+
+
+async def send_password_reset_email(email: str, name: str, reset_token: str, frontend_url: str):
+    """Send password reset email"""
+    reset_url = f"{frontend_url}/reset-password?token={reset_token}"
+    html = get_email_template_password_reset(name or "cher utilisateur", reset_url)
+    return await send_email_async(email, "Réinitialisation de votre mot de passe IAskan", html)
+
+
+async def send_magic_link_email(email: str, name: str, magic_token: str, frontend_url: str):
+    """Send magic link login email"""
+    magic_link = f"{frontend_url}/auth/magic?token={magic_token}"
+    html = get_email_template_magic_link(name or "cher utilisateur", magic_link)
+    return await send_email_async(email, "Votre lien de connexion IAskan", html)
+
+
+# Pydantic models for email endpoints
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+class MagicLinkRequest(BaseModel):
+    email: EmailStr
+
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(request: Request, body: PasswordResetRequest):
+    """Request password reset email"""
+    # Find user
+    user = await db.users.find_one({"email": body.email}, {"_id": 0})
+    
+    # Always return success to prevent email enumeration
+    if not user:
+        return {"message": "Si un compte existe avec cet email, vous recevrez un lien de réinitialisation."}
+    
+    # Generate reset token
+    reset_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    # Store reset token
+    await db.password_resets.insert_one({
+        "token": reset_token,
+        "user_id": user["user_id"],
+        "email": body.email,
+        "expires_at": expires_at.isoformat(),
+        "used": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Get frontend URL
+    referer = request.headers.get("referer", "")
+    frontend_url = referer.split("/")[0] + "//" + referer.split("/")[2] if "//" in referer else request.headers.get("origin", "")
+    
+    # Send email (non-blocking)
+    asyncio.create_task(send_password_reset_email(
+        body.email, 
+        user.get("name", ""), 
+        reset_token, 
+        frontend_url
+    ))
+    
+    return {"message": "Si un compte existe avec cet email, vous recevrez un lien de réinitialisation."}
+
+
+@api_router.post("/auth/reset-password")
+async def reset_password(body: PasswordResetConfirm):
+    """Reset password with token"""
+    import hashlib
+    
+    # Find valid reset token
+    reset_doc = await db.password_resets.find_one({
+        "token": body.token,
+        "used": False
+    }, {"_id": 0})
+    
+    if not reset_doc:
+        raise HTTPException(status_code=400, detail="Lien de réinitialisation invalide ou expiré.")
+    
+    # Check expiration
+    expires_at = datetime.fromisoformat(reset_doc["expires_at"].replace('Z', '+00:00'))
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="Ce lien a expiré. Veuillez demander un nouveau lien.")
+    
+    # Hash new password
+    password_hash = hashlib.sha256(body.new_password.encode()).hexdigest()
+    
+    # Update user password
+    await db.users.update_one(
+        {"user_id": reset_doc["user_id"]},
+        {"$set": {"password_hash": password_hash, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Mark token as used
+    await db.password_resets.update_one(
+        {"token": body.token},
+        {"$set": {"used": True}}
+    )
+    
+    # Invalidate all existing sessions
+    await db.user_sessions.delete_many({"user_id": reset_doc["user_id"]})
+    
+    return {"message": "Mot de passe mis à jour avec succès. Vous pouvez maintenant vous connecter."}
+
+
+@api_router.post("/auth/magic-link")
+async def request_magic_link(request: Request, body: MagicLinkRequest):
+    """Request magic link login email"""
+    # Find or create user
+    user = await db.users.find_one({"email": body.email}, {"_id": 0})
+    
+    if not user:
+        # Create new user
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        user = {
+            "user_id": user_id,
+            "email": body.email,
+            "name": body.email.split("@")[0],
+            "auth_provider": "magic_link",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(user)
+        
+        # Create trial subscription
+        trial_sub = {
+            "subscription_id": f"sub_{uuid.uuid4().hex[:12]}",
+            "user_id": user_id,
+            "plan": "starter",
+            "status": "trial",
+            "queries_limit": 300,
+            "queries_used": 0,
+            "trial_ends_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "current_period_start": datetime.now(timezone.utc).isoformat(),
+            "current_period_end": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.subscriptions.insert_one(trial_sub)
+    
+    # Generate magic token
+    magic_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    
+    # Store magic token
+    await db.magic_links.insert_one({
+        "token": magic_token,
+        "user_id": user["user_id"],
+        "email": body.email,
+        "expires_at": expires_at.isoformat(),
+        "used": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Get frontend URL
+    referer = request.headers.get("referer", "")
+    frontend_url = referer.split("/")[0] + "//" + referer.split("/")[2] if "//" in referer else request.headers.get("origin", "")
+    
+    # Send email
+    asyncio.create_task(send_magic_link_email(
+        body.email,
+        user.get("name", ""),
+        magic_token,
+        frontend_url
+    ))
+    
+    return {"message": "Un lien de connexion a été envoyé à votre adresse email."}
+
+
+@api_router.get("/auth/magic-verify")
+async def verify_magic_link(token: str, response: Response):
+    """Verify magic link and create session"""
+    # Find valid magic token
+    magic_doc = await db.magic_links.find_one({
+        "token": token,
+        "used": False
+    }, {"_id": 0})
+    
+    if not magic_doc:
+        raise HTTPException(status_code=400, detail="Lien de connexion invalide ou déjà utilisé.")
+    
+    # Check expiration
+    expires_at = datetime.fromisoformat(magic_doc["expires_at"].replace('Z', '+00:00'))
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="Ce lien a expiré. Veuillez demander un nouveau lien.")
+    
+    # Mark token as used
+    await db.magic_links.update_one(
+        {"token": token},
+        {"$set": {"used": True}}
+    )
+    
+    # Get user
+    user = await db.users.find_one({"user_id": magic_doc["user_id"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé.")
+    
+    # Create session
+    session_token = f"sess_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    session_doc = {
+        "session_id": str(uuid.uuid4()),
+        "user_id": user["user_id"],
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
+    )
+    
+    return {"message": "Connexion réussie", "user": user}
+
 # ================== PROJECT ROUTES ==================
 
 @api_router.post("/projects")
