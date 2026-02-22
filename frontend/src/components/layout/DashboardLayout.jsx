@@ -23,7 +23,8 @@ import {
   CreditCard,
   ChevronDown,
   ArrowLeftRight,
-  Users
+  Users,
+  TrendingUp
 } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
@@ -45,6 +46,7 @@ const DashboardLayout = ({ children }) => {
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/analysis", label: "Analyses", icon: BarChart3 },
+    { path: "/history", label: "Évolution", icon: TrendingUp },
     { path: "/competitors", label: "Concurrents", icon: Users },
     { path: "/recommendations", label: "Recommandations", icon: Target },
     { path: "/settings", label: "Paramètres", icon: Settings },
