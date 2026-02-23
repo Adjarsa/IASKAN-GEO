@@ -155,8 +155,8 @@ const PricingPage = () => {
               <span className="text-violet-700 font-semibold">
                 {subscription.plan?.charAt(0).toUpperCase() + subscription.plan?.slice(1)}
               </span>
-              {subscription.status === "trial" && (
-                <span className="ml-2 text-amber-600">(Essai gratuit)</span>
+              {subscription.plan === "free" && (
+                <span className="ml-2 text-emerald-600">(1 scan gratuit)</span>
               )}
             </p>
           </Card>
@@ -180,6 +180,12 @@ const PricingPage = () => {
                 {plan.popular && (
                   <div className="absolute top-0 right-0 bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-xs font-semibold px-4 py-1 rounded-bl-lg">
                     Populaire
+                  </div>
+                )}
+                
+                {plan.badge && (
+                  <div className="absolute top-0 left-0 bg-emerald-500 text-white text-xs font-semibold px-4 py-1 rounded-br-lg">
+                    {plan.badge}
                   </div>
                 )}
 
