@@ -143,7 +143,7 @@ const PricingPage = () => {
             Tarifs simples et transparents
           </h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            7 jours d'essai gratuit sur tous les plans. Annulez à tout moment.
+            Choisissez le plan adapté à vos besoins. 1 scan gratuit pour démarrer.
           </p>
         </div>
 
