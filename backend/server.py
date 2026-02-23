@@ -342,24 +342,24 @@ async def create_oauth_user_session(email: str, name: str, picture: str, provide
         }
         await db.users.insert_one(user_doc)
         
-        # Create trial subscription
-        trial_sub = {
+        # Create free subscription with 1 free scan
+        free_sub = {
             "subscription_id": f"sub_{uuid.uuid4().hex[:12]}",
             "user_id": user_id,
-            "plan": "starter",
-            "status": "trial",
-            "queries_limit": 300,
+            "plan": "free",
+            "status": "active",
+            "queries_limit": 1,
             "queries_used": 0,
-            "trial_ends_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "free_scans_remaining": 1,
             "current_period_start": datetime.now(timezone.utc).isoformat(),
-            "current_period_end": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "current_period_end": None,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
-        await db.subscriptions.insert_one(trial_sub)
+        await db.subscriptions.insert_one(free_sub)
     
     # Create session
     session_token = f"sess_{uuid.uuid4().hex}"
-    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
     session_doc = {
         "session_id": str(uuid.uuid4()),
         "user_id": user_id,
