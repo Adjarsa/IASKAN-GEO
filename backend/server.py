@@ -148,22 +148,28 @@ SUBSCRIPTION_PLANS = {
         "name": "Starter",
         "price": 79.00,
         "queries_limit": 300,
+        "free_scans": 1,
+        "projects_limit": 1,
         "ai_engines": ["chatgpt"],
-        "features": ["Score GEO basique", "ChatGPT uniquement", "Rapport standard", "Support email"]
+        "features": ["1 scan gratuit", "Score GEO basique", "ChatGPT uniquement", "Rapport standard", "1 projet", "Support email"]
     },
     "pro": {
         "name": "Pro",
         "price": 149.00,
         "queries_limit": 600,
+        "free_scans": 0,
+        "projects_limit": 5,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["Score GEO avancé", "Multi-IA (4 moteurs)", "Benchmark concurrents", "Analyse de stabilité", "Support prioritaire"]
+        "features": ["Score GEO avancé", "Multi-IA (4 moteurs)", "Benchmark concurrents", "Analyse de stabilité", "5 projets", "Support prioritaire"]
     },
     "business": {
         "name": "Business",
         "price": 349.00,
         "queries_limit": 1500,
+        "free_scans": 0,
+        "projects_limit": -1,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["Score GEO complet", "Toutes les IA", "Génération d'articles GEO", "Intelligence stratégique", "API access", "Support dédié"]
+        "features": ["Score GEO complet", "Toutes les IA", "Génération d'articles GEO", "Intelligence stratégique", "Projets illimités", "API access", "Support dédié"]
     }
 }
 
