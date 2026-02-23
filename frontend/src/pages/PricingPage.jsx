@@ -65,7 +65,9 @@ const PricingPage = () => {
       price: 79,
       icon: Zap,
       queries: "300 requêtes/mois",
+      badge: "1 scan gratuit",
       features: [
+        "1 scan gratuit inclus",
         "Score GEO basique",
         "ChatGPT uniquement",
         "Rapport standard",
