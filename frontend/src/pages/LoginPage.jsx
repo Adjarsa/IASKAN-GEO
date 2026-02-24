@@ -83,6 +83,36 @@ const MagicLinkForm = () => {
 
 const LoginPage = () => {
   const [searchParams] = useSearchParams();
+  const [processing, setProcessing] = useState(false);
+  const hasProcessed = useRef(false);
+
+  useEffect(() => {
+    // Check for session_id in hash (Emergent OAuth callback)
+    const hash = window.location.hash;
+    const sessionIdMatch = hash.match(/session_id=([^&]+)/);
+    
+    if (sessionIdMatch && !hasProcessed.current) {
+      hasProcessed.current = true;
+      setProcessing(true);
+      
+      const sessionId = sessionIdMatch[1];
+      
+      // Process the OAuth callback
+      axios.post(`${API}/auth/session`, { session_id: sessionId }, { withCredentials: true })
+        .then((response) => {
+          toast.success("Connexion réussie !");
+          // Clear the hash and redirect to projects
+          window.location.href = window.location.origin + '/projects';
+        })
+        .catch((error) => {
+          console.error("Auth error:", error);
+          toast.error("Erreur d'authentification");
+          setProcessing(false);
+          // Clear the hash
+          window.history.replaceState(null, '', window.location.pathname);
+        });
+    }
+  }, []);
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -113,6 +143,18 @@ const LoginPage = () => {
     // Redirect to LinkedIn OAuth endpoint
     window.location.href = `${API}/auth/linkedin/login`;
   };
+
+  // Show loading if processing OAuth callback
+  if (processing) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="spinner w-12 h-12 mx-auto mb-4"></div>
+          <p className="text-slate-700">Connexion en cours...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white relative overflow-hidden">
