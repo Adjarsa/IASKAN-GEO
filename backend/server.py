@@ -96,11 +96,19 @@ class Analysis(BaseModel):
     user_id: str
     status: str = "pending"  # pending, running, completed, failed
     global_score: float = 0.0
-    rate_score: Dict[str, float] = {}  # R.A.T.E scores
+    grade: str = "N/A"  # A, B, C, D, F
+    rate_score: Dict[str, Any] = {}  # R.A.T.E scores with weights
     ai_scores: Dict[str, float] = {}  # Score per AI
     query_scores: List[Dict[str, Any]] = []
     recommendations: List[Dict[str, Any]] = []
     competitor_comparison: List[Dict[str, Any]] = []
+    # IAskan Verified GEO Protocol™ fields
+    indices: Dict[str, float] = {}  # Stability Index™, Dominance Index™, Trust Gap™, Opportunity Score™
+    stability_data: Dict[str, Any] = {}  # Detailed stability metrics
+    query_type_breakdown: Dict[str, Any] = {}  # Breakdown by query type
+    analysis_summary: Dict[str, Any] = {}  # Protocol metadata
+    current_phase: str = "pending"  # query_generation, ai_querying, calculating_indices, completed
+    protocol_version: str = "IAskan Verified GEO Protocol™ v2.0"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
 
