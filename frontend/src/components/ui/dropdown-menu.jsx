@@ -3,6 +3,7 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronRight, Circle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { usePortalContainer } from "@/lib/portal-utils"
 
 const DropdownMenu = DropdownMenuPrimitive.Root
 
@@ -44,24 +45,13 @@ const DropdownMenuSubContent = React.forwardRef(({ className, ...props }, ref) =
 DropdownMenuSubContent.displayName =
   DropdownMenuPrimitive.SubContent.displayName
 
-// Fix for React 19 + Radix UI Portal conflict causing "insertBefore" error
-// Using container prop to force portal to use a specific DOM element
 const DropdownMenuContent = React.forwardRef(({ className, sideOffset = 4, ...props }, ref) => {
-  const [container, setContainer] = React.useState(null);
-  
-  React.useEffect(() => {
-    // Get or create a dedicated container for dropdowns
-    let portalContainer = document.getElementById('radix-portal-container');
-    if (!portalContainer) {
-      portalContainer = document.createElement('div');
-      portalContainer.id = 'radix-portal-container';
-      document.body.appendChild(portalContainer);
-    }
-    setContainer(portalContainer);
-  }, []);
+  const container = usePortalContainer();
+
+  if (!container) return null;
 
   return (
-    <DropdownMenuPrimitive.Portal container={container}>
+    <DropdownMenuPrimitive.Portal container={container} forceMount={false}>
       <DropdownMenuPrimitive.Content
         ref={ref}
         sideOffset={sideOffset}
