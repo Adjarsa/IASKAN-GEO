@@ -1,0 +1,75 @@
+{
+  "summary": "Comprehensive testing of IAskan Verified GEO Protocol™ features. All tests passed - Landing page displays 4 pillars (Multi-Runs, Multi-IA, 4 Couches, Anti-Hallucination) and Indices Exclusifs section (Stability Index, Dominance Index, Trust Gap, Opportunity Score). Dashboard and Analysis pages load correctly for authenticated users. Backend API endpoints (health, subscription plans, auth, projects) working correctly.",
+  "mode": "generate",
+  "baseline_commit": "1011682c3cfdfd44e82b3950fed1f880f3c38906",
+  "head_commit": "6c7cab2768f2d0d0e74822f4be227d4376a22ba0",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "regression_results": {
+    "total_specs": 25,
+    "passed": 25,
+    "failed": 0,
+    "skipped": 0
+  },
+  "backend_test_results": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0
+  },
+  "specs_created": [
+    "/app/tests/e2e/iaskan-protocol.spec.ts",
+    "/app/tests/e2e/dashboard-analysis.spec.ts"
+  ],
+  "specs_updated": [],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/tests/e2e/iaskan-protocol.spec.ts",
+    "/app/tests/e2e/dashboard-analysis.spec.ts",
+    "/app/tests/e2e/page-rendering.spec.ts",
+    "/app/backend/tests/test_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/tests/e2e/iaskan-protocol.spec.ts",
+    "/app/tests/e2e/dashboard-analysis.spec.ts",
+    "/app/backend/tests/test_api.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "100% (25/25 tests passed)"
+  },
+  "seed_data_creation": "Created test user, session, subscription, and project for authenticated page testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "IAskan Verified GEO Protocol™ features fully tested. Test infrastructure includes: 1) iaskan-protocol.spec.ts for landing page protocol sections (4 pillars, indices display, API health), 2) dashboard-analysis.spec.ts for authenticated user flows (project selection, dashboard, analysis navigation), 3) page-rendering.spec.ts for public pages. Test data created with session token 'test_session_1771941962434' for authenticated testing.",
+  "verified_features": {
+    "landing_page": {
+      "protocol_section": "IAskan Verified GEO Protocol™ section with Méthodologie Certifiée badge",
+      "four_pillars": ["Multi-Runs (3x par requête)", "Multi-IA (4 moteurs)", "4 Couches (Analyse sémantique)", "Anti-Hallucination (Vérification auto)"],
+      "indices_section": "Indices Exclusifs IAskan™ with demo values (87%, 72%, +15, 63%)",
+      "indices_displayed": ["Stability Index™", "Dominance Index™", "Trust Gap™", "Opportunity Score™"]
+    },
+    "dashboard_page": {
+      "authenticated_access": "Working with session cookie",
+      "indices_display": "IAskan Verified indices section ready for analysis data",
+      "navigation": "New analysis button and refresh stats working"
+    },
+    "analysis_page": {
+      "navigation": "Accessible from dashboard via new analysis button"
+    },
+    "api_endpoints": {
+      "health": "/api/health returns healthy status",
+      "subscription_plans": "/api/subscription/plans returns starter, pro, business plans",
+      "auth": "/api/auth/me requires authentication and returns user data",
+      "projects": "CRUD operations working"
+    }
+  }
+}
