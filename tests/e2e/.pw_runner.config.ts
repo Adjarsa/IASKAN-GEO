@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260224_140952/results.json' }],
   ],
   use: {
-    baseURL: 'https://ai-visibility-hub-4.preview.emergentagent.com',
+    baseURL: 'https://iaskan-preview.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,
