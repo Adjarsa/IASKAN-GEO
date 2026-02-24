@@ -127,6 +127,10 @@ const DashboardPage = () => {
   const queriesUsed = subscription?.queries_used || 0;
   const queriesLimit = subscription?.queries_limit || 300;
   const queriesPercent = (queriesUsed / queriesLimit) * 100;
+  
+  // IAskan Verified indices
+  const indices = latestAnalysis?.indices || {};
+  const hasIndices = Object.keys(indices).length > 0;
 
   return (
     <DashboardLayout>
