@@ -26,20 +26,20 @@ test.describe('IAskan Verified GEO Protocol™ Features', () => {
       // Scroll to 4 pillars section
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight * 0.25));
       
-      // Multi-Runs pillar
-      await expect(page.getByText('Multi-Runs')).toBeVisible();
+      // Multi-Runs pillar - use exact match with .first() for reliability
+      await expect(page.getByText('Multi-Runs', { exact: true }).first()).toBeVisible();
       await expect(page.getByText('3x par requête')).toBeVisible();
       
-      // Multi-IA pillar
-      await expect(page.getByText('Multi-IA')).toBeVisible();
+      // Multi-IA pillar - use exact match
+      await expect(page.getByText('Multi-IA', { exact: true }).first()).toBeVisible();
       await expect(page.getByText('4 moteurs')).toBeVisible();
       
       // 4 Couches pillar
-      await expect(page.getByText('4 Couches')).toBeVisible();
+      await expect(page.getByText('4 Couches', { exact: true }).first()).toBeVisible();
       await expect(page.getByText('Analyse sémantique')).toBeVisible();
       
       // Anti-Hallucination pillar
-      await expect(page.getByText('Anti-Hallucination')).toBeVisible();
+      await expect(page.getByText('Anti-Hallucination', { exact: true }).first()).toBeVisible();
       await expect(page.getByText('Vérification auto')).toBeVisible();
     });
 
