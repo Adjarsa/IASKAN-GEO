@@ -56,12 +56,14 @@ const AnalysisPage = () => {
   }, [polling, analysis?.status, analysis?.analysis_id]);
 
   const fetchAnalysis = async (id) => {
+    console.log("fetchAnalysis called with id:", id);
     try {
       setError(null);
       const response = await axios.get(`${API}/analysis/${id}`, { 
         withCredentials: true,
-        timeout: 10000 // 10 second timeout
+        timeout: 15000 // 15 second timeout
       });
+      console.log("fetchAnalysis response:", response.data);
       setAnalysis(response.data.analysis);
       
       if (response.data.analysis?.status === "running") {
@@ -71,9 +73,10 @@ const AnalysisPage = () => {
       }
     } catch (error) {
       console.error("Analysis error:", error);
+      console.error("Error details:", error.message, error.code, error.response?.status);
       const errorMessage = error.code === 'ECONNABORTED' 
         ? "Délai d'attente dépassé. Veuillez réessayer."
-        : error.response?.data?.detail || "Erreur lors du chargement de l'analyse";
+        : error.response?.data?.detail || `Erreur lors du chargement de l'analyse (${error.message})`;
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
