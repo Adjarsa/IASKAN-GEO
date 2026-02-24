@@ -1802,7 +1802,7 @@ def generate_recommendations_v2(
 
 @api_router.post("/analysis/start")
 async def start_analysis(request: Request, user: dict = Depends(get_current_user)):
-    """Start a new GEO analysis"""
+    """Start a new IAskan Verified GEO Protocol™ analysis"""
     body = await request.json()
     project_id = body.get("project_id")
     
@@ -1828,96 +1828,199 @@ async def start_analysis(request: Request, user: dict = Depends(get_current_user
     
     doc = analysis.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
+    doc["protocol_version"] = "IAskan Verified GEO Protocol™ v2.0"
     await db.analyses.insert_one(doc)
     
     # Start analysis in background
-    asyncio.create_task(run_analysis(doc["analysis_id"], project, plan_config["ai_engines"]))
+    asyncio.create_task(run_analysis_v2(doc["analysis_id"], project, plan_config["ai_engines"]))
     
-    return {"analysis_id": doc["analysis_id"], "status": "running"}
+    return {"analysis_id": doc["analysis_id"], "status": "running", "protocol": "IAskan Verified GEO Protocol™"}
 
-async def run_analysis(analysis_id: str, project: dict, ai_engines: List[str]):
-    """Run the actual GEO analysis"""
+
+async def run_analysis_v2(analysis_id: str, project: dict, ai_engines: List[str]):
+    """
+    IAskan Verified GEO Protocol™ - Main Analysis Engine
+    
+    Features:
+    - Multi-runs (3x per query) for stability measurement
+    - Multi-dimension query generation (30% transactional, 25% comparative, etc.)
+    - 4-layer semantic analysis (Presence, Role, Credibility, Conversion)
+    - Advanced indices: Stability Index™, Dominance Index™, Trust Gap™, Opportunity Score™
+    - R.A.T.E.™ score with adjusted weights
+    - Anti-hallucination checks
+    """
     try:
         brand_name = project.get("brand_name", "")
         keywords = project.get("keywords", [])
+        competitors = project.get("competitors", [])
         
-        # Generate queries
-        queries = []
-        base_queries = [
-            f"Quel est le meilleur {keywords[0] if keywords else 'service'} ?",
-            f"Je cherche un {keywords[0] if keywords else 'service'}, que recommandez-vous ?",
-            f"Comparaison des meilleurs {keywords[0] if keywords else 'services'}",
-            f"Avis sur {brand_name}",
-            f"{brand_name} vs concurrents"
-        ]
+        if not brand_name:
+            raise ValueError("Nom de marque requis")
         
-        if keywords:
-            for kw in keywords[:3]:
-                base_queries.extend([
-                    f"Meilleur {kw} en 2025",
-                    f"Comment choisir un {kw} ?",
-                    f"Top {kw} recommandés"
-                ])
+        # Update status with phase info
+        await db.analyses.update_one(
+            {"analysis_id": analysis_id},
+            {"$set": {"current_phase": "query_generation"}}
+        )
         
-        all_ai_responses = []
+        # ===== PHASE 1: Generate Multi-Dimension Queries =====
+        num_queries = 12 if len(ai_engines) > 1 else 8  # More queries for multi-AI plans
+        queries = generate_queries_multi_dimension(brand_name, keywords, competitors, num_queries)
+        
+        await db.analyses.update_one(
+            {"analysis_id": analysis_id},
+            {"$set": {"current_phase": "ai_querying", "total_queries": len(queries)}}
+        )
+        
+        # ===== PHASE 2: Multi-Run AI Querying =====
+        all_responses = []
         ai_scores = {ai: [] for ai in ai_engines}
         query_results = []
+        runs_per_query = 3  # IAskan Protocol mandates 3 runs per query
         
-        for query_text in base_queries[:10]:  # Limit queries
-            query_responses = []
+        for query_idx, query in enumerate(queries):
+            query_text = query["text"]
+            query_type = query["type"]
+            query_variations = [query_text] + query.get("variations", [])[:2]  # Base + 2 variations
+            
+            query_all_responses = []
             
             for ai in ai_engines:
-                response = await query_ai_engine(query_text, brand_name, ai)
-                query_responses.append(response)
-                all_ai_responses.append(response)
+                ai_run_responses = []
                 
-                if response.get("role") != "error":
-                    score = response.get("role_weight", 0) * 100
-                    ai_scores[ai].append(score)
+                # Execute multi-runs with variations
+                for run_id, variant_text in enumerate(query_variations[:runs_per_query], 1):
+                    response = await query_ai_engine_v2(
+                        variant_text,
+                        brand_name,
+                        competitors,
+                        ai,
+                        run_id
+                    )
+                    ai_run_responses.append(response)
+                    all_responses.append(response)
+                    
+                    if response.get("role") != "error":
+                        score = response.get("role_score", 0) * 100
+                        ai_scores[ai].append(score)
+                
+                # Calculate average for this AI on this query
+                avg_role_score = sum(r.get("role_score", 0) for r in ai_run_responses) / len(ai_run_responses) if ai_run_responses else 0
+                mentioned_count = sum(1 for r in ai_run_responses if r.get("brand_mentioned", False))
+                
+                query_all_responses.extend(ai_run_responses)
             
+            # Aggregate query results
             query_result = {
                 "query_text": query_text,
-                "responses": query_responses,
-                "avg_score": sum(r.get("role_weight", 0) for r in query_responses) / len(query_responses) * 100 if query_responses else 0
+                "query_type": query_type,
+                "keyword": query.get("keyword", ""),
+                "responses": query_all_responses,
+                "runs_per_ai": runs_per_query,
+                "avg_score": sum(r.get("role_score", 0) for r in query_all_responses) / len(query_all_responses) * 100 if query_all_responses else 0,
+                "mention_rate": (sum(1 for r in query_all_responses if r.get("brand_mentioned", False)) / len(query_all_responses) * 100) if query_all_responses else 0,
+                "stability": {
+                    "roles": list(set(r.get("role", "absent") for r in query_all_responses)),
+                    "consistent": len(set(r.get("role", "absent") for r in query_all_responses)) <= 2
+                }
             }
             query_results.append(query_result)
+            
+            # Update progress
+            await db.analyses.update_one(
+                {"analysis_id": analysis_id},
+                {"$set": {"queries_processed": query_idx + 1}}
+            )
         
-        # Calculate scores
-        rate_score = calculate_rate_score(all_ai_responses)
+        await db.analyses.update_one(
+            {"analysis_id": analysis_id},
+            {"$set": {"current_phase": "calculating_indices"}}
+        )
         
-        # Calculate per-AI scores
+        # ===== PHASE 3: Calculate Stability Index™ =====
+        stability_data = calculate_stability_index(all_responses)
+        
+        # ===== PHASE 4: Calculate Advanced Indices =====
+        indices = calculate_advanced_indices(all_responses, brand_name, competitors)
+        indices["stability_index"] = stability_data.get("stability_score", 0)
+        
+        # ===== PHASE 5: Calculate R.A.T.E.™ Score (Enhanced) =====
+        rate_score = calculate_rate_score_v2(all_responses, stability_data)
+        
+        # ===== PHASE 6: Calculate Per-AI Scores =====
         final_ai_scores = {}
         for ai, scores in ai_scores.items():
             final_ai_scores[ai] = round(sum(scores) / len(scores), 1) if scores else 0
         
-        # Generate recommendations
-        recommendations = generate_recommendations(rate_score, final_ai_scores)
+        # ===== PHASE 7: Generate Recommendations =====
+        recommendations = generate_recommendations_v2(rate_score, final_ai_scores, indices, stability_data)
         
-        # Update analysis
+        # ===== PHASE 8: Query Type Analysis =====
+        query_type_breakdown = {}
+        for qt in QUERY_TYPE_DISTRIBUTION.keys():
+            qt_queries = [q for q in query_results if q.get("query_type") == qt]
+            if qt_queries:
+                query_type_breakdown[qt] = {
+                    "count": len(qt_queries),
+                    "avg_score": round(sum(q.get("avg_score", 0) for q in qt_queries) / len(qt_queries), 1),
+                    "mention_rate": round(sum(q.get("mention_rate", 0) for q in qt_queries) / len(qt_queries), 1)
+                }
+        
+        # ===== PHASE 9: Finalize Analysis =====
+        analysis_summary = {
+            "total_queries": len(queries),
+            "total_runs": len(all_responses),
+            "ai_engines_used": ai_engines,
+            "competitors_analyzed": competitors[:5],
+            "protocol_version": "IAskan Verified GEO Protocol™ v2.0",
+            "methodology": {
+                "multi_runs": True,
+                "runs_per_query": runs_per_query,
+                "multi_ai": len(ai_engines) > 1,
+                "query_distribution": QUERY_TYPE_DISTRIBUTION,
+                "analysis_layers": ["presence", "role", "credibility", "conversion"],
+                "anti_hallucination": True
+            }
+        }
+        
+        # Update analysis with complete results
         await db.analyses.update_one(
             {"analysis_id": analysis_id},
             {"$set": {
                 "status": "completed",
                 "global_score": rate_score["total"],
+                "grade": rate_score.get("grade", "N/A"),
                 "rate_score": rate_score,
                 "ai_scores": final_ai_scores,
                 "query_scores": query_results,
                 "recommendations": recommendations,
+                "indices": indices,
+                "stability_data": stability_data,
+                "query_type_breakdown": query_type_breakdown,
+                "analysis_summary": analysis_summary,
+                "current_phase": "completed",
                 "completed_at": datetime.now(timezone.utc).isoformat()
             }}
         )
         
         # Update subscription usage
+        total_api_calls = len(queries) * runs_per_query * len(ai_engines)
         await db.subscriptions.update_one(
             {"user_id": project["user_id"]},
-            {"$inc": {"queries_used": len(base_queries[:10]) * len(ai_engines)}}
+            {"$inc": {"queries_used": total_api_calls}}
         )
+        
+        logger.info(f"Analysis {analysis_id} completed successfully with IAskan Verified GEO Protocol™")
         
     except Exception as e:
         logger.error(f"Analysis error: {e}")
         await db.analyses.update_one(
             {"analysis_id": analysis_id},
-            {"$set": {"status": "failed", "error": str(e)}}
+            {"$set": {
+                "status": "failed",
+                "error": str(e),
+                "current_phase": "failed"
+            }}
         )
 
 @api_router.get("/analysis/{analysis_id}")
