@@ -270,10 +270,13 @@ const AnalysisPage = () => {
               
               <div>
                 <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                  Préparation de l'analyse...
+                  Chargement de l'analyse en cours...
                 </h3>
                 <p className="text-slate-600 text-sm">
-                  Veuillez patienter pendant que nous initialisons votre analyse
+                  La connexion peut prendre quelques instants
+                </p>
+                <p className="text-xs text-slate-400 mt-2">
+                  ID: {analysisId}
                 </p>
               </div>
               
@@ -281,14 +284,21 @@ const AnalysisPage = () => {
                 <div className="h-full bg-gradient-to-r from-violet-600 to-cyan-600 rounded-full animate-loading-bar"></div>
               </div>
               
-              <Button 
-                variant="outline" 
-                onClick={() => navigate("/dashboard")}
-                className="mt-4"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Retour au dashboard
-              </Button>
+              <div className="flex gap-3 justify-center mt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => fetchAnalysis(analysisId)}
+                >
+                  Actualiser
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => navigate("/dashboard")}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Retour
+                </Button>
+              </div>
             </div>
           </Card>
         </div>
