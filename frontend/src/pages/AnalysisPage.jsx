@@ -55,13 +55,13 @@ const AnalysisPage = () => {
     return () => clearInterval(interval);
   }, [polling, analysis?.status, analysis?.analysis_id]);
 
-  const fetchAnalysis = async (id) => {
-    console.log("fetchAnalysis called with id:", id);
+  const fetchAnalysis = async (id, retryCount = 0) => {
+    console.log("fetchAnalysis called with id:", id, "retry:", retryCount);
     try {
       setError(null);
       const response = await axios.get(`${API}/analysis/${id}`, { 
         withCredentials: true,
-        timeout: 15000 // 15 second timeout
+        timeout: 30000 // 30 second timeout
       });
       console.log("fetchAnalysis response:", response.data);
       setAnalysis(response.data.analysis);
@@ -74,13 +74,24 @@ const AnalysisPage = () => {
     } catch (error) {
       console.error("Analysis error:", error);
       console.error("Error details:", error.message, error.code, error.response?.status);
+      
+      // Retry up to 2 times on timeout
+      if (error.code === 'ECONNABORTED' && retryCount < 2) {
+        console.log("Retrying fetch...", retryCount + 1);
+        toast.info("Connexion lente, nouvelle tentative...");
+        setTimeout(() => fetchAnalysis(id, retryCount + 1), 1000);
+        return;
+      }
+      
       const errorMessage = error.code === 'ECONNABORTED' 
-        ? "Délai d'attente dépassé. Veuillez réessayer."
+        ? "La connexion est très lente. Veuillez rafraîchir la page ou réessayer plus tard."
         : error.response?.data?.detail || `Erreur lors du chargement de l'analyse (${error.message})`;
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
-      setLoading(false);
+      if (retryCount === 0 || retryCount >= 2) {
+        setLoading(false);
+      }
     }
   };
 
