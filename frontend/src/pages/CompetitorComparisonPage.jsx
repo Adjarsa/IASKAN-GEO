@@ -182,15 +182,15 @@ const CompetitorComparisonPage = () => {
             data-testid="start-comparison-btn"
           >
             {starting ? (
-              <>
+              <span className="flex items-center">
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Analyse en cours...
-              </>
+              </span>
             ) : (
-              <>
+              <span className="flex items-center">
                 <Play className="w-4 h-4 mr-2" />
                 Lancer la comparaison
-              </>
+              </span>
             )}
           </Button>
         </div>
