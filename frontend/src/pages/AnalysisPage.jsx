@@ -560,87 +560,105 @@ const AnalysisPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Nouvelle Analyse</h1>
           <p className="text-slate-700">
-            Lancez une analyse GEO certifiée pour {currentProject?.brand_name}
+            Lancez une analyse GEO certifiée {currentProject?.brand_name ? `pour ${currentProject.brand_name}` : ''}
           </p>
         </div>
 
-        <Card className="p-8 max-w-2xl bg-white border-slate-100">
-          <div className="space-y-6">
-            {/* Protocol Badge */}
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-violet-50 to-cyan-50 border border-violet-200">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-white" />
+        {!currentProject ? (
+          <Card className="p-8 max-w-2xl bg-white border-slate-100">
+            <div className="text-center">
+              <Shield className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">Aucun projet sélectionné</h3>
+              <p className="text-slate-600 mb-6">
+                Veuillez d'abord sélectionner un projet pour lancer une analyse.
+              </p>
+              <Button 
+                onClick={() => navigate("/projects")}
+                className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700"
+              >
+                Voir mes projets
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <Card className="p-8 max-w-2xl bg-white border-slate-100">
+            <div className="space-y-6">
+              {/* Protocol Badge */}
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-violet-50 to-cyan-50 border border-violet-200">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">IAskan Verified GEO Protocol™</h3>
+                  <p className="text-sm text-slate-700">Méthodologie certifiée multi-IA, multi-requêtes, multi-analyses</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-slate-900">IAskan Verified GEO Protocol™</h3>
-                <p className="text-sm text-slate-700">Méthodologie certifiée multi-IA, multi-requêtes, multi-analyses</p>
+
+              {/* Project Info */}
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <h4 className="font-semibold text-slate-900 mb-2">{currentProject.name}</h4>
+                <p className="text-violet-600">{currentProject.brand_name}</p>
+                {currentProject.keywords?.length > 0 && (
+                  <p className="text-sm text-slate-700 mt-2">
+                    Mots-clés: {currentProject.keywords.join(", ")}
+                  </p>
+                )}
+                {currentProject.competitors?.length > 0 && (
+                  <p className="text-sm text-slate-700 mt-1">
+                    Concurrents: {currentProject.competitors.join(", ")}
+                  </p>
+                )}
               </div>
-            </div>
 
-            {/* Project Info */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-              <h4 className="font-semibold text-slate-900 mb-2">{currentProject?.name}</h4>
-              <p className="text-violet-600">{currentProject?.brand_name}</p>
-              {currentProject?.keywords?.length > 0 && (
-                <p className="text-sm text-slate-700 mt-2">
-                  Mots-clés: {currentProject.keywords.join(", ")}
-                </p>
-              )}
-              {currentProject?.competitors?.length > 0 && (
-                <p className="text-sm text-slate-700 mt-1">
-                  Concurrents: {currentProject.competitors.join(", ")}
-                </p>
-              )}
-            </div>
+              {/* Protocol Features */}
+              <div className="p-4 rounded-lg bg-cyan-50 border border-cyan-100">
+                <h4 className="text-cyan-700 font-medium mb-3">Ce que le protocole IAskan va faire :</h4>
+                <ul className="text-sm text-slate-700 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                    <span><strong>Multi-runs (3x)</strong> - Chaque requête exécutée 3 fois avec variations pour mesurer la stabilité</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                    <span><strong>Multi-dimensions</strong> - Requêtes transactionnelles, comparatives, informationnelles, locales, exploratoires</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                    <span><strong>4 couches d'analyse</strong> - Présence, Rôle, Crédibilité, Conversion</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                    <span><strong>Indices avancés</strong> - Stability Index™, Dominance Index™, Trust Gap™, Opportunity Score™</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                    <span><strong>Anti-hallucination</strong> - Vérification automatique de la cohérence des réponses IA</span>
+                  </li>
+                </ul>
+              </div>
 
-            {/* Protocol Features */}
-            <div className="p-4 rounded-lg bg-cyan-50 border border-cyan-100">
-              <h4 className="text-cyan-700 font-medium mb-3">Ce que le protocole IAskan va faire :</h4>
-              <ul className="text-sm text-slate-700 space-y-2">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Multi-runs (3x)</strong> - Chaque requête exécutée 3 fois avec variations pour mesurer la stabilité</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Multi-dimensions</strong> - Requêtes transactionnelles, comparatives, informationnelles, locales, exploratoires</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>4 couches d'analyse</strong> - Présence, Rôle, Crédibilité, Conversion</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Indices avancés</strong> - Stability Index™, Dominance Index™, Trust Gap™, Opportunity Score™</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                  <span><strong>Anti-hallucination</strong> - Vérification automatique de la cohérence des réponses IA</span>
-                </li>
-              </ul>
+              <Button
+                size="lg"
+                className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25"
+                onClick={startAnalysis}
+                disabled={starting}
+                data-testid="start-analysis-btn"
+              >
+                {starting ? (
+                  <span className="flex items-center">
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Initialisation du protocole...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <Play className="w-5 h-5 mr-2" />
+                    Lancer l'analyse IAskan Verified™
+                  </span>
+                )}
+              </Button>
             </div>
-
-            <Button
-              size="lg"
-              className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25"
-              onClick={startAnalysis}
-              disabled={starting}
-              data-testid="start-analysis-btn"
-            >
-              {starting ? (
-                <span className="flex items-center">
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Initialisation du protocole...
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <Play className="w-5 h-5 mr-2" />
-                  Lancer l'analyse IAskan Verified™
-                </span>
-              )}
-            </Button>
-          </div>
-        </Card>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );
