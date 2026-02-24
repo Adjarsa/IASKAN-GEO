@@ -328,6 +328,58 @@ const DashboardPage = () => {
           </Card>
         </div>
 
+        {/* IAskan Verified Indices */}
+        {hasIndices && (
+          <Card className="p-6 bg-white border-slate-100">
+            <div className="flex items-center gap-2 mb-4">
+              <Award className="w-5 h-5 text-violet-600" />
+              <h3 className="text-lg font-semibold text-slate-900">Indices IAskan Verified™</h3>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-violet-50 to-violet-100 border border-violet-200">
+                <div className="flex items-center gap-1 mb-1">
+                  <Activity className="w-3 h-3 text-violet-600" />
+                  <span className="text-xs font-medium text-slate-700">Stability</span>
+                </div>
+                <span className={`text-2xl font-bold ${
+                  indices.stability_index >= 80 ? 'text-emerald-600' :
+                  indices.stability_index >= 60 ? 'text-amber-600' :
+                  'text-red-600'
+                }`}>
+                  {Math.round(indices.stability_index || 0)}%
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200">
+                <div className="flex items-center gap-1 mb-1">
+                  <TrendingUp className="w-3 h-3 text-cyan-600" />
+                  <span className="text-xs font-medium text-slate-700">Dominance</span>
+                </div>
+                <span className={`text-2xl font-bold ${indices.dominance_index >= 50 ? 'text-cyan-600' : 'text-amber-600'}`}>
+                  {Math.round(indices.dominance_index || 0)}%
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200">
+                <div className="flex items-center gap-1 mb-1">
+                  <Shield className="w-3 h-3 text-emerald-600" />
+                  <span className="text-xs font-medium text-slate-700">Trust Gap</span>
+                </div>
+                <span className={`text-2xl font-bold ${indices.trust_gap >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {indices.trust_gap >= 0 ? '+' : ''}{Math.round(indices.trust_gap || 0)}
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
+                <div className="flex items-center gap-1 mb-1">
+                  <Target className="w-3 h-3 text-amber-600" />
+                  <span className="text-xs font-medium text-slate-700">Opportunity</span>
+                </div>
+                <span className={`text-2xl font-bold ${indices.opportunity_score >= 50 ? 'text-amber-600' : 'text-slate-600'}`}>
+                  {Math.round(indices.opportunity_score || 0)}%
+                </span>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* AI Scores */}
         {latestAnalysis?.ai_scores && (
           <Card className="p-6 bg-white border-slate-100">
