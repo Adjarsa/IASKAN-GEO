@@ -162,15 +162,15 @@ test.describe('Page Rendering - Bug Fix Verification', () => {
       await page.goto('/pricing');
       await waitForAppReady(page);
       
-      // Check plan names
-      await expect(page.getByText('Starter')).toBeVisible();
-      await expect(page.getByText('Pro')).toBeVisible();
-      await expect(page.getByText('Business')).toBeVisible();
+      // Check plan names using exact match
+      await expect(page.getByRole('heading', { name: 'Starter', exact: true }).first()).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Pro', exact: true }).first()).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Business', exact: true }).first()).toBeVisible();
       
       // Check prices
-      await expect(page.getByText('79€')).toBeVisible();
-      await expect(page.getByText('149€')).toBeVisible();
-      await expect(page.getByText('349€')).toBeVisible();
+      await expect(page.getByText('79€').first()).toBeVisible();
+      await expect(page.getByText('149€').first()).toBeVisible();
+      await expect(page.getByText('349€').first()).toBeVisible();
     });
 
     test('should have working navigation', async ({ page }) => {
