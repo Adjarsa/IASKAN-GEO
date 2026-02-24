@@ -230,6 +230,98 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* IAskan Verified GEO Protocol™ Section */}
+      <section className="py-20 px-6 bg-gradient-to-br from-violet-900 via-slate-900 to-cyan-900 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyOHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+        <div className="max-w-7xl mx-auto relative">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm mb-6">
+              <Shield className="w-5 h-5 text-cyan-400" />
+              <span className="text-white font-medium">Méthodologie Certifiée</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              IAskan Verified GEO Protocol™
+            </h2>
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+              Le seul moteur GEO basé sur une méthodologie multi-IA, multi-requêtes et multi-analyses 
+              garantissant des résultats <span className="text-cyan-400 font-semibold">fiables et reproductibles</span>.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: "🔄",
+                title: "Multi-Runs",
+                subtitle: "3x par requête",
+                description: "Chaque requête est exécutée 3 fois avec des variations pour garantir la stabilité des résultats."
+              },
+              {
+                icon: "🤖",
+                title: "Multi-IA",
+                subtitle: "4 moteurs",
+                description: "ChatGPT, Claude, Gemini et Perplexity analysés simultanément pour éliminer les biais."
+              },
+              {
+                icon: "📊",
+                title: "4 Couches",
+                subtitle: "Analyse sémantique",
+                description: "Présence, Rôle, Crédibilité et Conversion pour une compréhension complète."
+              },
+              {
+                icon: "🛡️",
+                title: "Anti-Hallucination",
+                subtitle: "Vérification auto",
+                description: "Détection automatique des contradictions et incohérences dans les réponses IA."
+              }
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors"
+              >
+                <div className="text-4xl mb-4">{item.icon}</div>
+                <h3 className="text-xl font-bold text-white mb-1">{item.title}</h3>
+                <div className="text-cyan-400 text-sm font-medium mb-3">{item.subtitle}</div>
+                <p className="text-slate-400 text-sm">{item.description}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Indices showcase */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-16 p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
+          >
+            <h3 className="text-2xl font-bold text-white text-center mb-8">Indices Exclusifs IAskan™</h3>
+            <div className="grid md:grid-cols-4 gap-6">
+              {[
+                { name: "Stability Index™", value: "87%", desc: "Cohérence des réponses IA", color: "text-violet-400" },
+                { name: "Dominance Index™", value: "72%", desc: "Position vs concurrents", color: "text-cyan-400" },
+                { name: "Trust Gap™", value: "+15", desc: "Écart de confiance", color: "text-emerald-400" },
+                { name: "Opportunity Score™", value: "63%", desc: "Potentiel d'amélioration", color: "text-amber-400" }
+              ].map((index, i) => (
+                <div key={i} className="text-center">
+                  <div className={`text-4xl font-bold ${index.color} mb-2`}>{index.value}</div>
+                  <div className="text-white font-medium text-sm mb-1">{index.name}</div>
+                  <div className="text-slate-400 text-xs">{index.desc}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="features" className="py-20 px-6 bg-gradient-to-b from-white to-slate-50">
         <div className="max-w-7xl mx-auto">
