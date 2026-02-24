@@ -27,6 +27,19 @@
             #emergent-badge { display: none !important; }
         </style>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+        <!-- Suppress React 19 insertBefore errors caused by external DOM manipulation -->
+        <script>
+            window.addEventListener("error", function(e) {
+                if (e.error instanceof DOMException && 
+                    e.error.name === "NotFoundError" && 
+                    e.message && e.message.includes("insertBefore")) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    console.warn("[IAskan] Suppressed React/DOM sync error - this is expected with external scripts");
+                    return false;
+                }
+            }, true);
+        </script>
         <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
         <!--
         These two scripts have been added for the Visual Edits, please do not edit or remove them
