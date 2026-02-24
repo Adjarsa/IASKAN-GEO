@@ -7,6 +7,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
   TrendingUp,
   BarChart3,
@@ -16,7 +17,11 @@ import {
   Plus,
   RefreshCw,
   Clock,
-  Bot
+  Bot,
+  Shield,
+  Award,
+  Activity,
+  CheckCircle2
 } from "lucide-react";
 
 const DashboardPage = () => {
