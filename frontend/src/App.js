@@ -5,6 +5,18 @@ import axios from "axios";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 
+// Initialize portal container for Radix UI components immediately
+// This fixes the React 19 + Radix UI "insertBefore" error
+if (typeof document !== 'undefined') {
+  const existingPortal = document.getElementById('radix-portal-root');
+  if (!existingPortal) {
+    const portalRoot = document.createElement('div');
+    portalRoot.id = 'radix-portal-root';
+    portalRoot.setAttribute('data-radix-portal', '');
+    document.body.appendChild(portalRoot);
+  }
+}
+
 // Pages
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
