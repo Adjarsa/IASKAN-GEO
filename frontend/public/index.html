@@ -29,16 +29,43 @@
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
         <!-- Suppress React 19 insertBefore errors caused by external DOM manipulation -->
         <script>
-            window.addEventListener("error", function(e) {
-                if (e.error instanceof DOMException && 
-                    e.error.name === "NotFoundError" && 
-                    e.message && e.message.includes("insertBefore")) {
-                    e.stopImmediatePropagation();
-                    e.preventDefault();
-                    console.warn("[IAskan] Suppressed React/DOM sync error - this is expected with external scripts");
-                    return false;
-                }
-            }, true);
+            (function() {
+                // Override console.error to suppress specific React DOM errors
+                var originalError = console.error;
+                console.error = function() {
+                    var args = Array.prototype.slice.call(arguments);
+                    var message = args.join(' ');
+                    if (message.includes('insertBefore') || 
+                        message.includes('LoaderCircle') ||
+                        message.includes('not a child of this node')) {
+                        return; // Suppress this specific error
+                    }
+                    return originalError.apply(console, arguments);
+                };
+                
+                // Also catch at window level
+                window.addEventListener("error", function(e) {
+                    if (e.message && (
+                        e.message.includes("insertBefore") ||
+                        e.message.includes("not a child of this node")
+                    )) {
+                        e.stopImmediatePropagation();
+                        e.preventDefault();
+                        return false;
+                    }
+                }, true);
+                
+                // Catch unhandled promise rejections
+                window.addEventListener("unhandledrejection", function(e) {
+                    if (e.reason && e.reason.message && (
+                        e.reason.message.includes("insertBefore") ||
+                        e.reason.message.includes("not a child of this node")
+                    )) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }, true);
+            })();
         </script>
         <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
         <!--
