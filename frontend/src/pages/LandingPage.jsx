@@ -184,7 +184,7 @@ const LandingPage = () => {
             <Card className="p-8 border-red-100 bg-red-50/50">
               <div className="text-red-600 text-sm font-semibold mb-4">AVANT</div>
               <h3 className="text-2xl font-bold text-slate-900 mb-4">SEO Classique</h3>
-              <ul className="space-y-3 text-slate-600">
+              <ul className="space-y-3 text-slate-700">
                 <li className="flex items-start gap-3">
                   <span className="text-red-500">✗</span>
                   Optimisation pour Google uniquement
@@ -207,7 +207,7 @@ const LandingPage = () => {
             <Card className="p-8 border-emerald-100 bg-emerald-50/50">
               <div className="text-emerald-600 text-sm font-semibold mb-4">APRÈS</div>
               <h3 className="text-2xl font-bold text-slate-900 mb-4">GEO avec IAskan</h3>
-              <ul className="space-y-3 text-slate-600">
+              <ul className="space-y-3 text-slate-700">
                 <li className="flex items-start gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                   Visibilité sur tous les moteurs IA
