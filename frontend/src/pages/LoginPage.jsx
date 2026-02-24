@@ -99,8 +99,8 @@ const LoginPage = () => {
   }, [searchParams]);
 
   const handleGoogleLogin = () => {
-    // Redirect to projects page after auth (user must select project first)
-    const redirectUrl = window.location.origin + '/projects';
+    // Redirect to login page with session_id in hash after Emergent auth
+    const redirectUrl = window.location.origin + '/login';
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
