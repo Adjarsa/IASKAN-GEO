@@ -145,8 +145,8 @@ const ProjectsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white">Projets</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold text-slate-900">Projets</h1>
+            <p className="text-slate-700">
               Gérez vos projets et marques à analyser
             </p>
           </div>
@@ -155,7 +155,7 @@ const ProjectsPage = () => {
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button className="glow-primary" data-testid="create-project-btn">
+              <Button className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700" data-testid="create-project-btn">
                 <Plus className="w-4 h-4 mr-2" />
                 Nouveau Projet
               </Button>
@@ -242,10 +242,10 @@ const ProjectsPage = () => {
         {projects.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project) => (
-              <Card key={project.project_id} className="glass p-6 card-hover">
+              <Card key={project.project_id} className="p-6 bg-white border-slate-100 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                    <FolderKanban className="w-6 h-6 text-primary" />
+                  <div className="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center">
+                    <FolderKanban className="w-6 h-6 text-violet-600" />
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -259,7 +259,7 @@ const ProjectsPage = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-destructive hover:text-destructive"
+                      className="text-red-600 hover:text-red-700"
                       onClick={() => handleDelete(project.project_id)}
                       data-testid={`delete-project-${project.project_id}`}
                     >
@@ -268,24 +268,24 @@ const ProjectsPage = () => {
                   </div>
                 </div>
 
-                <h3 className="text-lg font-semibold text-white mb-1">{project.name}</h3>
-                <p className="text-muted-foreground text-sm mb-4">{project.brand_name}</p>
+                <h3 className="text-lg font-semibold text-slate-900 mb-1">{project.name}</h3>
+                <p className="text-violet-600 text-sm mb-4">{project.brand_name}</p>
 
                 <div className="space-y-2 text-sm">
                   {project.website_url && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-slate-600">
                       <Globe className="w-4 h-4" />
                       <span className="truncate">{project.website_url}</span>
                     </div>
                   )}
                   {project.keywords?.length > 0 && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-slate-600">
                       <Tag className="w-4 h-4" />
                       <span className="truncate">{project.keywords.slice(0, 3).join(", ")}</span>
                     </div>
                   )}
                   {project.competitors?.length > 0 && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center gap-2 text-slate-600">
                       <Users className="w-4 h-4" />
                       <span>{project.competitors.length} concurrent(s)</span>
                     </div>
@@ -295,13 +295,13 @@ const ProjectsPage = () => {
             ))}
           </div>
         ) : (
-          <Card className="glass p-12 text-center">
-            <FolderKanban className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Aucun projet</h3>
-            <p className="text-muted-foreground mb-6">
+          <Card className="p-12 text-center bg-white border-slate-100">
+            <FolderKanban className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">Aucun projet</h3>
+            <p className="text-slate-600 mb-6">
               Créez votre premier projet pour commencer à analyser votre visibilité GEO
             </p>
-            <Button className="glow-primary" onClick={() => setDialogOpen(true)} data-testid="empty-create-btn">
+            <Button className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700" onClick={() => setDialogOpen(true)} data-testid="empty-create-btn">
               <Plus className="w-4 h-4 mr-2" />
               Créer un projet
             </Button>
