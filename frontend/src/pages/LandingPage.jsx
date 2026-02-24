@@ -326,7 +326,7 @@ const LandingPage = () => {
                   
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, fIndex) => (
-                      <li key={fIndex} className="flex items-start gap-3 text-slate-600">
+                      <li key={fIndex} className="flex items-start gap-3 text-slate-700">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                         {feature}
                       </li>
