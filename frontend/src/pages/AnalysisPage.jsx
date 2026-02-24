@@ -175,15 +175,15 @@ const AnalysisPage = () => {
                 data-testid="download-pdf-btn"
               >
                 {downloading ? (
-                  <>
+                  <span className="flex items-center">
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Génération...
-                  </>
+                  </span>
                 ) : (
-                  <>
+                  <span className="flex items-center">
                     <Download className="w-4 h-4 mr-2" />
                     Télécharger PDF
-                  </>
+                  </span>
                 )}
               </Button>
             )}
