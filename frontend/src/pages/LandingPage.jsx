@@ -320,9 +320,9 @@ const LandingPage = () => {
                   <h3 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
                   <div className="flex items-baseline gap-1 mb-2">
                     <span className="text-5xl font-bold text-slate-900">{plan.price}€</span>
-                    <span className="text-slate-500">/mois</span>
+                    <span className="text-slate-600">/mois</span>
                   </div>
-                  <p className="text-slate-500 mb-6">{plan.queries} requêtes/mois</p>
+                  <p className="text-slate-600 mb-6">{plan.queries} requêtes/mois</p>
                   
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, fIndex) => (
