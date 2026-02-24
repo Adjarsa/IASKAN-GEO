@@ -70,7 +70,7 @@ const ResetPasswordPage = () => {
       
       {/* Back to Login */}
       <div className="absolute top-6 left-6 z-10">
-        <Link to="/login" className="flex items-center gap-2 text-slate-500 hover:text-violet-600 transition-colors">
+        <Link to="/login" className="flex items-center gap-2 text-slate-600 hover:text-violet-600 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Retour à la connexion
         </Link>
@@ -124,7 +124,7 @@ const ResetPasswordPage = () => {
                     Nouveau mot de passe
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600" />
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Minimum 8 caractères"
@@ -136,7 +136,7 @@ const ResetPasswordPage = () => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-600"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -148,7 +148,7 @@ const ResetPasswordPage = () => {
                     Confirmer le mot de passe
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600" />
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Répétez le mot de passe"

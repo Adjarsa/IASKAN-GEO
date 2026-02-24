@@ -137,9 +137,9 @@ const CompetitorComparisonPage = () => {
 
   const getRankIcon = (rank) => {
     if (rank === 1) return <Crown className="w-5 h-5 text-yellow-500" />;
-    if (rank === 2) return <Medal className="w-5 h-5 text-slate-400" />;
+    if (rank === 2) return <Medal className="w-5 h-5 text-slate-600" />;
     if (rank === 3) return <Award className="w-5 h-5 text-amber-600" />;
-    return <span className="text-slate-400 font-bold">#{rank}</span>;
+    return <span className="text-slate-600 font-bold">#{rank}</span>;
   };
 
   const getScoreColor = (score) => {
@@ -158,7 +158,7 @@ const CompetitorComparisonPage = () => {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
-          <p className="text-slate-500">Sélectionnez un projet pour continuer</p>
+          <p className="text-slate-600">Sélectionnez un projet pour continuer</p>
         </div>
       </DashboardLayout>
     );
@@ -171,7 +171,7 @@ const CompetitorComparisonPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Comparaison Concurrents</h1>
-            <p className="text-slate-500 mt-1">
+            <p className="text-slate-600 mt-1">
               Analysez votre positionnement face à vos concurrents dans les réponses IA
             </p>
           </div>
@@ -234,11 +234,11 @@ const CompetitorComparisonPage = () => {
               </Badge>
             ))}
             {competitors.length === 0 && (
-              <p className="text-slate-400 text-sm">Aucun concurrent ajouté</p>
+              <p className="text-slate-600 text-sm">Aucun concurrent ajouté</p>
             )}
           </div>
           
-          <p className="text-xs text-slate-400 mt-4">
+          <p className="text-xs text-slate-600 mt-4">
             Votre marque: <span className="font-semibold text-violet-600">{currentProject.brand_name}</span>
           </p>
         </Card>
@@ -250,7 +250,7 @@ const CompetitorComparisonPage = () => {
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
               Analyse en cours...
             </h3>
-            <p className="text-slate-500">
+            <p className="text-slate-600">
               Nous interrogeons les IAs pour comparer votre visibilité avec celle de vos concurrents.
               Cela peut prendre quelques minutes.
             </p>
@@ -268,7 +268,7 @@ const CompetitorComparisonPage = () => {
                     <Trophy className="w-6 h-6 text-violet-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Votre rang</p>
+                    <p className="text-sm text-slate-600">Votre rang</p>
                     <p className="text-2xl font-bold text-slate-900">
                       #{comparison.results.summary?.user_rank || "-"}
                     </p>
@@ -282,7 +282,7 @@ const CompetitorComparisonPage = () => {
                     <Target className="w-6 h-6 text-cyan-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Votre score</p>
+                    <p className="text-sm text-slate-600">Votre score</p>
                     <p className={`text-2xl font-bold ${getScoreColor(comparison.results.summary?.user_score || 0)}`}>
                       {comparison.results.summary?.user_score || 0}
                     </p>
@@ -300,7 +300,7 @@ const CompetitorComparisonPage = () => {
                     )}
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Indice de dominance</p>
+                    <p className="text-sm text-slate-600">Indice de dominance</p>
                     <p className={`text-2xl font-bold ${comparison.results.summary?.dominance_index >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {comparison.results.summary?.dominance_index >= 0 ? '+' : ''}{comparison.results.summary?.dominance_index || 0}%
                     </p>
@@ -314,7 +314,7 @@ const CompetitorComparisonPage = () => {
                     <BarChart3 className="w-6 h-6 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Marques analysées</p>
+                    <p className="text-sm text-slate-600">Marques analysées</p>
                     <p className="text-2xl font-bold text-slate-900">
                       {comparison.results.summary?.total_brands_analyzed || 0}
                     </p>
@@ -353,7 +353,7 @@ const CompetitorComparisonPage = () => {
                               <Badge className="ml-2 bg-violet-600">Vous</Badge>
                             )}
                           </div>
-                          <div className="text-sm text-slate-500">
+                          <div className="text-sm text-slate-600">
                             Rang #{data.rank}
                           </div>
                         </div>
@@ -378,11 +378,11 @@ const CompetitorComparisonPage = () => {
               <div className="overflow-x-auto">
                 {/* Header Row */}
                 <div className="grid grid-cols-5 gap-4 border-b border-slate-200 pb-3 mb-2">
-                  <div className="text-left text-slate-500 font-medium px-4">Marque</div>
-                  <div className="text-center text-slate-500 font-medium px-4">ChatGPT</div>
-                  <div className="text-center text-slate-500 font-medium px-4">Claude</div>
-                  <div className="text-center text-slate-500 font-medium px-4">Gemini</div>
-                  <div className="text-center text-slate-500 font-medium px-4">Moyenne</div>
+                  <div className="text-left text-slate-600 font-medium px-4">Marque</div>
+                  <div className="text-center text-slate-600 font-medium px-4">ChatGPT</div>
+                  <div className="text-center text-slate-600 font-medium px-4">Claude</div>
+                  <div className="text-center text-slate-600 font-medium px-4">Gemini</div>
+                  <div className="text-center text-slate-600 font-medium px-4">Moyenne</div>
                 </div>
                 {/* Data Rows */}
                 {Object.entries(comparison.results.rankings || {})
@@ -461,7 +461,7 @@ const CompetitorComparisonPage = () => {
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
               Aucune analyse comparative
             </h3>
-            <p className="text-slate-500 mb-6">
+            <p className="text-slate-600 mb-6">
               Ajoutez vos concurrents et lancez une analyse pour voir comment vous vous positionnez.
             </p>
           </Card>

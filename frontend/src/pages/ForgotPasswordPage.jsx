@@ -41,7 +41,7 @@ const ForgotPasswordPage = () => {
       
       {/* Back to Login */}
       <div className="absolute top-6 left-6 z-10">
-        <Link to="/login" className="flex items-center gap-2 text-slate-500 hover:text-violet-600 transition-colors" data-testid="back-login">
+        <Link to="/login" className="flex items-center gap-2 text-slate-600 hover:text-violet-600 transition-colors" data-testid="back-login">
           <ArrowLeft className="w-4 h-4" />
           Retour à la connexion
         </Link>
@@ -71,7 +71,7 @@ const ForgotPasswordPage = () => {
               <p className="text-slate-600 mb-6">
                 Si un compte existe avec l'adresse <strong>{email}</strong>, vous recevrez un lien de réinitialisation dans quelques minutes.
               </p>
-              <p className="text-sm text-slate-500 mb-6">
+              <p className="text-sm text-slate-600 mb-6">
                 N'oubliez pas de vérifier vos spams.
               </p>
               <Link to="/login">
@@ -96,7 +96,7 @@ const ForgotPasswordPage = () => {
                     Adresse email
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600" />
                     <Input
                       type="email"
                       placeholder="vous@exemple.com"

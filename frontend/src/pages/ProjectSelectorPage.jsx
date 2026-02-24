@@ -143,13 +143,13 @@ const ProjectSelectorPage = () => {
                   </AvatarFallback>
                 </Avatar>
                 <span className="hidden md:block text-slate-700">{user?.name}</span>
-                <ChevronDown className="w-4 h-4 text-slate-400" />
+                <ChevronDown className="w-4 h-4 text-slate-600" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-3 py-2">
                 <p className="text-sm font-medium text-slate-900">{user?.name}</p>
-                <p className="text-xs text-slate-500">{user?.email}</p>
+                <p className="text-xs text-slate-600">{user?.email}</p>
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/settings")}>
@@ -176,7 +176,7 @@ const ProjectSelectorPage = () => {
           <h1 className="text-3xl font-bold text-slate-900 mb-3">
             Vos Projets
           </h1>
-          <p className="text-slate-500">
+          <p className="text-slate-600">
             Sélectionnez un projet pour commencer ou créez-en un nouveau
           </p>
         </div>
@@ -198,7 +198,7 @@ const ProjectSelectorPage = () => {
                 <Plus className="w-8 h-8 text-violet-600" />
               </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-1">Nouveau Projet</h3>
-              <p className="text-sm text-slate-500 text-center">Créez un projet pour analyser une marque</p>
+              <p className="text-sm text-slate-600 text-center">Créez un projet pour analyser une marque</p>
             </Card>
           </motion.div>
 
@@ -227,19 +227,19 @@ const ProjectSelectorPage = () => {
 
                 <div className="mt-auto space-y-2 text-sm">
                   {project.website_url && (
-                    <div className="flex items-center gap-2 text-slate-500">
+                    <div className="flex items-center gap-2 text-slate-600">
                       <Globe className="w-4 h-4" />
                       <span className="truncate">{project.website_url.replace(/https?:\/\//, '')}</span>
                     </div>
                   )}
                   {project.keywords?.length > 0 && (
-                    <div className="flex items-center gap-2 text-slate-500">
+                    <div className="flex items-center gap-2 text-slate-600">
                       <Tag className="w-4 h-4" />
                       <span className="truncate">{project.keywords.slice(0, 3).join(", ")}</span>
                     </div>
                   )}
                   {project.competitors?.length > 0 && (
-                    <div className="flex items-center gap-2 text-slate-500">
+                    <div className="flex items-center gap-2 text-slate-600">
                       <Users className="w-4 h-4" />
                       <span>{project.competitors.length} concurrent(s)</span>
                     </div>
@@ -257,7 +257,7 @@ const ProjectSelectorPage = () => {
             <h3 className="text-xl font-semibold text-slate-900 mb-2">
               Bienvenue sur IAskan !
             </h3>
-            <p className="text-slate-500 mb-6 max-w-md mx-auto">
+            <p className="text-slate-600 mb-6 max-w-md mx-auto">
               Créez votre premier projet pour commencer à analyser la visibilité de votre marque dans les réponses IA.
             </p>
             <Button 

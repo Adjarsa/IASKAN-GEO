@@ -51,7 +51,7 @@ const MagicLinkForm = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="relative">
-        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
         <Input
           type="email"
           placeholder="Connexion par email (Magic Link)"
@@ -122,7 +122,7 @@ const LoginPage = () => {
       
       {/* Back to Home */}
       <div className="absolute top-6 left-6 z-10">
-        <Link to="/" className="flex items-center gap-2 text-slate-500 hover:text-violet-600 transition-colors" data-testid="back-home">
+        <Link to="/" className="flex items-center gap-2 text-slate-600 hover:text-violet-600 transition-colors" data-testid="back-home">
           <ArrowLeft className="w-4 h-4" />
           Retour
         </Link>
@@ -195,7 +195,7 @@ const LoginPage = () => {
             {/* Divider */}
             <div className="flex items-center gap-4 my-8">
               <div className="flex-1 h-px bg-slate-200" />
-              <span className="text-slate-400 text-sm">ou</span>
+              <span className="text-slate-600 text-sm">ou</span>
               <div className="flex-1 h-px bg-slate-200" />
             </div>
 
@@ -214,7 +214,7 @@ const LoginPage = () => {
             </div>
 
             {/* Terms */}
-            <p className="text-xs text-slate-400 text-center mt-10">
+            <p className="text-xs text-slate-600 text-center mt-10">
               En vous connectant, vous acceptez nos{" "}
               <a href="#" className="text-violet-600 hover:underline">Conditions d'utilisation</a>
               {" "}et notre{" "}
@@ -239,7 +239,7 @@ const LoginPage = () => {
                 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">ChatGPT</span>
+                    <span className="text-slate-600">ChatGPT</span>
                     <span className="text-emerald-600 font-semibold">92</span>
                   </div>
                   <div className="progress-bar">
@@ -247,7 +247,7 @@ const LoginPage = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Claude</span>
+                    <span className="text-slate-600">Claude</span>
                     <span className="text-violet-600 font-semibold">85</span>
                   </div>
                   <div className="progress-bar">
@@ -255,7 +255,7 @@ const LoginPage = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Gemini</span>
+                    <span className="text-slate-600">Gemini</span>
                     <span className="text-cyan-600 font-semibold">78</span>
                   </div>
                   <div className="progress-bar">

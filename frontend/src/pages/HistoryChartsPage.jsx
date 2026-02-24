@@ -85,13 +85,13 @@ const HistoryChartsPage = () => {
   const getTrendIcon = (trend) => {
     if (trend === "up") return <TrendingUp className="w-5 h-5 text-emerald-600" />;
     if (trend === "down") return <TrendingDown className="w-5 h-5 text-red-600" />;
-    return <Minus className="w-5 h-5 text-slate-400" />;
+    return <Minus className="w-5 h-5 text-slate-600" />;
   };
 
   const getTrendColor = (trend) => {
     if (trend === "up") return "text-emerald-600";
     if (trend === "down") return "text-red-600";
-    return "text-slate-500";
+    return "text-slate-600";
   };
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -114,7 +114,7 @@ const HistoryChartsPage = () => {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
-          <p className="text-slate-500">Sélectionnez un projet pour continuer</p>
+          <p className="text-slate-600">Sélectionnez un projet pour continuer</p>
         </div>
       </DashboardLayout>
     );
@@ -139,7 +139,7 @@ const HistoryChartsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Évolution & Tendances</h1>
-            <p className="text-slate-500 mt-1">
+            <p className="text-slate-600 mt-1">
               Suivez l'évolution de votre visibilité GEO dans le temps
             </p>
           </div>
@@ -156,7 +156,7 @@ const HistoryChartsPage = () => {
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
               Pas encore de données
             </h3>
-            <p className="text-slate-500 mb-6">
+            <p className="text-slate-600 mb-6">
               Lancez plusieurs analyses pour voir l'évolution de votre score GEO.
             </p>
             <Button onClick={() => navigate("/analysis")}>
@@ -173,7 +173,7 @@ const HistoryChartsPage = () => {
                     <Activity className="w-6 h-6 text-violet-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Analyses</p>
+                    <p className="text-sm text-slate-600">Analyses</p>
                     <p className="text-2xl font-bold text-slate-900">
                       {analysisHistory.summary.total_analyses}
                     </p>
@@ -190,7 +190,7 @@ const HistoryChartsPage = () => {
                     {getTrendIcon(analysisHistory.summary.trend)}
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Évolution</p>
+                    <p className="text-sm text-slate-600">Évolution</p>
                     <p className={`text-2xl font-bold ${getTrendColor(analysisHistory.summary.trend)}`}>
                       {analysisHistory.summary.score_change > 0 ? "+" : ""}
                       {analysisHistory.summary.score_change} pts
@@ -205,7 +205,7 @@ const HistoryChartsPage = () => {
                     <Target className="w-6 h-6 text-cyan-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Score actuel</p>
+                    <p className="text-sm text-slate-600">Score actuel</p>
                     <p className="text-2xl font-bold text-slate-900">
                       {analysisHistory.score_evolution[analysisHistory.score_evolution.length - 1]?.score || 0}
                     </p>
@@ -219,7 +219,7 @@ const HistoryChartsPage = () => {
                     <Calendar className="w-6 h-6 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Dernière analyse</p>
+                    <p className="text-sm text-slate-600">Dernière analyse</p>
                     <p className="text-lg font-semibold text-slate-900">
                       {formatDate(analysisHistory.summary.last_analysis)}
                     </p>
@@ -242,7 +242,7 @@ const HistoryChartsPage = () => {
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     activeTab === tab.id
                       ? "bg-violet-100 text-violet-700"
-                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                      : "text-slate-600 hover:text-slate-700 hover:bg-slate-100"
                   }`}
                 >
                   {tab.label}
@@ -463,7 +463,7 @@ const HistoryChartsPage = () => {
                   </>
                 ) : (
                   <div className="text-center py-12">
-                    <p className="text-slate-500">
+                    <p className="text-slate-600">
                       Lancez des analyses comparatives pour voir l'évolution de votre positionnement.
                     </p>
                     <Button onClick={() => navigate("/competitors")} className="mt-4">

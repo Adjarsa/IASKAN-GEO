@@ -154,7 +154,7 @@ const AnalysisPage = () => {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">Résultats de l'analyse</h1>
-                <p className="text-slate-500 text-sm">
+                <p className="text-slate-600 text-sm">
                   {new Date(analysis.created_at).toLocaleDateString("fr-FR", {
                     day: "numeric",
                     month: "long",
@@ -228,13 +228,13 @@ const AnalysisPage = () => {
                     <div className={`text-7xl font-bold ${getScoreColor(analysis.global_score)}`}>
                       {Math.round(analysis.global_score)}
                     </div>
-                    <p className="text-slate-500 mt-2">sur 100</p>
+                    <p className="text-slate-600 mt-2">sur 100</p>
                   </div>
 
                   {/* R.A.T.E Breakdown */}
                   {analysis.rate_score && (
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-slate-500">Score R.A.T.E™</h3>
+                      <h3 className="text-sm font-medium text-slate-600">Score R.A.T.E™</h3>
                       {[
                         { key: "relevance", label: "Relevance", color: "bg-violet-500" },
                         { key: "authority", label: "Authority", color: "bg-cyan-500" },
@@ -243,7 +243,7 @@ const AnalysisPage = () => {
                       ].map((item) => (
                         <div key={item.key} className="space-y-1">
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">{item.label}</span>
+                            <span className="text-slate-600">{item.label}</span>
                             <span className="text-slate-900 font-medium">
                               {Math.round(analysis.rate_score[item.key] || 0)}%
                             </span>
@@ -282,7 +282,7 @@ const AnalysisPage = () => {
                           }`} />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm text-slate-500 capitalize">{ai}</p>
+                          <p className="text-sm text-slate-600 capitalize">{ai}</p>
                           <p className={`text-2xl font-bold ${getScoreColor(score)}`}>
                             {Math.round(score)}
                           </p>
@@ -338,7 +338,7 @@ const AnalysisPage = () => {
                       >
                         <div className="flex-1">
                           <h4 className="text-slate-900 font-medium mb-1">{rec.title}</h4>
-                          <p className="text-sm text-slate-500">{rec.description}</p>
+                          <p className="text-sm text-slate-600">{rec.description}</p>
                         </div>
                         <div className="text-right space-y-1">
                           <span className={`text-xs px-2 py-1 rounded-full block ${
@@ -348,7 +348,7 @@ const AnalysisPage = () => {
                           }`}>
                             Impact {rec.impact}
                           </span>
-                          <span className="text-xs text-slate-400 block">
+                          <span className="text-xs text-slate-600 block">
                             Effort {rec.effort}
                           </span>
                         </div>
@@ -370,7 +370,7 @@ const AnalysisPage = () => {
       <div className="space-y-8" data-testid="analysis-page">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Nouvelle Analyse</h1>
-          <p className="text-slate-500">
+          <p className="text-slate-600">
             Lancez une analyse GEO pour {currentProject?.brand_name}
           </p>
         </div>
@@ -382,7 +382,7 @@ const AnalysisPage = () => {
               <h4 className="font-semibold text-slate-900 mb-2">{currentProject?.name}</h4>
               <p className="text-violet-600">{currentProject?.brand_name}</p>
               {currentProject?.keywords?.length > 0 && (
-                <p className="text-sm text-slate-500 mt-2">
+                <p className="text-sm text-slate-600 mt-2">
                   Mots-clés: {currentProject.keywords.join(", ")}
                 </p>
               )}

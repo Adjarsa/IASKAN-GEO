@@ -194,17 +194,17 @@ const PricingPage = () => {
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                       plan.popular ? "bg-gradient-to-br from-violet-100 to-cyan-100" : "bg-slate-100"
                     }`}>
-                      <Icon className={`w-6 h-6 ${plan.popular ? "text-violet-600" : "text-slate-500"}`} />
+                      <Icon className={`w-6 h-6 ${plan.popular ? "text-violet-600" : "text-slate-600"}`} />
                     </div>
                     <h3 className="text-2xl font-bold text-slate-900">{plan.name}</h3>
                   </div>
 
                   <div className="flex items-baseline gap-1 mb-2">
                     <span className="text-5xl font-bold text-slate-900">{plan.price}€</span>
-                    <span className="text-slate-500">/mois</span>
+                    <span className="text-slate-600">/mois</span>
                   </div>
 
-                  <p className="text-slate-500 mb-6">{plan.queries}</p>
+                  <p className="text-slate-600 mb-6">{plan.queries}</p>
 
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, index) => (
@@ -241,13 +241,13 @@ const PricingPage = () => {
 
         {/* FAQ / Trust Signals */}
         <div className="mt-20 text-center">
-          <p className="text-slate-500 mb-4">
+          <p className="text-slate-600 mb-4">
             Questions ? Contactez-nous à{" "}
             <a href="mailto:contact@iaskan.com" className="text-violet-600 hover:underline">
               contact@iaskan.com
             </a>
           </p>
-          <div className="flex items-center justify-center gap-8 text-sm text-slate-400">
+          <div className="flex items-center justify-center gap-8 text-sm text-slate-600">
             <span>Paiement sécurisé par Stripe</span>
             <span>•</span>
             <span>Annulation facile</span>

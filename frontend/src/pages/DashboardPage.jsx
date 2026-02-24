@@ -132,7 +132,7 @@ const DashboardPage = () => {
             <h1 className="text-3xl font-bold text-slate-900">
               {currentProject?.brand_name || "Dashboard"}
             </h1>
-            <p className="text-slate-500">
+            <p className="text-slate-600">
               Analyse de visibilité GEO pour votre marque
             </p>
           </div>
@@ -167,10 +167,10 @@ const DashboardPage = () => {
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900 mb-1">Score GEO Global</h2>
-                <p className="text-slate-500 text-sm">Basé sur votre dernière analyse</p>
+                <p className="text-slate-600 text-sm">Basé sur votre dernière analyse</p>
               </div>
               {latestAnalysis && (
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-600">
                   {new Date(latestAnalysis.created_at).toLocaleDateString("fr-FR")}
                 </span>
               )}
@@ -210,14 +210,14 @@ const DashboardPage = () => {
                   <span className={`text-5xl font-bold ${getScoreColor(globalScore)}`}>
                     {Math.round(globalScore)}
                   </span>
-                  <span className="text-slate-400">/100</span>
+                  <span className="text-slate-600">/100</span>
                 </div>
               </div>
 
               {/* R.A.T.E Breakdown */}
               {latestAnalysis?.rate_score && (
                 <div className="flex-1 space-y-4">
-                  <h3 className="text-sm font-medium text-slate-500 mb-4">Score R.A.T.E™</h3>
+                  <h3 className="text-sm font-medium text-slate-600 mb-4">Score R.A.T.E™</h3>
                   {[
                     { key: "relevance", label: "Relevance", color: "bg-violet-500" },
                     { key: "authority", label: "Authority", color: "bg-cyan-500" },
@@ -226,7 +226,7 @@ const DashboardPage = () => {
                   ].map((item) => (
                     <div key={item.key} className="space-y-1">
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-500">{item.label}</span>
+                        <span className="text-slate-600">{item.label}</span>
                         <span className="text-slate-900 font-medium">
                           {Math.round(latestAnalysis.rate_score[item.key] || 0)}%
                         </span>
@@ -244,7 +244,7 @@ const DashboardPage = () => {
 
               {!latestAnalysis && (
                 <div className="flex-1 text-center">
-                  <p className="text-slate-500 mb-4">
+                  <p className="text-slate-600 mb-4">
                     Aucune analyse effectuée pour ce projet
                   </p>
                   <Link to="/analysis">
@@ -267,7 +267,7 @@ const DashboardPage = () => {
                 <h3 className="font-semibold text-slate-900">
                   Plan {subscription?.plan?.charAt(0).toUpperCase() + subscription?.plan?.slice(1) || "Starter"}
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-600">
                   {subscription?.status === "trial" ? "Essai gratuit" : "Actif"}
                 </p>
               </div>
@@ -276,7 +276,7 @@ const DashboardPage = () => {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-slate-500">Requêtes utilisées</span>
+                  <span className="text-slate-600">Requêtes utilisées</span>
                   <span className="text-slate-900">{queriesUsed} / {queriesLimit}</span>
                 </div>
                 <Progress value={queriesPercent} className="h-2" />
@@ -322,7 +322,7 @@ const DashboardPage = () => {
                     }`} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-slate-500 capitalize">{ai}</p>
+                    <p className="text-sm text-slate-600 capitalize">{ai}</p>
                     <p className={`text-2xl font-bold ${getScoreColor(score)}`}>
                       {Math.round(score)}
                     </p>
@@ -356,7 +356,7 @@ const DashboardPage = () => {
                   >
                     <div className="flex-1">
                       <h4 className="text-slate-900 font-medium mb-1">{rec.title}</h4>
-                      <p className="text-sm text-slate-500 line-clamp-2">
+                      <p className="text-sm text-slate-600 line-clamp-2">
                         {rec.description}
                       </p>
                     </div>
@@ -375,7 +375,7 @@ const DashboardPage = () => {
             ) : (
               <div className="text-center py-8">
                 <Target className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500">
+                <p className="text-slate-600">
                   Lancez une analyse pour obtenir des recommandations
                 </p>
               </div>
@@ -418,19 +418,19 @@ const DashboardPage = () => {
                         <p className="text-sm text-slate-900">
                           Score: {Math.round(analysis.global_score)}
                         </p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-600">
                           {new Date(analysis.created_at).toLocaleDateString("fr-FR")}
                         </p>
                       </div>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-slate-400" />
+                    <ArrowRight className="w-4 h-4 text-slate-600" />
                   </Link>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8">
                 <BarChart3 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500">
+                <p className="text-slate-600">
                   Aucune analyse pour le moment
                 </p>
               </div>
