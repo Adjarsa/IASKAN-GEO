@@ -296,22 +296,105 @@ const AnalysisPage = () => {
 
           {/* Status - Running */}
           {analysis.status === "running" && (
-            <Card className="p-6 border-cyan-200 bg-cyan-50">
-              <div className="flex items-center gap-4">
-                <Loader2 className="w-8 h-8 text-cyan-600 animate-spin" />
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">Analyse IAskan Verified™ en cours...</h3>
-                  <p className="text-slate-700">
-                    {analysis.current_phase === "query_generation" && "Génération des requêtes multi-dimensions..."}
-                    {analysis.current_phase === "ai_querying" && `Interrogation des moteurs IA (${analysis.queries_processed || 0}/${analysis.total_queries || '?'} requêtes)...`}
-                    {analysis.current_phase === "calculating_indices" && "Calcul des indices avancés..."}
-                    {!analysis.current_phase && "Protocole IAskan en cours d'exécution..."}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="text-xs px-2 py-1 rounded-full bg-cyan-100 text-cyan-700">Multi-runs (3x)</span>
-                    <span className="text-xs px-2 py-1 rounded-full bg-cyan-100 text-cyan-700">Multi-IA</span>
-                    <span className="text-xs px-2 py-1 rounded-full bg-cyan-100 text-cyan-700">Anti-hallucination</span>
+            <Card className="p-8 border-violet-200 bg-gradient-to-br from-violet-50 to-cyan-50">
+              <div className="space-y-6">
+                {/* Header with animated icon */}
+                <div className="flex items-center gap-4">
+                  <div className="relative w-16 h-16 flex-shrink-0">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 animate-pulse opacity-30"></div>
+                    <div className="absolute inset-2 rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-violet-600 border-r-cyan-600 animate-spin"></div>
                   </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-slate-900">Analyse IAskan Verified™ en cours</h3>
+                    <p className="text-slate-600 text-sm">Temps estimé : 1-2 minutes</p>
+                  </div>
+                </div>
+                
+                {/* Progress Steps */}
+                <div className="space-y-3">
+                  {[
+                    { id: "query_generation", label: "Génération des requêtes multi-dimensions", icon: "🎯" },
+                    { id: "ai_querying", label: `Interrogation des moteurs IA${analysis.queries_processed ? ` (${analysis.queries_processed}/${analysis.total_queries || '?'})` : ''}`, icon: "🤖" },
+                    { id: "calculating_indices", label: "Calcul des indices avancés", icon: "📊" }
+                  ].map((step, index) => {
+                    const currentPhase = analysis.current_phase || "query_generation";
+                    const phases = ["query_generation", "ai_querying", "calculating_indices"];
+                    const currentIndex = phases.indexOf(currentPhase);
+                    const stepIndex = phases.indexOf(step.id);
+                    const isComplete = stepIndex < currentIndex;
+                    const isCurrent = step.id === currentPhase;
+                    
+                    return (
+                      <div 
+                        key={step.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                          isCurrent 
+                            ? 'bg-white shadow-md border border-violet-200' 
+                            : isComplete 
+                              ? 'bg-emerald-50 border border-emerald-200' 
+                              : 'bg-slate-50 border border-slate-200 opacity-50'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                          isCurrent 
+                            ? 'bg-gradient-to-r from-violet-600 to-cyan-600 text-white' 
+                            : isComplete 
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-slate-200 text-slate-500'
+                        }`}>
+                          {isComplete ? '✓' : isCurrent ? <Loader2 className="w-4 h-4 animate-spin" /> : step.icon}
+                        </div>
+                        <span className={`flex-1 ${isCurrent ? 'font-medium text-slate-900' : isComplete ? 'text-emerald-700' : 'text-slate-500'}`}>
+                          {step.label}
+                        </span>
+                        {isCurrent && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-violet-100 text-violet-700 animate-pulse">
+                            En cours...
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Global Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Progression globale</span>
+                    <span className="text-violet-600 font-medium">
+                      {analysis.current_phase === "query_generation" && "~20%"}
+                      {analysis.current_phase === "ai_querying" && `~${Math.min(20 + Math.round((analysis.queries_processed || 0) / (analysis.total_queries || 1) * 60), 80)}%`}
+                      {analysis.current_phase === "calculating_indices" && "~90%"}
+                      {!analysis.current_phase && "En cours..."}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-violet-600 to-cyan-600 rounded-full transition-all duration-500 ease-out"
+                      style={{ 
+                        width: analysis.current_phase === "query_generation" ? "20%" 
+                             : analysis.current_phase === "ai_querying" ? `${Math.min(20 + Math.round((analysis.queries_processed || 0) / (analysis.total_queries || 1) * 60), 80)}%`
+                             : analysis.current_phase === "calculating_indices" ? "90%"
+                             : "10%"
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                
+                {/* Protocol badges */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <span className="text-xs px-3 py-1.5 rounded-full bg-white border border-violet-200 text-violet-700">
+                    <span className="mr-1">🔄</span> Multi-runs (3x)
+                  </span>
+                  <span className="text-xs px-3 py-1.5 rounded-full bg-white border border-cyan-200 text-cyan-700">
+                    <span className="mr-1">🤖</span> Multi-IA
+                  </span>
+                  <span className="text-xs px-3 py-1.5 rounded-full bg-white border border-emerald-200 text-emerald-700">
+                    <span className="mr-1">🛡️</span> Anti-hallucination
+                  </span>
                 </div>
               </div>
             </Card>
