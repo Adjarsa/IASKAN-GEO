@@ -158,16 +158,28 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
   - Protocol badge and certification
 
 ### Feb 22-23, 2026 - Bug Fixes
-- Fixed React DOM `insertBefore` error (Portal provider solution)
+- Fixed React DOM `insertBefore` error by **downgrading React from v19 to v18.2.0**
 - Fixed HTML nesting/hydration errors
 - Improved text contrast for readability
 
+### Feb 24, 2026 (Later) - UX Improvements
+- Added visual loading indicators with progress bars (replaces blank page)
+- Added 5-second timeout on auth checks to prevent infinite loading
+- Improved loading states with animated spinners and gradients
+- Enhanced analysis "running" state with step-by-step progress
+- User is now properly redirected to login when auth times out
+
 ## Next Tasks
-1. Team/multi-user support
-2. Analysis completion notification email
-3. API access for Business plan
-4. Mobile optimization
-5. Recharts dimension warning fix (low priority)
+1. User to verify: Loading indicators working correctly
+2. User to add LLM budget via Profile → Universal Key → Add Balance
+3. Team/multi-user support
+4. Analysis completion notification email
+5. API access for Business plan
+6. Recharts dimension warning fix (P2)
+
+## Known Issues
+- **LLM Budget Exhausted**: User must add funds to their Emergent Universal Key to run new analyses
+- **Network Latency**: External API calls may be slow due to network conditions
 
 ## Key Files Modified
 - `/app/backend/server.py` - IAskan Verified GEO Protocol™ engine
