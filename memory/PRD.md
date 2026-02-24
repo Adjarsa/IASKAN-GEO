@@ -21,7 +21,16 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 - Abonnements (Starter 79€, Pro 149€, Business 349€)
 - SSO Enterprise-grade
 
-## What's Been Implemented (Feb 21, 2026)
+## What's Been Implemented (Feb 24, 2026)
+
+### IAskan Verified GEO Protocol™ v2.0 (NEW!)
+- ✅ **Multi-runs (3x)**: Chaque requête exécutée 3 fois avec variations pour la stabilité
+- ✅ **Générateur de requêtes multi-dimensions**: 30% transactionnel, 25% comparatif, 20% informationnel, 15% local, 10% exploratoire
+- ✅ **Analyse sémantique 4 couches**: Présence → Rôle → Crédibilité → Conversion
+- ✅ **Indices avancés**: Stability Index™, Dominance Index™, Trust Gap™, Opportunity Score™
+- ✅ **Score R.A.T.E™ ajusté**: Relevance 30%, Authority 25%, Truth 20%, Endorsement 25%
+- ✅ **Contrôle anti-hallucination**: Vérification automatique de la cohérence
+- ✅ **Grade système**: A/B/C/D/F basé sur le score global
 
 ### Backend (FastAPI + MongoDB)
 - ✅ Authentication system with Emergent Google OAuth
@@ -29,27 +38,31 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 - ✅ User management (users, user_sessions)
 - ✅ Subscription system (trial + 3 plans)
 - ✅ Projects CRUD operations
-- ✅ GEO Analysis engine with multi-AI support
-- ✅ R.A.T.E scoring algorithm
-- ✅ Recommendations generation
+- ✅ **GEO Analysis engine V2 with IAskan Verified Protocol™**
+- ✅ R.A.T.E scoring algorithm (enhanced)
+- ✅ Recommendations generation (enhanced with metrics)
 - ✅ Stripe checkout integration
 - ✅ Dashboard statistics API
 - ✅ Payment webhooks
+- ✅ PDF Report Generation
 
 ### Frontend (React + Tailwind CSS)
-- ✅ Landing page (hero, features, pricing, CTA)
+- ✅ Landing page with IAskan Verified GEO Protocol™ section
 - ✅ Login page with SSO buttons (Google, Microsoft, LinkedIn)
-- ✅ Dashboard with score display and subscription info
-- ✅ Analysis page with project selection and results
+- ✅ Dashboard with indices IAskan Verified™ display
+- ✅ **Analysis page V2** with protocol features:
+  - Protocol badge and certification display
+  - Advanced indices visualization (Stability, Dominance, Trust Gap, Opportunity)
+  - Query type breakdown
+  - Multi-run stability indicators
+  - Grade display (A/B/C/D/F)
 - ✅ Projects management (CRUD)
 - ✅ Recommendations page with filtering
 - ✅ Pricing page with Stripe checkout
 - ✅ Settings page (account, subscription, security)
 - ✅ French language UI
-- ✅ Premium dark theme "Cyber Slate"
 - ✅ Responsive design
 - ✅ Protected routes
-- ✅ PDF Report Generation (Rapport détaillé avec Score GEO, R.A.T.E.™, AI Scores, Requêtes, Recommandations)
 
 ### Integrations
 - ✅ Emergent Google OAuth (SSO)
@@ -61,32 +74,6 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 - ✅ FPDF2 (PDF generation)
 - ✅ Authlib (OAuth2 client)
 - ✅ Resend (email service - requires RESEND_API_KEY)
-
-## Prioritized Backlog
-
-### P0 - Critical (Next Sprint)
-- [x] Microsoft SSO integration ✅ (Completed Feb 21, 2026 - requires API keys)
-- [x] LinkedIn SSO integration ✅ (Completed Feb 21, 2026 - requires API keys)
-- [x] Magic Link email authentication ✅ (Completed Feb 22, 2026)
-- [x] Email notifications (welcome, password reset) ✅ (Completed Feb 22, 2026 - requires RESEND_API_KEY)
-
-### P1 - High Priority
-- [x] Competitor comparison detailed view ✅ (Completed Feb 22, 2026)
-- [x] PDF report generation ✅ (Completed Feb 21, 2026)
-- [x] Analysis history charts ✅ (Completed Feb 22, 2026)
-- [ ] Team/multi-user support
-
-### P2 - Medium Priority
-- [ ] API access for Business plan
-- [ ] GEO article generation
-- [ ] Waitlist system for launch
-- [ ] Referral program
-
-### P3 - Low Priority
-- [ ] Mobile app
-- [ ] Slack integration
-- [ ] Custom branding
-- [ ] White-label option
 
 ## Technical Architecture
 ```
@@ -101,86 +88,86 @@ OAuth: Authlib for Microsoft/LinkedIn
 Email: Resend API
 ```
 
+## IAskan Verified GEO Protocol™ Methodology
+
+### Query Distribution
+- 30% Transactional (acheter, prix, commander)
+- 25% Comparative (vs, comparaison, meilleur)
+- 20% Informational (qu'est-ce que, comment)
+- 15% Local (près de moi, en France)
+- 10% Exploratory (recommandations, suggestions)
+
+### Analysis Layers
+1. **Presence**: Brand mention detection, position analysis
+2. **Role**: Top recommendation, shortlist, comparison, mention, cited, discouraged
+3. **Credibility**: Numbers, statistics, testimonials, certifications, facts, sources
+4. **Conversion**: CTA, urgency, benefits, trust, social proof
+
+### Indices
+- **Stability Index™**: Consistency of AI responses across multi-runs
+- **Dominance Index™**: Position vs competitors in AI responses
+- **Trust Gap™**: Credibility gap vs competitors
+- **Opportunity Score™**: Potential for improvement
+
+## Prioritized Backlog
+
+### P0 - Critical (Completed)
+- [x] IAskan Verified GEO Protocol™ implementation ✅ (Feb 24, 2026)
+- [x] Microsoft SSO integration ✅ (requires API keys)
+- [x] LinkedIn SSO integration ✅ (requires API keys)
+- [x] Magic Link email authentication ✅
+- [x] Email notifications ✅ (requires RESEND_API_KEY)
+
+### P1 - High Priority
+- [x] Competitor comparison detailed view ✅
+- [x] PDF report generation ✅
+- [x] Analysis history charts ✅
+- [ ] Team/multi-user support
+
+### P2 - Medium Priority
+- [ ] API access for Business plan
+- [ ] GEO article generation
+- [ ] Waitlist system for launch
+- [ ] Referral program
+- [ ] Fix Recharts dimension warning (minor)
+
+### P3 - Low Priority
+- [ ] Mobile app
+- [ ] Slack integration
+- [ ] Custom branding
+- [ ] White-label option
+
 ## Recent Updates
 
-### Feb 22, 2026 - Email Notifications & Magic Link
-- **Email Service (Resend):**
-  - Welcome email template with IAskan branding
-  - Password reset email with secure token
-  - Magic Link login email
-  - All emails in French with professional HTML design
-- **Magic Link Authentication:**
-  - POST /api/auth/magic-link - Request login link
-  - GET /api/auth/magic-verify - Verify and authenticate
-  - Auto-creates user if not exists (with trial subscription)
-- **Password Reset Flow:**
-  - POST /api/auth/forgot-password - Request reset link
-  - POST /api/auth/reset-password - Set new password
-  - Token expires after 1 hour
-- **Frontend Pages:**
-  - /forgot-password - Password reset request
-  - /reset-password?token=xxx - Set new password
-  - /auth/magic?token=xxx - Magic link verification
+### Feb 24, 2026 - IAskan Verified GEO Protocol™ v2.0
+- **Complete methodology implementation**:
+  - Multi-runs (3x per query with variations)
+  - Multi-dimension query generation
+  - 4-layer semantic analysis
+  - Advanced indices calculation
+  - Anti-hallucination checks
+  - Enhanced recommendations with metrics impacted
+- **Frontend updates**:
+  - New IAskan Verified GEO Protocol™ section on landing page
+  - Advanced indices display on dashboard and analysis pages
+  - Query type breakdown visualization
+  - Grade system (A/B/C/D/F)
+  - Protocol badge and certification
 
-### Feb 22, 2026 - Competitor Comparison
-- **Backend Endpoints:**
-  - POST /api/analysis/compare - Start competitor comparison
-  - GET /api/analysis/compare/{comparison_id} - Get comparison results
-  - GET /api/analysis/comparisons/{project_id} - List all comparisons
-- **Features:**
-  - Analyze brand visibility vs competitors across ChatGPT, Claude, Gemini
-  - Calculate dominance index and rankings
-  - Detailed breakdown by AI engine
-  - Professional insights and recommendations
-- **Frontend:**
-  - /competitors - Competitor comparison page
-  - Add/remove competitors dynamically
-  - Visual ranking with medals and scores
-  - AI breakdown table
-
-### Feb 21, 2026 - Microsoft & LinkedIn SSO
-- Backend endpoints: GET /api/auth/microsoft/login, /api/auth/linkedin/login
-- OAuth2 authorization code flow implementation
-- Automatic user creation and session management
-- Error handling with user-friendly messages
-
-### Feb 21, 2026 - PDF Report Module
-- Backend endpoint: GET /api/analysis/{analysis_id}/pdf
-- 7-page professional PDF report
-- Includes: Score GEO Global, R.A.T.E.™ breakdown, AI scores, query details, recommendations
-
-### Feb 22, 2026 - History Charts
-- **Backend Endpoints:**
-  - GET /api/analyses/history/{project_id} - Analysis history with trends
-  - GET /api/comparisons/history/{project_id} - Comparison history
-- **Charts (Recharts):**
-  - Score GEO Global evolution (Area chart)
-  - R.A.T.E.™ scores evolution (Line chart with 4 lines)
-  - AI engines breakdown (Bar chart)
-  - Competitor ranking evolution (Line chart)
-  - Dominance index evolution (Area chart)
-- **Features:**
-  - Tab navigation between chart types
-  - Summary cards (total analyses, trend, current score)
-  - Custom tooltips with French date formatting
-  - Responsive design
-
-### Feb 24, 2026 - Bug Fix: React DOM Errors
-- **Issue:** Critical `NotFoundError: Failed to execute 'insertBefore' on 'Node'` error crashing the frontend
-- **Root Cause:** 
-  1. Invalid HTML nesting - Badge component rendering `<div>` inside `<p>` tags
-  2. Conflict between React 19 StrictMode and Radix UI Portal components (DropdownMenu, Dialog, etc.)
-- **Fixes Applied:**
-  - Modified `Badge` component (`/app/frontend/src/components/ui/badge.jsx`) to render `<span>` instead of `<div>`
-  - Changed `<p>` tags to `<div>` in `CompetitorComparisonPage.jsx` where Badge was used
-  - Disabled `React.StrictMode` temporarily in `index.js` due to known incompatibility with Radix UI Portals (React 19)
-- **Note:** StrictMode can be re-enabled when Radix UI v2+ resolves portal stability issues
-- **Testing:** All pages load without React DOM errors
+### Feb 22-23, 2026 - Bug Fixes
+- Fixed React DOM `insertBefore` error (Portal provider solution)
+- Fixed HTML nesting/hydration errors
+- Improved text contrast for readability
 
 ## Next Tasks
-1. **P0** - Stripe integration for subscription plans
-2. **P1** - Microsoft & LinkedIn SSO (requires API keys from user)
-3. Team/multi-user support
-4. Analysis completion notification email
-5. API access for Business plan
-6. Mobile optimization
+1. Team/multi-user support
+2. Analysis completion notification email
+3. API access for Business plan
+4. Mobile optimization
+5. Recharts dimension warning fix (low priority)
+
+## Key Files Modified
+- `/app/backend/server.py` - IAskan Verified GEO Protocol™ engine
+- `/app/frontend/src/pages/AnalysisPage.jsx` - Analysis V2 with indices
+- `/app/frontend/src/pages/DashboardPage.jsx` - Indices display
+- `/app/frontend/src/pages/LandingPage.jsx` - Protocol section
