@@ -840,6 +840,52 @@ const AnalysisPage = () => {
   }
 
   // Show new analysis form
+  if (starting) {
+    // Full-screen starting state
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]" data-testid="analysis-starting">
+          <Card className="p-8 max-w-lg w-full bg-white border-slate-100">
+            <div className="text-center space-y-6">
+              <div className="relative mx-auto w-24 h-24">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 animate-pulse opacity-30"></div>
+                <div className="absolute inset-3 rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 flex items-center justify-center">
+                  <Shield className="w-10 h-10 text-white" />
+                </div>
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-violet-600 border-r-cyan-600 animate-spin"></div>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                  Lancement de l'analyse IAskan Verified™
+                </h3>
+                <p className="text-slate-600 text-sm">
+                  Initialisation du protocole multi-IA en cours...
+                </p>
+              </div>
+              
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-violet-600 to-cyan-600 rounded-full animate-loading-bar"></div>
+              </div>
+              
+              <div className="flex flex-wrap justify-center gap-2 pt-2">
+                <span className="text-xs px-3 py-1.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700">
+                  Multi-runs (3x)
+                </span>
+                <span className="text-xs px-3 py-1.5 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-700">
+                  Multi-IA
+                </span>
+                <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
+                  Anti-hallucination
+                </span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-8" data-testid="analysis-page">
