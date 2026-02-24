@@ -376,53 +376,49 @@ const CompetitorComparisonPage = () => {
               </h3>
               
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left py-3 px-4 text-slate-500 font-medium">Marque</th>
-                      <th className="text-center py-3 px-4 text-slate-500 font-medium">ChatGPT</th>
-                      <th className="text-center py-3 px-4 text-slate-500 font-medium">Claude</th>
-                      <th className="text-center py-3 px-4 text-slate-500 font-medium">Gemini</th>
-                      <th className="text-center py-3 px-4 text-slate-500 font-medium">Moyenne</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(comparison.results.rankings || {})
-                      .sort((a, b) => a[1].rank - b[1].rank)
-                      .map(([brand, data]) => {
-                        const aiBreakdown = comparison.results.ai_breakdown || {};
-                        const chatgptScore = Math.round(aiBreakdown.chatgpt?.[brand] || 0);
-                        const claudeScore = Math.round(aiBreakdown.claude?.[brand] || 0);
-                        const geminiScore = Math.round(aiBreakdown.gemini?.[brand] || 0);
-                        
-                        return (
-                          <tr 
-                            key={brand} 
-                            className={`border-b border-slate-100 ${data.is_user_brand ? 'bg-violet-50' : ''}`}
-                          >
-                            <td className="py-4 px-4">
-                              <span className={`font-medium ${data.is_user_brand ? 'text-violet-700' : 'text-slate-900'}`}>
-                                {brand}
-                                {data.is_user_brand && <span className="ml-2 text-xs text-violet-500">(vous)</span>}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className={`font-semibold ${getScoreColor(chatgptScore)}`}>{chatgptScore}</span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className={`font-semibold ${getScoreColor(claudeScore)}`}>{claudeScore}</span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className={`font-semibold ${getScoreColor(geminiScore)}`}>{geminiScore}</span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className={`font-bold text-lg ${getScoreColor(data.score)}`}>{data.score}</span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
+                {/* Header Row */}
+                <div className="grid grid-cols-5 gap-4 border-b border-slate-200 pb-3 mb-2">
+                  <div className="text-left text-slate-500 font-medium px-4">Marque</div>
+                  <div className="text-center text-slate-500 font-medium px-4">ChatGPT</div>
+                  <div className="text-center text-slate-500 font-medium px-4">Claude</div>
+                  <div className="text-center text-slate-500 font-medium px-4">Gemini</div>
+                  <div className="text-center text-slate-500 font-medium px-4">Moyenne</div>
+                </div>
+                {/* Data Rows */}
+                {Object.entries(comparison.results.rankings || {})
+                  .sort((a, b) => a[1].rank - b[1].rank)
+                  .map(([brand, data]) => {
+                    const aiBreakdown = comparison.results.ai_breakdown || {};
+                    const chatgptScore = Math.round(aiBreakdown.chatgpt?.[brand] || 0);
+                    const claudeScore = Math.round(aiBreakdown.claude?.[brand] || 0);
+                    const geminiScore = Math.round(aiBreakdown.gemini?.[brand] || 0);
+                    
+                    return (
+                      <div 
+                        key={brand} 
+                        className={`grid grid-cols-5 gap-4 border-b border-slate-100 py-4 ${data.is_user_brand ? 'bg-violet-50 rounded-lg' : ''}`}
+                      >
+                        <div className="px-4">
+                          <span className={`font-medium ${data.is_user_brand ? 'text-violet-700' : 'text-slate-900'}`}>
+                            {brand}
+                            {data.is_user_brand && <span className="ml-2 text-xs text-violet-500">(vous)</span>}
+                          </span>
+                        </div>
+                        <div className="text-center px-4">
+                          <span className={`font-semibold ${getScoreColor(chatgptScore)}`}>{chatgptScore}</span>
+                        </div>
+                        <div className="text-center px-4">
+                          <span className={`font-semibold ${getScoreColor(claudeScore)}`}>{claudeScore}</span>
+                        </div>
+                        <div className="text-center px-4">
+                          <span className={`font-semibold ${getScoreColor(geminiScore)}`}>{geminiScore}</span>
+                        </div>
+                        <div className="text-center px-4">
+                          <span className={`font-bold text-lg ${getScoreColor(data.score)}`}>{data.score}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </Card>
 
