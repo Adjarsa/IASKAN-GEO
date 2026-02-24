@@ -227,3 +227,44 @@
 .shadow-medium {
   box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.04);
 }
+
+
+
+/* Loading bar animation */
+@keyframes loading-bar {
+  0% { 
+    width: 0%; 
+    margin-left: 0%;
+  }
+  50% { 
+    width: 60%; 
+    margin-left: 20%;
+  }
+  100% { 
+    width: 0%; 
+    margin-left: 100%;
+  }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 1.5s ease-in-out infinite;
+}
+
+/* Spinning ring for loader */
+@keyframes spin-ring {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin-ring 1s linear infinite;
+}
+
+/* Pulse animation for loading states */
+@keyframes pulse-loading {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-loading {
+  animation: pulse-loading 1.5s ease-in-out infinite;
+}
