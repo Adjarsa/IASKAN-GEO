@@ -39,6 +39,70 @@ const MagicLinkPage = () => {
     verifyToken();
   }, [token, navigate]);
 
+  const renderContent = () => {
+    if (status === "verifying") {
+      return (
+        <div key="verifying">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-violet-100 flex items-center justify-center">
+            <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-3">
+            Vérification en cours...
+          </h1>
+          <p className="text-slate-600">
+            Nous vérifions votre lien de connexion.
+          </p>
+        </div>
+      );
+    }
+    
+    if (status === "success") {
+      return (
+        <div key="success">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-100 flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-emerald-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-3">
+            Connexion réussie !
+          </h1>
+          <p className="text-slate-600 mb-4">
+            Vous allez être redirigé vers votre dashboard...
+          </p>
+          <div className="w-full bg-slate-200 rounded-full h-1 overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-violet-600 to-cyan-600"
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 2 }}
+            />
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div key="error">
+        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-100 flex items-center justify-center">
+          <XCircle className="w-8 h-8 text-red-600" />
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-3">
+          Lien invalide
+        </h1>
+        <p className="text-slate-600 mb-6">
+          {error}
+        </p>
+        <div className="space-y-3">
+          <Button
+            onClick={() => navigate("/login")}
+            className="w-full bg-gradient-to-r from-violet-600 to-cyan-600"
+          >
+            Retour à la connexion
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white relative overflow-hidden flex items-center justify-center px-4">
       {/* Background decorations */}
@@ -57,63 +121,7 @@ const MagicLinkPage = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-slate-100 text-center">
-          {status === "verifying" && (
-            <>
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-violet-100 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-violet-600 animate-spin" />
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-3">
-                Vérification en cours...
-              </h1>
-              <p className="text-slate-600">
-                Nous vérifions votre lien de connexion.
-              </p>
-            </>
-          )}
-
-          {status === "success" && (
-            <>
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-100 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-emerald-600" />
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-3">
-                Connexion réussie !
-              </h1>
-              <p className="text-slate-600 mb-4">
-                Vous allez être redirigé vers votre dashboard...
-              </p>
-              <div className="w-full bg-slate-200 rounded-full h-1 overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-violet-600 to-cyan-600"
-                  initial={{ width: "0%" }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 2 }}
-                />
-              </div>
-            </>
-          )}
-
-          {status === "error" && (
-            <>
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-100 flex items-center justify-center">
-                <XCircle className="w-8 h-8 text-red-600" />
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-3">
-                Lien invalide
-              </h1>
-              <p className="text-slate-600 mb-6">
-                {error}
-              </p>
-              <div className="space-y-3">
-                <Button
-                  onClick={() => navigate("/login")}
-                  className="w-full bg-gradient-to-r from-violet-600 to-cyan-600"
-                >
-                  Retour à la connexion
-                </Button>
-              </div>
-            </>
-          )}
+          {renderContent()}
         </div>
       </motion.div>
     </div>
