@@ -142,7 +142,7 @@ const LandingPage = () => {
               <span className="text-gradient">de l'Intelligence Artificielle</span>
             </h1>
             
-            <p className="text-xl text-slate-700 mb-10 max-w-2xl mx-auto">
+            <p className="text-xl text-slate-800 mb-10 max-w-2xl mx-auto">
               IAskan analyse votre visibilité dans ChatGPT, Claude, Gemini et Perplexity. 
               Optimisez votre présence pour être recommandé par les IA.
             </p>
