@@ -167,12 +167,15 @@ Email: Resend API
 
 ### Feb 24, 2026 - Bug Fix: React DOM Errors
 - **Issue:** Critical `NotFoundError: Failed to execute 'insertBefore' on 'Node'` error crashing the frontend
-- **Root Cause:** Invalid HTML nesting - Badge component rendering `<div>` inside `<p>` tags
+- **Root Cause:** 
+  1. Invalid HTML nesting - Badge component rendering `<div>` inside `<p>` tags
+  2. Conflict between React 19 StrictMode and Radix UI Portal components (DropdownMenu, Dialog, etc.)
 - **Fixes Applied:**
   - Modified `Badge` component (`/app/frontend/src/components/ui/badge.jsx`) to render `<span>` instead of `<div>`
   - Changed `<p>` tags to `<div>` in `CompetitorComparisonPage.jsx` where Badge was used
-  - Re-enabled `React.StrictMode` in `index.js` for better error detection
-- **Testing:** All 11 Playwright tests passed (100% success rate)
+  - Disabled `React.StrictMode` temporarily in `index.js` due to known incompatibility with Radix UI Portals (React 19)
+- **Note:** StrictMode can be re-enabled when Radix UI v2+ resolves portal stability issues
+- **Testing:** All pages load without React DOM errors
 
 ## Next Tasks
 1. **P0** - Stripe integration for subscription plans
