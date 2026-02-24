@@ -73,8 +73,8 @@ const RecommendationsPage = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Recommandations</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold text-slate-900">Recommandations</h1>
+            <p className="text-slate-700">
               Actions prioritaires pour améliorer votre score GEO
             </p>
           </div>
@@ -96,42 +96,42 @@ const RecommendationsPage = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="glass p-4">
+          <Card className="p-4 bg-white border-slate-100">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-destructive/20 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-destructive" />
+              <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">
-                  {recommendations.filter(r => r.priority === "high").length}
+                <p className="text-2xl font-bold text-slate-900">
+                  {recommendations.filter(r => r.priority === "high" || r.priority === "critical").length}
                 </p>
-                <p className="text-sm text-muted-foreground">Priorité haute</p>
+                <p className="text-sm text-slate-600">Priorité haute</p>
               </div>
             </div>
           </Card>
-          <Card className="glass p-4">
+          <Card className="p-4 bg-white border-slate-100">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-warning" />
+              <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-slate-900">
                   {recommendations.filter(r => r.priority === "medium").length}
                 </p>
-                <p className="text-sm text-muted-foreground">Priorité moyenne</p>
+                <p className="text-sm text-slate-600">Priorité moyenne</p>
               </div>
             </div>
           </Card>
-          <Card className="glass p-4">
+          <Card className="p-4 bg-white border-slate-100">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-success/20 flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-success" />
+              <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-slate-900">
                   {recommendations.filter(r => r.priority === "low").length}
                 </p>
-                <p className="text-sm text-muted-foreground">Priorité basse</p>
+                <p className="text-sm text-slate-600">Priorité basse</p>
               </div>
             </div>
           </Card>
@@ -145,49 +145,53 @@ const RecommendationsPage = () => {
               const Icon = config.icon;
               
               return (
-                <Card key={index} className="glass p-6">
+                <Card key={index} className="p-6 bg-white border-slate-100">
                   <div className="flex items-start gap-4">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      rec.priority === "high" ? "bg-destructive/20" :
-                      rec.priority === "medium" ? "bg-warning/20" :
-                      "bg-success/20"
+                      rec.priority === "high" || rec.priority === "critical" ? "bg-red-100" :
+                      rec.priority === "medium" ? "bg-amber-100" :
+                      "bg-emerald-100"
                     }`}>
                       <Icon className={`w-5 h-5 ${
-                        rec.priority === "high" ? "text-destructive" :
-                        rec.priority === "medium" ? "text-warning" :
-                        "text-success"
+                        rec.priority === "high" || rec.priority === "critical" ? "text-red-600" :
+                        rec.priority === "medium" ? "text-amber-600" :
+                        "text-emerald-600"
                       }`} />
                     </div>
                     
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-4 mb-2">
-                        <h3 className="text-lg font-semibold text-white">{rec.title}</h3>
-                        <Badge variant="outline" className={config.color}>
+                        <h3 className="text-lg font-semibold text-slate-900">{rec.title}</h3>
+                        <Badge variant="outline" className={`${
+                          rec.priority === "high" || rec.priority === "critical" ? "bg-red-50 text-red-700 border-red-200" :
+                          rec.priority === "medium" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                          "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        }`}>
                           Priorité {config.label.toLowerCase()}
                         </Badge>
                       </div>
                       
-                      <p className="text-muted-foreground mb-4">{rec.description}</p>
+                      <p className="text-slate-700 mb-4">{rec.description}</p>
                       
                       <div className="flex flex-wrap gap-4 text-sm">
                         <span className="flex items-center gap-1">
-                          <span className="text-muted-foreground">Impact:</span>
+                          <span className="text-slate-600">Impact:</span>
                           <span className={`font-medium ${
-                            rec.impact === "élevé" ? "text-success" :
-                            rec.impact === "moyen" ? "text-warning" :
-                            "text-muted-foreground"
+                            rec.impact === "critique" || rec.impact === "élevé" ? "text-emerald-600" :
+                            rec.impact === "moyen" ? "text-amber-600" :
+                            "text-slate-600"
                           }`}>
                             {rec.impact}
                           </span>
                         </span>
                         <span className="flex items-center gap-1">
-                          <span className="text-muted-foreground">Effort:</span>
-                          <span className="text-white">{rec.effort}</span>
+                          <span className="text-slate-600">Effort:</span>
+                          <span className="text-slate-800">{rec.effort}</span>
                         </span>
                         {rec.category && (
                           <span className="flex items-center gap-1">
-                            <span className="text-muted-foreground">Catégorie:</span>
-                            <span className="text-white capitalize">{rec.category}</span>
+                            <span className="text-slate-600">Catégorie:</span>
+                            <span className="text-slate-800 capitalize">{rec.category}</span>
                           </span>
                         )}
                       </div>
@@ -198,14 +202,14 @@ const RecommendationsPage = () => {
             })}
           </div>
         ) : (
-          <Card className="glass p-12 text-center">
-            <Target className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
+          <Card className="p-12 text-center bg-white border-slate-100">
+            <Target className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">
               {recommendations.length === 0 
                 ? "Aucune recommandation" 
                 : "Aucun résultat pour ce filtre"}
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-slate-600">
               {recommendations.length === 0 
                 ? "Lancez une analyse pour obtenir des recommandations personnalisées"
                 : "Essayez de modifier les filtres"}
