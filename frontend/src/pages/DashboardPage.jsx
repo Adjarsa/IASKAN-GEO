@@ -175,13 +175,31 @@ const DashboardPage = () => {
           <Card className="p-8 lg:col-span-2 bg-white border-slate-100">
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-1">Score GEO Global</h2>
-                <p className="text-slate-600 text-sm">Basé sur votre dernière analyse</p>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-slate-900 mb-1">Score GEO Global</h2>
+                  {latestAnalysis?.grade && (
+                    <span className={`text-lg font-bold px-2 py-0.5 rounded-md ${
+                      latestAnalysis.grade === 'A' ? 'bg-emerald-100 text-emerald-700' :
+                      latestAnalysis.grade === 'B' ? 'bg-cyan-100 text-cyan-700' :
+                      latestAnalysis.grade === 'C' ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {latestAnalysis.grade}
+                    </span>
+                  )}
+                </div>
+                <p className="text-slate-700 text-sm">Basé sur votre dernière analyse</p>
               </div>
               {latestAnalysis && (
-                <span className="text-xs text-slate-600">
-                  {new Date(latestAnalysis.created_at).toLocaleDateString("fr-FR")}
-                </span>
+                <div className="text-right">
+                  <Badge className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white border-0 text-xs mb-1">
+                    <Shield className="w-3 h-3 mr-1" />
+                    IAskan Verified™
+                  </Badge>
+                  <p className="text-xs text-slate-600">
+                    {new Date(latestAnalysis.created_at).toLocaleDateString("fr-FR")}
+                  </p>
+                </div>
               )}
             </div>
 
