@@ -167,6 +167,45 @@ const AnalysisPage = () => {
     );
   }
 
+  // Show error state if analysis failed to load
+  if (error && analysisId && !analysis) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-8" data-testid="analysis-error">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => navigate("/dashboard")} data-testid="back-btn">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Retour
+            </Button>
+            <h1 className="text-2xl font-bold text-slate-900">Analyse</h1>
+          </div>
+          
+          <Card className="p-8 max-w-2xl bg-white border-slate-100">
+            <div className="text-center">
+              <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">Erreur de chargement</h3>
+              <p className="text-slate-600 mb-6">{error}</p>
+              <div className="flex justify-center gap-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => fetchAnalysis(analysisId)}
+                >
+                  Réessayer
+                </Button>
+                <Button 
+                  onClick={() => navigate("/analysis")}
+                  className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700"
+                >
+                  Nouvelle analyse
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   // Show analysis results if we have an analysis
   if (analysis) {
     const indices = analysis.indices || {};
