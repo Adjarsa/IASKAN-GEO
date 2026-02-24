@@ -18,74 +18,98 @@ test.describe('Authenticated Pages - Dashboard & Analysis', () => {
     await dismissToasts(page);
   });
 
-  test.describe('Dashboard Page', () => {
+  test.describe('Project Selector Page', () => {
     
-    test('should load dashboard page for authenticated user', async ({ page }) => {
-      await page.goto('/dashboard');
+    test('should load project selector for authenticated user', async ({ page }) => {
+      await page.goto('/projects');
       await waitForAppReady(page);
       await hideEmergentBadge(page);
       
-      // Check for dashboard elements
+      // Check for project selector elements
+      await expect(page.getByText('Vos Projets')).toBeVisible();
+      await expect(page.getByText('Nouveau Projet')).toBeVisible();
+    });
+
+    test('should show test project in projects list', async ({ page }) => {
+      await page.goto('/projects');
+      await waitForAppReady(page);
+      await hideEmergentBadge(page);
+      
+      // Check for the test project
+      await expect(page.getByText('Test Project')).toBeVisible();
+      await expect(page.getByText('TestBrand')).toBeVisible();
+    });
+
+    test('should navigate to dashboard when selecting a project', async ({ page }) => {
+      await page.goto('/projects');
+      await waitForAppReady(page);
+      await hideEmergentBadge(page);
+      
+      // Click on the test project card
+      await page.getByText('Test Project').click();
+      
+      // Should navigate to dashboard
+      await page.waitForURL(/\/dashboard/);
+      await expect(page.getByTestId('dashboard-page')).toBeVisible();
+    });
+  });
+
+  test.describe('Dashboard Page', () => {
+    
+    test.beforeEach(async ({ page }) => {
+      // First select a project to access dashboard
+      await page.goto('/projects');
+      await waitForAppReady(page);
+      await hideEmergentBadge(page);
+      
+      // Click on the test project
+      await page.getByText('Test Project').click();
+      await page.waitForURL(/\/dashboard/);
+    });
+
+    test('should load dashboard page after selecting project', async ({ page }) => {
       await expect(page.getByTestId('dashboard-page')).toBeVisible();
     });
 
-    test('should display IAskan Verified indices section when data exists', async ({ page }) => {
-      await page.goto('/dashboard');
-      await waitForAppReady(page);
-      await hideEmergentBadge(page);
-      
-      // The indices section displays when latestAnalysis has indices
-      // Since we might not have analysis data, check for the "no analysis" state
-      // or indices section if data exists
-      const noAnalysisText = page.getByText('Aucune analyse effectuée');
-      const indicesSection = page.getByText('Indices IAskan Verified™');
-      
-      // Either indices section or "no analysis" message should be visible
-      const hasNoAnalysis = await noAnalysisText.isVisible().catch(() => false);
-      const hasIndices = await indicesSection.isVisible().catch(() => false);
-      
-      // At least one of these should be present
-      expect(hasNoAnalysis || hasIndices || true).toBeTruthy();
+    test('should display brand name on dashboard', async ({ page }) => {
+      await expect(page.getByRole('heading', { name: 'TestBrand' })).toBeVisible();
     });
 
     test('should have new analysis button', async ({ page }) => {
-      await page.goto('/dashboard');
-      await waitForAppReady(page);
-      await hideEmergentBadge(page);
-      
       await expect(page.getByTestId('new-analysis-btn')).toBeVisible();
     });
 
     test('should have refresh stats button', async ({ page }) => {
-      await page.goto('/dashboard');
-      await waitForAppReady(page);
-      await hideEmergentBadge(page);
-      
       await expect(page.getByTestId('refresh-stats')).toBeVisible();
+    });
+
+    test('should display IAskan Verified badge or no analysis message', async ({ page }) => {
+      // Either show indices section or no analysis message
+      const noAnalysisText = page.getByText('Aucune analyse effectuée');
+      const indicesBadge = page.getByText('IAskan Verified™');
+      
+      // One of these should be visible
+      const noAnalysisVisible = await noAnalysisText.isVisible().catch(() => false);
+      const badgeVisible = await indicesBadge.first().isVisible().catch(() => false);
+      
+      expect(noAnalysisVisible || badgeVisible).toBeTruthy();
     });
   });
 
-  test.describe('Analysis Page', () => {
+  test.describe('Analysis Page Structure', () => {
     
-    test('should navigate to analysis page from dashboard', async ({ page }) => {
-      await page.goto('/dashboard');
+    test.beforeEach(async ({ page }) => {
+      // First select a project
+      await page.goto('/projects');
       await waitForAppReady(page);
       await hideEmergentBadge(page);
-      
-      // Click new analysis button
-      await page.getByTestId('new-analysis-btn').click();
-      
-      // Should navigate to analysis page
-      await expect(page).toHaveURL(/\/analysis/);
+      await page.getByText('Test Project').click();
+      await page.waitForURL(/\/dashboard/);
     });
 
-    test('should load analysis page structure', async ({ page }) => {
-      await page.goto('/analysis');
-      await waitForAppReady(page);
-      await hideEmergentBadge(page);
-      
-      // Page should load without errors
-      await page.waitForLoadState('domcontentloaded');
+    test('should navigate to analysis page from dashboard', async ({ page }) => {
+      await page.getByTestId('new-analysis-btn').click();
+      await expect(page).toHaveURL(/\/analysis/);
     });
   });
 });
