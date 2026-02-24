@@ -150,7 +150,7 @@ const PricingPage = () => {
         {/* Current Plan Info */}
         {user && subscription && (
           <Card className="p-4 mb-8 max-w-md mx-auto text-center bg-violet-50 border-violet-100">
-            <p className="text-slate-600">
+            <p className="text-slate-700">
               Votre plan actuel :{" "}
               <span className="text-violet-700 font-semibold">
                 {subscription.plan?.charAt(0).toUpperCase() + subscription.plan?.slice(1)}
