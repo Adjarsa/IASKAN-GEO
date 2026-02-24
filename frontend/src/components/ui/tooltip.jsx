@@ -2,6 +2,7 @@ import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
+import { usePortalContainer } from "@/lib/portal-utils"
 
 const TooltipProvider = TooltipPrimitive.Provider
 
@@ -9,19 +10,10 @@ const Tooltip = TooltipPrimitive.Root
 
 const TooltipTrigger = TooltipPrimitive.Trigger
 
-// Fix for React 19 + Radix UI Portal conflict causing "insertBefore" error
 const TooltipContent = React.forwardRef(({ className, sideOffset = 4, ...props }, ref) => {
-  const [container, setContainer] = React.useState(null);
-  
-  React.useEffect(() => {
-    let portalContainer = document.getElementById('radix-portal-container');
-    if (!portalContainer) {
-      portalContainer = document.createElement('div');
-      portalContainer.id = 'radix-portal-container';
-      document.body.appendChild(portalContainer);
-    }
-    setContainer(portalContainer);
-  }, []);
+  const container = usePortalContainer();
+
+  if (!container) return null;
 
   return (
     <TooltipPrimitive.Portal container={container}>
