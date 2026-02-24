@@ -90,7 +90,7 @@ const DashboardLayout = ({ children }) => {
             <div className="px-4 mb-4">
               <div className="p-3 rounded-xl bg-gradient-to-br from-violet-50 to-cyan-50 border border-violet-100">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-slate-500 uppercase tracking-wide">Projet actif</span>
+                  <span className="text-xs text-slate-600 uppercase tracking-wide">Projet actif</span>
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -98,7 +98,7 @@ const DashboardLayout = ({ children }) => {
                     onClick={handleSwitchProject}
                     title="Changer de projet"
                   >
-                    <ArrowLeftRight className="w-3 h-3 text-slate-400" />
+                    <ArrowLeftRight className="w-3 h-3 text-slate-600" />
                   </Button>
                 </div>
                 <p className="font-semibold text-slate-900 truncate">{currentProject.name}</p>
@@ -146,7 +146,7 @@ const DashboardLayout = ({ children }) => {
                   Plan {subscription?.plan?.charAt(0).toUpperCase() + subscription?.plan?.slice(1) || "Starter"}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mb-3">
+              <p className="text-xs text-slate-600 mb-3">
                 {subscription?.queries_used || 0} / {subscription?.queries_limit || 300} requêtes
               </p>
               <Link to="/pricing">
@@ -183,7 +183,7 @@ const DashboardLayout = ({ children }) => {
               {currentProject && (
                 <>
                   <span className="text-slate-300">•</span>
-                  <span className="text-slate-500">{currentProject.brand_name}</span>
+                  <span className="text-slate-600">{currentProject.brand_name}</span>
                 </>
               )}
             </div>
@@ -199,13 +199,13 @@ const DashboardLayout = ({ children }) => {
                     </AvatarFallback>
                   </Avatar>
                   <span className="hidden md:block text-slate-700">{user?.name}</span>
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                  <ChevronDown className="w-4 h-4 text-slate-600" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-3 py-2">
                   <p className="text-sm font-medium text-slate-900">{user?.name}</p>
-                  <p className="text-xs text-slate-500">{user?.email}</p>
+                  <p className="text-xs text-slate-600">{user?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSwitchProject}>
