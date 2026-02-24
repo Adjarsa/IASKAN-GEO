@@ -6,6 +6,7 @@ import { useAuth, API } from "@/App";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Bot,
   Play,
@@ -13,7 +14,15 @@ import {
   XCircle,
   ArrowLeft,
   Download,
-  FileText
+  Shield,
+  TrendingUp,
+  Target,
+  Zap,
+  Award,
+  BarChart3,
+  Activity,
+  CheckCircle2,
+  AlertTriangle
 } from "lucide-react";
 
 const AnalysisPage = () => {
@@ -77,11 +86,10 @@ const AnalysisPage = () => {
         { withCredentials: true }
       );
       
-      toast.success("Analyse lancée !");
+      toast.success("Analyse IAskan Verified™ lancée !");
       navigate(`/analysis/${response.data.analysis_id}`);
     } catch (error) {
       console.error("Start analysis error:", error);
-      // Handle auth errors specifically
       if (error.response?.status === 401) {
         toast.error("Session expirée. Veuillez vous reconnecter.");
         return;
@@ -105,7 +113,6 @@ const AnalysisPage = () => {
         }
       );
       
-      // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -130,6 +137,23 @@ const AnalysisPage = () => {
     return "text-red-600";
   };
 
+  const getGradeColor = (grade) => {
+    const colors = {
+      "A": "bg-emerald-100 text-emerald-700 border-emerald-200",
+      "B": "bg-cyan-100 text-cyan-700 border-cyan-200",
+      "C": "bg-amber-100 text-amber-700 border-amber-200",
+      "D": "bg-orange-100 text-orange-700 border-orange-200",
+      "F": "bg-red-100 text-red-700 border-red-200"
+    };
+    return colors[grade] || "bg-slate-100 text-slate-700 border-slate-200";
+  };
+
+  const getStabilityStatus = (score) => {
+    if (score >= 80) return { label: "Élevée", color: "text-emerald-600", icon: CheckCircle2 };
+    if (score >= 60) return { label: "Moyenne", color: "text-amber-600", icon: Activity };
+    return { label: "Faible", color: "text-red-600", icon: AlertTriangle };
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -142,6 +166,12 @@ const AnalysisPage = () => {
 
   // Show analysis results if we have an analysis
   if (analysis) {
+    const indices = analysis.indices || {};
+    const stabilityData = analysis.stability_data || {};
+    const queryTypeBreakdown = analysis.query_type_breakdown || {};
+    const analysisSummary = analysis.analysis_summary || {};
+    const stabilityStatus = getStabilityStatus(indices.stability_index || 0);
+
     return (
       <DashboardLayout>
         <div className="space-y-8" data-testid="analysis-results">
@@ -153,8 +183,16 @@ const AnalysisPage = () => {
                 Retour
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">Résultats de l'analyse</h1>
-                <p className="text-slate-600 text-sm">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold text-slate-900">Résultats de l'analyse</h1>
+                  {analysis.status === "completed" && (
+                    <Badge className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white border-0 text-xs">
+                      <Shield className="w-3 h-3 mr-1" />
+                      IAskan Verified™
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-slate-700 text-sm">
                   {new Date(analysis.created_at).toLocaleDateString("fr-FR", {
                     day: "numeric",
                     month: "long",
@@ -166,7 +204,6 @@ const AnalysisPage = () => {
               </div>
             </div>
             
-            {/* Download PDF Button */}
             {analysis.status === "completed" && (
               <Button
                 onClick={downloadPDF}
@@ -189,61 +226,94 @@ const AnalysisPage = () => {
             )}
           </div>
 
-          {/* Status */}
+          {/* Status - Running */}
           {analysis.status === "running" && (
             <Card className="p-6 border-cyan-200 bg-cyan-50">
               <div className="flex items-center gap-4">
                 <Loader2 className="w-8 h-8 text-cyan-600 animate-spin" />
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900">Analyse en cours...</h3>
-                  <p className="text-slate-600">
-                    Interrogation des moteurs IA. Cela peut prendre quelques minutes.
+                  <h3 className="text-lg font-semibold text-slate-900">Analyse IAskan Verified™ en cours...</h3>
+                  <p className="text-slate-700">
+                    {analysis.current_phase === "query_generation" && "Génération des requêtes multi-dimensions..."}
+                    {analysis.current_phase === "ai_querying" && `Interrogation des moteurs IA (${analysis.queries_processed || 0}/${analysis.total_queries || '?'} requêtes)...`}
+                    {analysis.current_phase === "calculating_indices" && "Calcul des indices avancés..."}
+                    {!analysis.current_phase && "Protocole IAskan en cours d'exécution..."}
                   </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="text-xs px-2 py-1 rounded-full bg-cyan-100 text-cyan-700">Multi-runs (3x)</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-cyan-100 text-cyan-700">Multi-IA</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-cyan-100 text-cyan-700">Anti-hallucination</span>
+                  </div>
                 </div>
               </div>
             </Card>
           )}
 
+          {/* Status - Failed */}
           {analysis.status === "failed" && (
             <Card className="p-6 border-red-200 bg-red-50">
               <div className="flex items-center gap-4">
                 <XCircle className="w-8 h-8 text-red-600" />
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900">Analyse échouée</h3>
-                  <p className="text-slate-600">
-                    Une erreur s'est produite. Veuillez réessayer.
+                  <p className="text-slate-700">
+                    {analysis.error || "Une erreur s'est produite. Veuillez réessayer."}
                   </p>
                 </div>
               </div>
             </Card>
           )}
 
+          {/* Completed Results */}
           {analysis.status === "completed" && (
             <>
-              {/* Global Score */}
+              {/* Global Score + Grade */}
               <Card className="p-8 bg-white border-slate-100">
                 <div className="grid md:grid-cols-2 gap-8 items-center">
                   <div>
-                    <h2 className="text-xl font-semibold text-slate-900 mb-2">Score GEO Global</h2>
+                    <div className="flex items-center gap-3 mb-4">
+                      <h2 className="text-xl font-semibold text-slate-900">Score GEO Global</h2>
+                      {analysis.grade && (
+                        <span className={`text-2xl font-bold px-3 py-1 rounded-lg border ${getGradeColor(analysis.grade)}`}>
+                          {analysis.grade}
+                        </span>
+                      )}
+                    </div>
                     <div className={`text-7xl font-bold ${getScoreColor(analysis.global_score)}`}>
                       {Math.round(analysis.global_score)}
                     </div>
-                    <p className="text-slate-600 mt-2">sur 100</p>
+                    <p className="text-slate-700 mt-2">sur 100</p>
+                    
+                    {/* Protocol Badge */}
+                    <div className="mt-4 p-3 rounded-lg bg-gradient-to-r from-violet-50 to-cyan-50 border border-violet-100">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Shield className="w-4 h-4 text-violet-600" />
+                        <span className="font-medium text-slate-900">IAskan Verified GEO Protocol™</span>
+                      </div>
+                      <p className="text-xs text-slate-700 mt-1">
+                        {analysisSummary.total_queries || 0} requêtes × {analysisSummary.methodology?.runs_per_query || 3} runs × {analysisSummary.ai_engines_used?.length || 1} IAs
+                      </p>
+                    </div>
                   </div>
 
                   {/* R.A.T.E Breakdown */}
                   {analysis.rate_score && (
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-slate-600">Score R.A.T.E™</h3>
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-slate-700">Score R.A.T.E™</h3>
+                        <span className="text-xs text-slate-600">
+                          {analysis.rate_score.weights?.relevance} R | {analysis.rate_score.weights?.authority} A | {analysis.rate_score.weights?.truthfulness} T | {analysis.rate_score.weights?.endorsement} E
+                        </span>
+                      </div>
                       {[
-                        { key: "relevance", label: "Relevance", color: "bg-violet-500" },
-                        { key: "authority", label: "Authority", color: "bg-cyan-500" },
-                        { key: "truthfulness", label: "Truthfulness", color: "bg-emerald-500" },
-                        { key: "endorsement", label: "Endorsement", color: "bg-amber-500" }
+                        { key: "relevance", label: "Relevance", color: "bg-violet-500", desc: "Pertinence" },
+                        { key: "authority", label: "Authority", color: "bg-cyan-500", desc: "Autorité" },
+                        { key: "truthfulness", label: "Truthfulness", color: "bg-emerald-500", desc: "Véracité" },
+                        { key: "endorsement", label: "Endorsement", color: "bg-amber-500", desc: "Recommandation" }
                       ].map((item) => (
                         <div key={item.key} className="space-y-1">
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-600">{item.label}</span>
+                            <span className="text-slate-700">{item.label}</span>
                             <span className="text-slate-900 font-medium">
                               {Math.round(analysis.rate_score[item.key] || 0)}%
                             </span>
@@ -260,6 +330,65 @@ const AnalysisPage = () => {
                   )}
                 </div>
               </Card>
+
+              {/* Advanced Indices - IAskan Verified™ */}
+              {indices && Object.keys(indices).length > 0 && (
+                <Card className="p-6 bg-white border-slate-100">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Award className="w-5 h-5 text-violet-600" />
+                    <h3 className="text-lg font-semibold text-slate-900">Indices IAskan Verified™</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Stability Index */}
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-violet-50 to-violet-100 border border-violet-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <stabilityStatus.icon className={`w-4 h-4 ${stabilityStatus.color}`} />
+                        <span className="text-xs font-medium text-slate-700">Stability Index™</span>
+                      </div>
+                      <div className={`text-3xl font-bold ${stabilityStatus.color}`}>
+                        {Math.round(indices.stability_index || 0)}%
+                      </div>
+                      <p className="text-xs text-slate-600 mt-1">Cohérence: {stabilityStatus.label}</p>
+                    </div>
+                    
+                    {/* Dominance Index */}
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-4 h-4 text-cyan-600" />
+                        <span className="text-xs font-medium text-slate-700">Dominance Index™</span>
+                      </div>
+                      <div className={`text-3xl font-bold ${indices.dominance_index >= 50 ? 'text-cyan-600' : 'text-amber-600'}`}>
+                        {Math.round(indices.dominance_index || 0)}%
+                      </div>
+                      <p className="text-xs text-slate-600 mt-1">Position vs concurrents</p>
+                    </div>
+                    
+                    {/* Trust Gap */}
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="w-4 h-4 text-emerald-600" />
+                        <span className="text-xs font-medium text-slate-700">Trust Gap™</span>
+                      </div>
+                      <div className={`text-3xl font-bold ${indices.trust_gap >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {indices.trust_gap >= 0 ? '+' : ''}{Math.round(indices.trust_gap || 0)}
+                      </div>
+                      <p className="text-xs text-slate-600 mt-1">Écart de confiance</p>
+                    </div>
+                    
+                    {/* Opportunity Score */}
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="w-4 h-4 text-amber-600" />
+                        <span className="text-xs font-medium text-slate-700">Opportunity Score™</span>
+                      </div>
+                      <div className={`text-3xl font-bold ${indices.opportunity_score >= 50 ? 'text-amber-600' : 'text-slate-600'}`}>
+                        {Math.round(indices.opportunity_score || 0)}%
+                      </div>
+                      <p className="text-xs text-slate-600 mt-1">Potentiel d'amélioration</p>
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {/* AI Scores */}
               {analysis.ai_scores && Object.keys(analysis.ai_scores).length > 0 && (
@@ -282,13 +411,43 @@ const AnalysisPage = () => {
                           }`} />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm text-slate-600 capitalize">{ai}</p>
+                          <p className="text-sm text-slate-700 capitalize">{ai}</p>
                           <p className={`text-2xl font-bold ${getScoreColor(score)}`}>
                             {Math.round(score)}
                           </p>
                         </div>
                       </div>
                     ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Query Type Breakdown */}
+              {queryTypeBreakdown && Object.keys(queryTypeBreakdown).length > 0 && (
+                <Card className="p-6 bg-white border-slate-100">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-6">Analyse par type de requête</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {Object.entries(queryTypeBreakdown).map(([type, data]) => {
+                      const typeLabels = {
+                        transactional: { label: "Transactionnel", icon: "💳", color: "bg-violet-50 border-violet-200" },
+                        comparative: { label: "Comparatif", icon: "⚖️", color: "bg-cyan-50 border-cyan-200" },
+                        informational: { label: "Informationnel", icon: "📚", color: "bg-emerald-50 border-emerald-200" },
+                        local: { label: "Local", icon: "📍", color: "bg-amber-50 border-amber-200" },
+                        exploratory: { label: "Exploratoire", icon: "🔍", color: "bg-purple-50 border-purple-200" }
+                      };
+                      const typeInfo = typeLabels[type] || { label: type, icon: "📊", color: "bg-slate-50 border-slate-200" };
+                      
+                      return (
+                        <div key={type} className={`p-3 rounded-lg border ${typeInfo.color}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">{typeInfo.icon}</span>
+                            <span className="text-xs font-medium text-slate-700">{typeInfo.label}</span>
+                          </div>
+                          <div className="text-xl font-bold text-slate-900">{Math.round(data.avg_score || 0)}</div>
+                          <p className="text-xs text-slate-600">{data.count} requêtes • {Math.round(data.mention_rate || 0)}% mentions</p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </Card>
               )}
@@ -301,13 +460,26 @@ const AnalysisPage = () => {
                     {analysis.query_scores.map((query, index) => (
                       <div key={index} className="p-4 rounded-lg bg-slate-50 border border-slate-100">
                         <div className="flex items-start justify-between mb-3">
-                          <p className="text-slate-900 font-medium">{query.query_text}</p>
-                          <span className={`text-lg font-bold ${getScoreColor(query.avg_score)}`}>
-                            {Math.round(query.avg_score)}
-                          </span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-slate-900 font-medium">{query.query_text}</p>
+                              {query.stability?.consistent && (
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500" title="Résultats stables" />
+                              )}
+                            </div>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 capitalize">
+                              {query.query_type || "général"}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-lg font-bold ${getScoreColor(query.avg_score)}`}>
+                              {Math.round(query.avg_score)}
+                            </span>
+                            <p className="text-xs text-slate-600">{Math.round(query.mention_rate || 0)}% mentions</p>
+                          </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {query.responses?.map((resp, rIndex) => (
+                          {query.responses?.slice(0, 6).map((resp, rIndex) => (
                             <span
                               key={rIndex}
                               className={`text-xs px-2 py-1 rounded-full ${
@@ -316,9 +488,14 @@ const AnalysisPage = () => {
                                   : "bg-slate-200 text-slate-600"
                               }`}
                             >
-                              {resp.ai_type}: {resp.role || "absent"}
+                              {resp.ai_type} #{resp.run_id}: {resp.role || "absent"}
                             </span>
                           ))}
+                          {query.responses?.length > 6 && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600">
+                              +{query.responses.length - 6} autres
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -329,7 +506,7 @@ const AnalysisPage = () => {
               {/* Recommendations */}
               {analysis.recommendations && analysis.recommendations.length > 0 && (
                 <Card className="p-6 bg-white border-slate-100">
-                  <h3 className="text-lg font-semibold text-slate-900 mb-6">Recommandations</h3>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-6">Recommandations Prioritaires</h3>
                   <div className="space-y-3">
                     {analysis.recommendations.map((rec, index) => (
                       <div
@@ -337,12 +514,24 @@ const AnalysisPage = () => {
                         className={`recommendation-card priority-${rec.priority}`}
                       >
                         <div className="flex-1">
-                          <h4 className="text-slate-900 font-medium mb-1">{rec.title}</h4>
-                          <p className="text-sm text-slate-600">{rec.description}</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            {rec.priority === "critical" && <AlertTriangle className="w-4 h-4 text-red-500" />}
+                            <h4 className="text-slate-900 font-medium">{rec.title}</h4>
+                          </div>
+                          <p className="text-sm text-slate-700">{rec.description}</p>
+                          {rec.metrics_impacted && rec.metrics_impacted.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {rec.metrics_impacted.map((metric, mIdx) => (
+                                <span key={mIdx} className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                                  {metric}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div className="text-right space-y-1">
                           <span className={`text-xs px-2 py-1 rounded-full block ${
-                            rec.impact === "élevé" ? "bg-emerald-100 text-emerald-700" :
+                            rec.impact === "critique" || rec.impact === "élevé" ? "bg-emerald-100 text-emerald-700" :
                             rec.impact === "moyen" ? "bg-amber-100 text-amber-700" :
                             "bg-slate-100 text-slate-600"
                           }`}>
@@ -370,32 +559,64 @@ const AnalysisPage = () => {
       <div className="space-y-8" data-testid="analysis-page">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Nouvelle Analyse</h1>
-          <p className="text-slate-600">
-            Lancez une analyse GEO pour {currentProject?.brand_name}
+          <p className="text-slate-700">
+            Lancez une analyse GEO certifiée pour {currentProject?.brand_name}
           </p>
         </div>
 
         <Card className="p-8 max-w-2xl bg-white border-slate-100">
           <div className="space-y-6">
+            {/* Protocol Badge */}
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-violet-50 to-cyan-50 border border-violet-200">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">IAskan Verified GEO Protocol™</h3>
+                <p className="text-sm text-slate-700">Méthodologie certifiée multi-IA, multi-requêtes, multi-analyses</p>
+              </div>
+            </div>
+
             {/* Project Info */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-violet-50 to-cyan-50 border border-violet-100">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <h4 className="font-semibold text-slate-900 mb-2">{currentProject?.name}</h4>
               <p className="text-violet-600">{currentProject?.brand_name}</p>
               {currentProject?.keywords?.length > 0 && (
-                <p className="text-sm text-slate-600 mt-2">
+                <p className="text-sm text-slate-700 mt-2">
                   Mots-clés: {currentProject.keywords.join(", ")}
+                </p>
+              )}
+              {currentProject?.competitors?.length > 0 && (
+                <p className="text-sm text-slate-700 mt-1">
+                  Concurrents: {currentProject.competitors.join(", ")}
                 </p>
               )}
             </div>
 
+            {/* Protocol Features */}
             <div className="p-4 rounded-lg bg-cyan-50 border border-cyan-100">
-              <h4 className="text-cyan-700 font-medium mb-2">Ce que l'analyse va faire :</h4>
-              <ul className="text-sm text-slate-600 space-y-1">
-                <li>• Générer des requêtes représentatives de votre marché</li>
-                <li>• Interroger les moteurs IA (selon votre plan)</li>
-                <li>• Analyser les réponses pour détecter votre visibilité</li>
-                <li>• Calculer votre score R.A.T.E™</li>
-                <li>• Générer des recommandations prioritaires</li>
+              <h4 className="text-cyan-700 font-medium mb-3">Ce que le protocole IAskan va faire :</h4>
+              <ul className="text-sm text-slate-700 space-y-2">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                  <span><strong>Multi-runs (3x)</strong> - Chaque requête exécutée 3 fois avec variations pour mesurer la stabilité</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                  <span><strong>Multi-dimensions</strong> - Requêtes transactionnelles, comparatives, informationnelles, locales, exploratoires</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                  <span><strong>4 couches d'analyse</strong> - Présence, Rôle, Crédibilité, Conversion</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                  <span><strong>Indices avancés</strong> - Stability Index™, Dominance Index™, Trust Gap™, Opportunity Score™</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                  <span><strong>Anti-hallucination</strong> - Vérification automatique de la cohérence des réponses IA</span>
+                </li>
               </ul>
             </div>
 
@@ -409,12 +630,12 @@ const AnalysisPage = () => {
               {starting ? (
                 <span className="flex items-center">
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Lancement...
+                  Initialisation du protocole...
                 </span>
               ) : (
                 <span className="flex items-center">
                   <Play className="w-5 h-5 mr-2" />
-                  Lancer l'analyse
+                  Lancer l'analyse IAskan Verified™
                 </span>
               )}
             </Button>
