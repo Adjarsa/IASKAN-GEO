@@ -382,7 +382,7 @@ async def create_oauth_user_session(email: str, name: str, picture: str, provide
     
     # Send welcome email for new users (non-blocking)
     if is_new_user and RESEND_API_KEY:
-        frontend_url = "https://analyze-visibility.preview.emergentagent.com"
+        frontend_url = "https://geo-analysis-stage.preview.emergentagent.com"
         asyncio.create_task(send_welcome_email(email, name, frontend_url))
     
     return user_id, session_token
