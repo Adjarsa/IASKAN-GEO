@@ -209,9 +209,17 @@ const ProtectedRoute = ({ children }) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner w-12 h-12 mx-auto mb-4"></div>
-          <p className="text-slate-500">Chargement...</p>
+        <div className="text-center space-y-4">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 animate-pulse opacity-20"></div>
+            <div className="absolute inset-2 rounded-full bg-white flex items-center justify-center shadow-lg">
+              <div className="w-6 h-6 rounded-full border-2 border-violet-600 border-t-transparent animate-spin"></div>
+            </div>
+          </div>
+          <p className="text-slate-600 font-medium">Chargement...</p>
+          <div className="w-32 mx-auto bg-slate-100 rounded-full h-1 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-violet-600 to-cyan-600 rounded-full animate-loading-bar"></div>
+          </div>
         </div>
       </div>
     );
