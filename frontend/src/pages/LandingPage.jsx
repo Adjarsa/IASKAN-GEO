@@ -256,7 +256,7 @@ const LandingPage = () => {
                     <feature.icon className="w-6 h-6 text-violet-600" />
                   </div>
                   <h3 className="text-xl font-semibold text-slate-900 mb-2">{feature.title}</h3>
-                  <p className="text-slate-600">{feature.description}</p>
+                  <p className="text-slate-700">{feature.description}</p>
                 </Card>
               </motion.div>
             ))}
