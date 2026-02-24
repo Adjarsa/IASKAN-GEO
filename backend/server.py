@@ -1073,15 +1073,77 @@ async def delete_project(project_id: str, user: dict = Depends(get_current_user)
         raise HTTPException(status_code=404, detail="Projet non trouvé")
     return {"message": "Projet supprimé"}
 
-# ================== GEO ANALYSIS ENGINE ==================
+# ================== IAskan Verified GEO Protocol™ ENGINE ==================
+# Méthodologie certifiée multi-IA, multi-requêtes, multi-analyses
 
-async def query_ai_engine(query_text: str, brand_name: str, ai_type: str) -> Dict[str, Any]:
-    """Query a specific AI engine and analyze the response"""
+# Query type distribution for realistic simulation
+QUERY_TYPE_DISTRIBUTION = {
+    "transactional": 0.30,    # 30% - "acheter", "prix", "commander"
+    "comparative": 0.25,       # 25% - "vs", "comparaison", "meilleur"
+    "informational": 0.20,     # 20% - "qu'est-ce que", "comment"
+    "local": 0.15,             # 15% - "près de moi", "en France"
+    "exploratory": 0.10        # 10% - "recommandations", "suggestions"
+}
+
+# Query templates by type (French market focused)
+QUERY_TEMPLATES = {
+    "transactional": [
+        "Acheter {keyword} - meilleur prix",
+        "Commander {keyword} en ligne",
+        "Où acheter {keyword} pas cher ?",
+        "Prix {keyword} - comparatif",
+        "Devis {keyword} professionnel"
+    ],
+    "comparative": [
+        "Quel est le meilleur {keyword} ?",
+        "{keyword} : comparaison des solutions",
+        "Top 10 {keyword} en {year}",
+        "Alternative à {competitor} pour {keyword}",
+        "{brand} vs {competitor} : avis"
+    ],
+    "informational": [
+        "Qu'est-ce que {keyword} ?",
+        "Comment choisir un bon {keyword} ?",
+        "Guide complet {keyword}",
+        "Avis sur {keyword} - que vaut-il ?",
+        "Avantages et inconvénients {keyword}"
+    ],
+    "local": [
+        "Meilleur {keyword} en France",
+        "{keyword} entreprise française",
+        "Solution {keyword} européenne",
+        "{keyword} près de chez moi",
+        "Fournisseur {keyword} local"
+    ],
+    "exploratory": [
+        "Je cherche un {keyword}, que recommandez-vous ?",
+        "Suggestions pour {keyword}",
+        "Quelle solution {keyword} pour mon entreprise ?",
+        "Besoin de conseils sur {keyword}",
+        "Recommandations {keyword} B2B"
+    ]
+}
+
+# Query variations for multi-run stability
+QUERY_VARIATIONS = {
+    "short": lambda q: q.split(" - ")[0] if " - " in q else q[:50],
+    "long": lambda q: f"{q} - avis détaillé et recommandations professionnelles",
+    "conversational": lambda q: f"Salut ! {q} J'aimerais avoir ton avis.",
+    "question": lambda q: f"{q}" if q.endswith("?") else f"{q} ?",
+    "recommendation": lambda q: f"Peux-tu me recommander : {q}"
+}
+
+async def query_ai_engine_v2(query_text: str, brand_name: str, competitors: List[str], ai_type: str, run_id: int = 1) -> Dict[str, Any]:
+    """
+    IAskan Verified GEO Protocol™ - Advanced AI Query Engine
+    Performs semantic analysis across 4 layers: Presence, Role, Credibility, Conversion
+    """
     try:
-        session_id = f"geo_{uuid.uuid4().hex[:8]}"
+        session_id = f"geo_v2_{uuid.uuid4().hex[:8]}_{run_id}"
         
-        system_message = f"""Tu es un assistant qui répond aux questions des utilisateurs de manière naturelle et informative.
-Réponds à la question suivante de manière complète et objective, en mentionnant les marques ou entreprises pertinentes si applicable."""
+        system_message = """Tu es un assistant intelligent qui répond aux questions des utilisateurs de manière naturelle, 
+objective et informative. Réponds en mentionnant les marques, entreprises ou solutions pertinentes si applicable. 
+Sois précis et factuel dans tes recommandations."""
         
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
@@ -1097,158 +1159,646 @@ Réponds à la question suivante de manière complète et objective, en mentionn
         elif ai_type == "gemini":
             chat.with_model("gemini", "gemini-3-flash-preview")
         elif ai_type == "perplexity":
-            # Use OpenAI as fallback for perplexity simulation
             chat.with_model("openai", "gpt-4o")
         else:
             chat.with_model("openai", "gpt-5.2")
         
         user_message = UserMessage(text=query_text)
         response = await chat.send_message(user_message)
-        
-        # Analyze response for brand visibility
-        response_lower = response.lower()
+        response_text = response if isinstance(response, str) else str(response)
+        response_lower = response_text.lower()
         brand_lower = brand_name.lower()
         
-        # Check if brand is mentioned
+        # ===== LAYER 1: PRESENCE ANALYSIS =====
         brand_mentioned = brand_lower in response_lower
+        mention_count = response_lower.count(brand_lower)
+        first_position = response_lower.find(brand_lower) if brand_mentioned else -1
+        response_length = len(response_lower)
+        position_ratio = (first_position / response_length) if brand_mentioned and response_length > 0 else 1.0
         
-        # Determine role
+        # ===== LAYER 2: ROLE ANALYSIS =====
         role = "absent"
-        role_weight = 0.0
+        role_score = 0.0
         
         if brand_mentioned:
-            # Check position
-            first_mention = response_lower.find(brand_lower)
-            total_len = len(response_lower)
-            position_ratio = first_mention / total_len if total_len > 0 else 1
+            # Analyze surrounding context for role determination
+            context_start = max(0, first_position - 100)
+            context_end = min(response_length, first_position + 200)
+            context = response_lower[context_start:context_end]
             
-            if position_ratio < 0.2:
+            # Top recommendation indicators
+            top_indicators = ["meilleur", "leader", "recommande", "premier", "numéro 1", "#1", "top", "incontournable", "référence"]
+            shortlist_indicators = ["également", "aussi", "autre option", "alternative", "parmi les", "fait partie"]
+            comparison_indicators = ["comparé", "versus", "vs", "face à", "contrairement", "différent"]
+            negative_indicators = ["éviter", "déconseille", "problème", "inconvénient", "moins bon", "attention"]
+            
+            has_top = any(ind in context for ind in top_indicators)
+            has_shortlist = any(ind in context for ind in shortlist_indicators)
+            has_comparison = any(ind in context for ind in comparison_indicators)
+            has_negative = any(ind in context for ind in negative_indicators)
+            
+            if has_negative:
+                role = "discouraged"
+                role_score = 0.1
+            elif position_ratio < 0.15 and has_top:
                 role = "top_recommendation"
-                role_weight = 1.0
-            elif position_ratio < 0.5:
+                role_score = 1.0
+            elif position_ratio < 0.30 and (has_top or has_shortlist):
                 role = "shortlist"
-                role_weight = 0.85
-            elif "recommend" in response_lower or "conseille" in response_lower:
+                role_score = 0.85
+            elif position_ratio < 0.50 or has_shortlist:
                 role = "comparison"
-                role_weight = 0.65
+                role_score = 0.60
+            elif has_comparison:
+                role = "mentioned"
+                role_score = 0.40
             else:
-                role = "mention"
-                role_weight = 0.4
+                role = "cited"
+                role_score = 0.25
         
-        # Count mentions
-        mention_count = response_lower.count(brand_lower)
+        # ===== LAYER 3: CREDIBILITY ANALYSIS =====
+        credibility_score = 50.0  # Base score
+        credibility_factors = []
+        
+        # Check for credibility signals around brand mention
+        if brand_mentioned:
+            credibility_signals = {
+                "numbers": any(char.isdigit() for char in response_text),
+                "statistics": any(word in response_lower for word in ["étude", "recherche", "statistique", "pourcentage", "%", "données"]),
+                "testimonials": any(word in response_lower for word in ["avis", "témoignage", "utilisateur", "client", "retour"]),
+                "certifications": any(word in response_lower for word in ["certifié", "certification", "norme", "iso", "agréé"]),
+                "facts": any(word in response_lower for word in ["fondé en", "depuis", "année", "expérience", "historique"]),
+                "sources": any(word in response_lower for word in ["selon", "d'après", "source", "rapport", "étude"])
+            }
+            
+            for signal, present in credibility_signals.items():
+                if present:
+                    credibility_score += 8
+                    credibility_factors.append(signal)
+            
+            credibility_score = min(100, credibility_score)
+        
+        # ===== LAYER 4: CONVERSION ANALYSIS =====
+        conversion_score = 0.0
+        conversion_signals = []
+        
+        if brand_mentioned:
+            # Check for conversion-oriented language
+            conversion_indicators = {
+                "cta": any(word in response_lower for word in ["essayer", "tester", "visiter", "contacter", "découvrir"]),
+                "urgency": any(word in response_lower for word in ["maintenant", "aujourd'hui", "profiter", "offre"]),
+                "benefit": any(word in response_lower for word in ["avantage", "bénéfice", "économie", "gain", "amélioration"]),
+                "trust": any(word in response_lower for word in ["fiable", "confiance", "sécurisé", "garanti"]),
+                "social_proof": any(word in response_lower for word in ["populaire", "utilisé par", "choisi par", "apprécié"])
+            }
+            
+            for signal, present in conversion_indicators.items():
+                if present:
+                    conversion_score += 20
+                    conversion_signals.append(signal)
+            
+            # Boost based on role
+            if role == "top_recommendation":
+                conversion_score += 30
+            elif role == "shortlist":
+                conversion_score += 15
+            
+            conversion_score = min(100, conversion_score)
+        
+        # ===== ANTI-HALLUCINATION CHECK =====
+        hallucination_flags = []
+        hallucination_penalty = 0
+        
+        # Check for inconsistencies
+        if brand_mentioned:
+            # Check if brand is mentioned but with conflicting info
+            if "n'existe pas" in response_lower or "ne connais pas" in response_lower:
+                hallucination_flags.append("existence_doubt")
+                hallucination_penalty += 30
+            
+            # Check for contradictions
+            if ("meilleur" in response_lower and "éviter" in response_lower):
+                hallucination_flags.append("contradiction")
+                hallucination_penalty += 20
+        
+        # ===== COMPETITOR ANALYSIS =====
+        competitor_positions = {}
+        for comp in competitors[:5]:  # Limit to top 5 competitors
+            comp_lower = comp.lower()
+            if comp_lower in response_lower:
+                comp_pos = response_lower.find(comp_lower)
+                comp_ratio = comp_pos / response_length if response_length > 0 else 1
+                competitor_positions[comp] = {
+                    "mentioned": True,
+                    "position_ratio": round(comp_ratio, 3),
+                    "before_brand": comp_pos < first_position if brand_mentioned else True
+                }
+            else:
+                competitor_positions[comp] = {"mentioned": False, "position_ratio": 1.0, "before_brand": False}
         
         return {
             "ai_type": ai_type,
-            "response_text": response[:500],  # Truncate for storage
+            "run_id": run_id,
+            "query_text": query_text[:200],
+            "response_excerpt": response_text[:500],
+            "response_length": response_length,
+            # Layer 1: Presence
             "brand_mentioned": brand_mentioned,
-            "role": role,
-            "role_weight": role_weight,
             "mention_count": mention_count,
-            "response_length": len(response),
+            "first_position": first_position,
+            "position_ratio": round(position_ratio, 3),
+            # Layer 2: Role
+            "role": role,
+            "role_score": round(role_score, 2),
+            # Layer 3: Credibility
+            "credibility_score": round(credibility_score, 1),
+            "credibility_factors": credibility_factors,
+            # Layer 4: Conversion
+            "conversion_score": round(conversion_score, 1),
+            "conversion_signals": conversion_signals,
+            # Anti-hallucination
+            "hallucination_flags": hallucination_flags,
+            "hallucination_penalty": hallucination_penalty,
+            # Competitors
+            "competitor_analysis": competitor_positions,
+            # Metadata
             "analyzed_at": datetime.now(timezone.utc).isoformat()
         }
+        
     except Exception as e:
-        logger.error(f"Error querying {ai_type}: {e}")
+        logger.error(f"Error querying {ai_type} (run {run_id}): {e}")
         return {
             "ai_type": ai_type,
+            "run_id": run_id,
             "error": str(e),
             "brand_mentioned": False,
             "role": "error",
-            "role_weight": 0.0,
-            "mention_count": 0
+            "role_score": 0.0,
+            "credibility_score": 0.0,
+            "conversion_score": 0.0
         }
 
-def calculate_rate_score(ai_responses: List[Dict[str, Any]]) -> Dict[str, float]:
-    """Calculate R.A.T.E score from AI responses"""
-    if not ai_responses:
-        return {"relevance": 0, "authority": 0, "truthfulness": 0, "endorsement": 0, "total": 0}
+
+def generate_queries_multi_dimension(brand_name: str, keywords: List[str], competitors: List[str], num_queries: int = 15) -> List[Dict[str, Any]]:
+    """
+    IAskan Verified GEO Protocol™ - Multi-dimension Query Generator
+    Distributes queries across: 30% transactional, 25% comparative, 20% informational, 15% local, 10% exploratory
+    """
+    import random
+    from datetime import datetime
     
-    valid_responses = [r for r in ai_responses if r.get("role") != "error"]
+    queries = []
+    current_year = datetime.now().year
+    
+    # Calculate queries per type based on distribution
+    type_counts = {
+        qtype: max(1, int(num_queries * ratio))
+        for qtype, ratio in QUERY_TYPE_DISTRIBUTION.items()
+    }
+    
+    # Ensure we hit the target number
+    total = sum(type_counts.values())
+    if total < num_queries:
+        type_counts["comparative"] += num_queries - total
+    
+    for query_type, count in type_counts.items():
+        templates = QUERY_TEMPLATES.get(query_type, QUERY_TEMPLATES["informational"])
+        
+        for i in range(count):
+            # Select template
+            template = random.choice(templates)
+            
+            # Fill in template variables
+            keyword = random.choice(keywords) if keywords else "solution"
+            competitor = random.choice(competitors) if competitors else "concurrent"
+            
+            query_text = template.format(
+                keyword=keyword,
+                brand=brand_name,
+                competitor=competitor,
+                year=current_year
+            )
+            
+            queries.append({
+                "text": query_text,
+                "type": query_type,
+                "keyword": keyword,
+                "intent": query_type,
+                "variations": []
+            })
+    
+    # Generate variations for each query (for multi-run stability)
+    for query in queries:
+        base_text = query["text"]
+        query["variations"] = [
+            QUERY_VARIATIONS["short"](base_text),
+            QUERY_VARIATIONS["conversational"](base_text),
+            QUERY_VARIATIONS["question"](base_text)
+        ]
+    
+    return queries[:num_queries]
+
+
+def calculate_stability_index(multi_run_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    IAskan Verified GEO Protocol™ - Stability Index™
+    Measures consistency of AI responses across multiple runs
+    """
+    if not multi_run_results or len(multi_run_results) < 2:
+        return {"stability_score": 100.0, "variance": 0.0, "status": "insufficient_data"}
+    
+    # Group results by AI type
+    ai_groups = {}
+    for result in multi_run_results:
+        ai_type = result.get("ai_type", "unknown")
+        if ai_type not in ai_groups:
+            ai_groups[ai_type] = []
+        ai_groups[ai_type].append(result)
+    
+    stability_metrics = {
+        "per_ai": {},
+        "overall_variance": 0.0,
+        "role_consistency": 0.0,
+        "mention_consistency": 0.0
+    }
+    
+    total_variance = 0
+    total_groups = 0
+    roles_consistent = 0
+    mentions_consistent = 0
+    
+    for ai_type, results in ai_groups.items():
+        if len(results) < 2:
+            continue
+        
+        # Calculate role consistency
+        roles = [r.get("role", "absent") for r in results]
+        role_variance = len(set(roles)) / len(roles)  # 1.0 = all different, lower = more consistent
+        
+        # Calculate mention consistency
+        mentions = [r.get("brand_mentioned", False) for r in results]
+        mention_variance = len(set(mentions)) / len(mentions)
+        
+        # Calculate score variance
+        scores = [r.get("role_score", 0) for r in results]
+        avg_score = sum(scores) / len(scores)
+        score_variance = sum((s - avg_score) ** 2 for s in scores) / len(scores)
+        
+        # Per-AI stability
+        ai_stability = 100 - (role_variance * 30 + mention_variance * 30 + min(score_variance * 10, 40))
+        
+        stability_metrics["per_ai"][ai_type] = {
+            "stability": round(max(0, ai_stability), 1),
+            "role_variance": round(role_variance, 2),
+            "mention_variance": round(mention_variance, 2),
+            "runs_analyzed": len(results)
+        }
+        
+        total_variance += (role_variance + mention_variance + score_variance) / 3
+        total_groups += 1
+        
+        if role_variance < 0.5:
+            roles_consistent += 1
+        if mention_variance < 0.5:
+            mentions_consistent += 1
+    
+    # Calculate overall stability
+    if total_groups > 0:
+        avg_variance = total_variance / total_groups
+        stability_metrics["overall_variance"] = round(avg_variance, 3)
+        stability_metrics["role_consistency"] = round((roles_consistent / total_groups) * 100, 1)
+        stability_metrics["mention_consistency"] = round((mentions_consistent / total_groups) * 100, 1)
+    
+    # Final stability score (0-100)
+    stability_score = 100 - (stability_metrics["overall_variance"] * 100)
+    stability_score = max(0, min(100, stability_score))
+    
+    # Determine status
+    if stability_score >= 80:
+        status = "high"
+    elif stability_score >= 60:
+        status = "medium"
+    else:
+        status = "low"
+    
+    return {
+        "stability_score": round(stability_score, 1),
+        "variance": stability_metrics["overall_variance"],
+        "status": status,
+        "role_consistency": stability_metrics["role_consistency"],
+        "mention_consistency": stability_metrics["mention_consistency"],
+        "per_ai_stability": stability_metrics["per_ai"],
+        "total_runs_analyzed": len(multi_run_results)
+    }
+
+
+def calculate_advanced_indices(all_responses: List[Dict[str, Any]], brand_name: str, competitors: List[str]) -> Dict[str, Any]:
+    """
+    IAskan Verified GEO Protocol™ - Advanced Indices Calculator
+    Calculates: Stability Index™, Dominance Index™, Trust Gap™, Opportunity Score™
+    """
+    indices = {
+        "stability_index": 0.0,
+        "dominance_index": 0.0,
+        "trust_gap": 0.0,
+        "opportunity_score": 0.0
+    }
+    
+    if not all_responses:
+        return indices
+    
+    valid_responses = [r for r in all_responses if r.get("role") != "error"]
     if not valid_responses:
-        return {"relevance": 0, "authority": 0, "truthfulness": 0, "endorsement": 0, "total": 0}
+        return indices
     
-    # Relevance: based on mention rate
+    # ===== DOMINANCE INDEX™ =====
+    # Measures how often brand appears before competitors
+    dominance_scores = []
+    for resp in valid_responses:
+        if resp.get("brand_mentioned"):
+            comp_analysis = resp.get("competitor_analysis", {})
+            competitors_before = sum(1 for c, data in comp_analysis.items() if data.get("before_brand", False))
+            total_comps = len(comp_analysis)
+            if total_comps > 0:
+                dominance = 100 - (competitors_before / total_comps * 100)
+                dominance_scores.append(dominance)
+    
+    indices["dominance_index"] = round(sum(dominance_scores) / len(dominance_scores), 1) if dominance_scores else 0.0
+    
+    # ===== TRUST GAP™ =====
+    # Measures credibility gap vs competitors
+    brand_credibility = [r.get("credibility_score", 0) for r in valid_responses if r.get("brand_mentioned")]
+    avg_brand_credibility = sum(brand_credibility) / len(brand_credibility) if brand_credibility else 0
+    
+    # Estimate competitor credibility (simplified - based on mention frequency)
+    competitor_mentions = 0
+    for resp in valid_responses:
+        comp_analysis = resp.get("competitor_analysis", {})
+        competitor_mentions += sum(1 for c, data in comp_analysis.items() if data.get("mentioned", False))
+    
+    avg_competitor_presence = (competitor_mentions / (len(valid_responses) * len(competitors))) * 100 if competitors else 0
+    indices["trust_gap"] = round(avg_brand_credibility - avg_competitor_presence, 1)
+    
+    # ===== OPPORTUNITY SCORE™ =====
+    # Measures potential for improvement
+    low_score_queries = sum(1 for r in valid_responses if r.get("role_score", 0) < 0.5)
+    absent_queries = sum(1 for r in valid_responses if r.get("role") == "absent")
+    
+    # High opportunity = many queries where brand is absent or low-ranked
+    opportunity_base = ((absent_queries + low_score_queries) / len(valid_responses)) * 100
+    
+    # Boost opportunity if competitors have weak presence too
+    weak_competitor_queries = 0
+    for resp in valid_responses:
+        comp_analysis = resp.get("competitor_analysis", {})
+        if all(not data.get("mentioned", False) for data in comp_analysis.values()):
+            weak_competitor_queries += 1
+    
+    opportunity_boost = (weak_competitor_queries / len(valid_responses)) * 20 if valid_responses else 0
+    indices["opportunity_score"] = round(min(100, opportunity_base + opportunity_boost), 1)
+    
+    return indices
+
+
+def calculate_rate_score_v2(all_responses: List[Dict[str, Any]], stability_data: Dict[str, Any]) -> Dict[str, float]:
+    """
+    IAskan Verified GEO Protocol™ - R.A.T.E.™ Score Calculator (Enhanced)
+    Weights: Relevance 30%, Authority 25%, Truthfulness 20%, Endorsement 25%
+    """
+    if not all_responses:
+        return {"relevance": 0, "authority": 0, "truthfulness": 0, "endorsement": 0, "total": 0, "grade": "F"}
+    
+    valid_responses = [r for r in all_responses if r.get("role") != "error"]
+    if not valid_responses:
+        return {"relevance": 0, "authority": 0, "truthfulness": 0, "endorsement": 0, "total": 0, "grade": "F"}
+    
+    # ===== RELEVANCE (30%) =====
+    # Based on mention rate and position quality
     mentioned = sum(1 for r in valid_responses if r.get("brand_mentioned", False))
-    relevance = (mentioned / len(valid_responses)) * 100
+    mention_rate = (mentioned / len(valid_responses)) * 100
     
-    # Authority: based on role weight
-    authority = sum(r.get("role_weight", 0) for r in valid_responses) / len(valid_responses) * 100
+    # Position quality bonus
+    position_scores = [1 - r.get("position_ratio", 1) for r in valid_responses if r.get("brand_mentioned")]
+    avg_position_score = (sum(position_scores) / len(position_scores)) * 100 if position_scores else 0
     
-    # Truthfulness: assume high if no errors
-    truthfulness = 85.0  # Base score
+    relevance = (mention_rate * 0.6) + (avg_position_score * 0.4)
     
-    # Endorsement: based on top recommendations
+    # ===== AUTHORITY (25%) =====
+    # Based on role weight and credibility factors
+    role_scores = [r.get("role_score", 0) for r in valid_responses]
+    avg_role = (sum(role_scores) / len(role_scores)) * 100
+    
+    credibility_scores = [r.get("credibility_score", 50) for r in valid_responses if r.get("brand_mentioned")]
+    avg_credibility = sum(credibility_scores) / len(credibility_scores) if credibility_scores else 50
+    
+    authority = (avg_role * 0.5) + (avg_credibility * 0.5)
+    
+    # ===== TRUTHFULNESS (20%) =====
+    # Based on credibility analysis and anti-hallucination checks
+    base_truthfulness = 85.0
+    
+    # Penalty for hallucinations
+    hallucination_penalties = sum(r.get("hallucination_penalty", 0) for r in valid_responses)
+    truthfulness = max(0, base_truthfulness - (hallucination_penalties / len(valid_responses)))
+    
+    # Bonus for credibility factors
+    all_credibility_factors = []
+    for r in valid_responses:
+        all_credibility_factors.extend(r.get("credibility_factors", []))
+    
+    unique_factors = len(set(all_credibility_factors))
+    truthfulness = min(100, truthfulness + (unique_factors * 2))
+    
+    # ===== ENDORSEMENT (25%) =====
+    # Based on top recommendations and conversion potential
     top_recs = sum(1 for r in valid_responses if r.get("role") == "top_recommendation")
-    endorsement = (top_recs / len(valid_responses)) * 100
+    shortlists = sum(1 for r in valid_responses if r.get("role") == "shortlist")
     
-    total = (relevance * 0.35 + authority * 0.20 + truthfulness * 0.15 + endorsement * 0.30)
+    endorsement_base = ((top_recs * 2 + shortlists) / len(valid_responses)) * 100
+    
+    # Conversion score bonus
+    conversion_scores = [r.get("conversion_score", 0) for r in valid_responses if r.get("brand_mentioned")]
+    avg_conversion = sum(conversion_scores) / len(conversion_scores) if conversion_scores else 0
+    
+    endorsement = (endorsement_base * 0.6) + (avg_conversion * 0.4)
+    
+    # ===== STABILITY ADJUSTMENT =====
+    stability_score = stability_data.get("stability_score", 100)
+    stability_factor = stability_score / 100
+    
+    # ===== TOTAL SCORE (Weighted) =====
+    total = (
+        relevance * 0.30 +
+        authority * 0.25 +
+        truthfulness * 0.20 +
+        endorsement * 0.25
+    ) * stability_factor
+    
+    # Determine grade
+    if total >= 80:
+        grade = "A"
+    elif total >= 65:
+        grade = "B"
+    elif total >= 50:
+        grade = "C"
+    elif total >= 35:
+        grade = "D"
+    else:
+        grade = "F"
     
     return {
         "relevance": round(relevance, 1),
         "authority": round(authority, 1),
         "truthfulness": round(truthfulness, 1),
         "endorsement": round(endorsement, 1),
-        "total": round(total, 1)
+        "total": round(total, 1),
+        "grade": grade,
+        "weights": {
+            "relevance": "30%",
+            "authority": "25%",
+            "truthfulness": "20%",
+            "endorsement": "25%"
+        }
     }
 
-def generate_recommendations(rate_score: Dict[str, float], ai_scores: Dict[str, float]) -> List[Dict[str, Any]]:
-    """Generate actionable recommendations based on scores"""
+
+def generate_recommendations_v2(
+    rate_score: Dict[str, float],
+    ai_scores: Dict[str, float],
+    indices: Dict[str, Any],
+    stability_data: Dict[str, Any]
+) -> List[Dict[str, Any]]:
+    """
+    IAskan Verified GEO Protocol™ - Advanced Recommendations Generator
+    Generates actionable, prioritized recommendations based on comprehensive analysis
+    """
     recommendations = []
     
-    if rate_score.get("relevance", 0) < 50:
+    # Priority 1: Stability issues
+    if stability_data.get("stability_score", 100) < 60:
+        recommendations.append({
+            "priority": "critical",
+            "category": "stability",
+            "title": "Améliorer la cohérence des réponses IA",
+            "description": f"Votre Stability Index™ est de {stability_data.get('stability_score', 0)}%. Les IAs donnent des réponses incohérentes sur votre marque. Standardisez votre présence en ligne avec des informations uniformes.",
+            "impact": "critique",
+            "effort": "moyen",
+            "metrics_impacted": ["stability_index", "trustworthiness"]
+        })
+    
+    # Priority 2: Low visibility
+    if rate_score.get("relevance", 0) < 40:
         recommendations.append({
             "priority": "high",
             "category": "visibility",
-            "title": "Améliorer la visibilité de marque",
-            "description": "Votre marque n'apparaît pas suffisamment dans les réponses IA. Créez plus de contenu mentionnant votre marque avec des cas d'usage concrets.",
+            "title": "Augmenter la visibilité de marque",
+            "description": f"Score de pertinence: {rate_score.get('relevance', 0)}%. Votre marque n'apparaît pas suffisamment dans les réponses IA. Créez du contenu optimisé GEO avec des cas d'usage concrets et des témoignages clients.",
             "impact": "élevé",
-            "effort": "moyen"
+            "effort": "moyen",
+            "metrics_impacted": ["relevance", "mention_rate"]
         })
     
-    if rate_score.get("authority", 0) < 60:
+    # Priority 3: Low authority
+    if rate_score.get("authority", 0) < 50:
         recommendations.append({
             "priority": "high",
             "category": "authority",
-            "title": "Renforcer l'autorité",
-            "description": "Ajoutez des preuves de crédibilité : études de cas, témoignages, certifications, mentions presse.",
+            "title": "Renforcer l'autorité de marque",
+            "description": f"Score d'autorité: {rate_score.get('authority', 0)}%. Ajoutez des signaux de crédibilité: études de cas chiffrées, certifications, mentions presse, témoignages vérifiables.",
             "impact": "élevé",
-            "effort": "faible"
+            "effort": "faible",
+            "metrics_impacted": ["authority", "credibility"]
         })
     
-    if rate_score.get("endorsement", 0) < 40:
+    # Priority 4: Low endorsement
+    if rate_score.get("endorsement", 0) < 35:
         recommendations.append({
-            "priority": "medium",
+            "priority": "high",
             "category": "endorsement",
             "title": "Optimiser pour les recommandations",
-            "description": "Créez du contenu comparatif où votre marque est positionnée comme solution de référence.",
+            "description": f"Score d'endorsement: {rate_score.get('endorsement', 0)}%. Positionnez votre marque comme référence en créant du contenu comparatif objectif et des guides de décision.",
             "impact": "élevé",
-            "effort": "moyen"
+            "effort": "moyen",
+            "metrics_impacted": ["endorsement", "conversion"]
+        })
+    
+    # Priority 5: Dominance issues
+    if indices.get("dominance_index", 0) < 50:
+        recommendations.append({
+            "priority": "medium",
+            "category": "competitive",
+            "title": "Améliorer le positionnement concurrentiel",
+            "description": f"Dominance Index™: {indices.get('dominance_index', 0)}%. Vos concurrents apparaissent souvent avant vous. Renforcez votre présence sur les requêtes clés avec du contenu ciblé.",
+            "impact": "moyen",
+            "effort": "moyen",
+            "metrics_impacted": ["dominance_index", "ranking"]
+        })
+    
+    # Priority 6: Trust gap
+    trust_gap = indices.get("trust_gap", 0)
+    if trust_gap < 0:
+        recommendations.append({
+            "priority": "medium",
+            "category": "trust",
+            "title": "Combler l'écart de confiance",
+            "description": f"Trust Gap™: {trust_gap}. Vos concurrents sont perçus comme plus fiables. Ajoutez des preuves sociales et des garanties pour renforcer la confiance.",
+            "impact": "moyen",
+            "effort": "faible",
+            "metrics_impacted": ["trust_gap", "credibility"]
         })
     
     # AI-specific recommendations
     for ai, score in ai_scores.items():
         if score < 30:
+            ai_names = {"chatgpt": "ChatGPT", "claude": "Claude", "gemini": "Gemini", "perplexity": "Perplexity"}
             recommendations.append({
                 "priority": "medium",
                 "category": "ai_specific",
-                "title": f"Améliorer la visibilité sur {ai.capitalize()}",
-                "description": f"Votre score sur {ai.capitalize()} est faible. Adaptez votre contenu aux préférences de ce moteur IA.",
+                "title": f"Améliorer la visibilité sur {ai_names.get(ai, ai)}",
+                "description": f"Score sur {ai_names.get(ai, ai)}: {score}%. Adaptez votre contenu aux préférences de ce moteur IA spécifique. Analysez comment vos concurrents y sont positionnés.",
                 "impact": "moyen",
-                "effort": "moyen"
+                "effort": "moyen",
+                "metrics_impacted": [f"ai_{ai}", "relevance"]
             })
     
-    # Add general recommendations
+    # Opportunity-based recommendations
+    if indices.get("opportunity_score", 0) > 60:
+        recommendations.append({
+            "priority": "medium",
+            "category": "opportunity",
+            "title": "Exploiter les opportunités de marché",
+            "description": f"Opportunity Score™: {indices.get('opportunity_score', 0)}%. Il existe de nombreuses requêtes où ni vous ni vos concurrents n'êtes bien positionnés. C'est une opportunité à saisir!",
+            "impact": "élevé",
+            "effort": "moyen",
+            "metrics_impacted": ["opportunity_score", "market_share"]
+        })
+    
+    # General recommendations
     recommendations.append({
         "priority": "low",
         "category": "content",
         "title": "Créer du contenu FAQ structuré",
-        "description": "Les IAs privilégient le contenu structuré en questions-réponses. Ajoutez une section FAQ complète.",
+        "description": "Les IAs privilégient le contenu structuré en questions-réponses. Ajoutez une section FAQ complète avec des réponses détaillées sur votre site.",
         "impact": "moyen",
-        "effort": "faible"
+        "effort": "faible",
+        "metrics_impacted": ["relevance", "authority"]
     })
     
-    return recommendations[:10]  # Limit to 10 recommendations
+    recommendations.append({
+        "priority": "low",
+        "category": "schema",
+        "title": "Implémenter les Schema.org",
+        "description": "Ajoutez les balises Schema.org (Organization, Product, FAQ) pour aider les IAs à mieux comprendre votre contenu.",
+        "impact": "moyen",
+        "effort": "faible",
+        "metrics_impacted": ["authority", "crawlability"]
+    })
+    
+    # Sort by priority
+    priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    recommendations.sort(key=lambda x: priority_order.get(x["priority"], 3))
+    
+    return recommendations[:12]
 
 @api_router.post("/analysis/start")
 async def start_analysis(request: Request, user: dict = Depends(get_current_user)):
