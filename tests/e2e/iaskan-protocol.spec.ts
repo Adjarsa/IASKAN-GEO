@@ -28,19 +28,19 @@ test.describe('IAskan Verified GEO Protocol™ Features', () => {
       
       // Multi-Runs pillar - use exact match with .first() for reliability
       await expect(page.getByText('Multi-Runs', { exact: true }).first()).toBeVisible();
-      await expect(page.getByText('3x par requête')).toBeVisible();
+      await expect(page.getByText('3x par requête', { exact: true }).first()).toBeVisible();
       
       // Multi-IA pillar - use exact match
       await expect(page.getByText('Multi-IA', { exact: true }).first()).toBeVisible();
-      await expect(page.getByText('4 moteurs')).toBeVisible();
+      await expect(page.getByText('4 moteurs', { exact: true }).first()).toBeVisible();
       
       // 4 Couches pillar
       await expect(page.getByText('4 Couches', { exact: true }).first()).toBeVisible();
-      await expect(page.getByText('Analyse sémantique')).toBeVisible();
+      await expect(page.getByText('Analyse sémantique', { exact: true }).first()).toBeVisible();
       
       // Anti-Hallucination pillar
       await expect(page.getByText('Anti-Hallucination', { exact: true }).first()).toBeVisible();
-      await expect(page.getByText('Vérification auto')).toBeVisible();
+      await expect(page.getByText('Vérification auto', { exact: true }).first()).toBeVisible();
     });
 
     test('should display Indices Exclusifs IAskan™ section', async ({ page }) => {
