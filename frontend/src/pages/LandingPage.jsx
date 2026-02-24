@@ -377,14 +377,14 @@ const LandingPage = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <Logo size="small" />
             
-            <div className="flex items-center gap-6 text-sm text-slate-500">
+            <div className="flex items-center gap-6 text-sm text-slate-600">
               <a href="#" className="hover:text-violet-600 transition-colors">Mentions légales</a>
               <a href="#" className="hover:text-violet-600 transition-colors">Politique de confidentialité</a>
               <a href="#" className="hover:text-violet-600 transition-colors">CGV</a>
               <a href="#" className="hover:text-violet-600 transition-colors">Contact</a>
             </div>
             
-            <div className="text-sm text-slate-500">
+            <div className="text-sm text-slate-600">
               © 2025 IAskan. Tous droits réservés.
             </div>
           </div>
