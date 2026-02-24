@@ -77,7 +77,7 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 
 ## Technical Architecture
 ```
-Frontend: React 19 + Tailwind CSS + Framer Motion
+Frontend: React 18.2.0 + Tailwind CSS + Framer Motion
 Backend: FastAPI + Motor (async MongoDB)
 Database: MongoDB
 Auth: Emergent Google OAuth + Microsoft OAuth2 + LinkedIn OAuth2
@@ -87,6 +87,9 @@ PDF: FPDF2 with DejaVu Unicode fonts
 OAuth: Authlib for Microsoft/LinkedIn
 Email: Resend API
 ```
+
+**⚠️ CRITICAL: React 18.2.0 - DO NOT UPGRADE TO REACT 19**
+React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash caused by Radix UI compatibility issues.
 
 ## IAskan Verified GEO Protocol™ Methodology
 
