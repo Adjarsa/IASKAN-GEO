@@ -170,7 +170,7 @@ const LandingPage = () => {
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-4xl font-bold text-gradient mb-2">{stat.value}</div>
-                <div className="text-slate-600">{stat.label}</div>
+                <div className="text-slate-700">{stat.label}</div>
               </div>
             ))}
           </motion.div>
