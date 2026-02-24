@@ -3,6 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { usePortalContainer } from "@/lib/portal-utils"
 
 const Dialog = DialogPrimitive.Root
 
@@ -23,19 +24,10 @@ const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
-// Fix for React 19 + Radix UI Portal conflict causing "insertBefore" error
 const DialogContent = React.forwardRef(({ className, children, ...props }, ref) => {
-  const [container, setContainer] = React.useState(null);
-  
-  React.useEffect(() => {
-    let portalContainer = document.getElementById('radix-portal-container');
-    if (!portalContainer) {
-      portalContainer = document.createElement('div');
-      portalContainer.id = 'radix-portal-container';
-      document.body.appendChild(portalContainer);
-    }
-    setContainer(portalContainer);
-  }, []);
+  const container = usePortalContainer();
+
+  if (!container) return null;
 
   return (
     <DialogPrimitive.Portal container={container}>
