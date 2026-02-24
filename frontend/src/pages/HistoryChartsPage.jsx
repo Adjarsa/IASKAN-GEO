@@ -21,7 +21,7 @@ import {
   ResponsiveContainer
 } from "recharts";
 import { format, parseISO } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr } from "date-fns/locale/fr";
 import {
   TrendingUp,
   TrendingDown,
