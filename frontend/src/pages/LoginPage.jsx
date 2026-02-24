@@ -69,10 +69,10 @@ const MagicLinkForm = () => {
         data-testid="magic-link-submit"
       >
         {loading ? (
-          <>
+          <span className="flex items-center">
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             Envoi...
-          </>
+          </span>
         ) : (
           "Recevoir un lien de connexion"
         )}
