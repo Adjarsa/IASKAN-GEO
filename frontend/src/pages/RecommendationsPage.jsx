@@ -52,9 +52,10 @@ const RecommendationsPage = () => {
     : recommendations.filter(r => r.priority === filter);
 
   const priorityConfig = {
-    high: { label: "Haute", color: "bg-destructive/20 text-destructive border-destructive/30", icon: AlertTriangle },
-    medium: { label: "Moyenne", color: "bg-warning/20 text-warning border-warning/30", icon: TrendingUp },
-    low: { label: "Basse", color: "bg-success/20 text-success border-success/30", icon: CheckCircle2 }
+    critical: { label: "Critique", color: "bg-red-50 text-red-700 border-red-200", icon: AlertTriangle },
+    high: { label: "Haute", color: "bg-red-50 text-red-700 border-red-200", icon: AlertTriangle },
+    medium: { label: "Moyenne", color: "bg-amber-50 text-amber-700 border-amber-200", icon: TrendingUp },
+    low: { label: "Basse", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle2 }
   };
 
   if (loading) {
