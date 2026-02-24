@@ -165,8 +165,19 @@ Email: Resend API
   - Custom tooltips with French date formatting
   - Responsive design
 
+### Feb 24, 2026 - Bug Fix: React DOM Errors
+- **Issue:** Critical `NotFoundError: Failed to execute 'insertBefore' on 'Node'` error crashing the frontend
+- **Root Cause:** Invalid HTML nesting - Badge component rendering `<div>` inside `<p>` tags
+- **Fixes Applied:**
+  - Modified `Badge` component (`/app/frontend/src/components/ui/badge.jsx`) to render `<span>` instead of `<div>`
+  - Changed `<p>` tags to `<div>` in `CompetitorComparisonPage.jsx` where Badge was used
+  - Re-enabled `React.StrictMode` in `index.js` for better error detection
+- **Testing:** All 11 Playwright tests passed (100% success rate)
+
 ## Next Tasks
-1. Team/multi-user support
-2. Analysis completion notification email
-3. API access for Business plan
-4. Mobile optimization
+1. **P0** - Stripe integration for subscription plans
+2. **P1** - Microsoft & LinkedIn SSO (requires API keys from user)
+3. Team/multi-user support
+4. Analysis completion notification email
+5. API access for Business plan
+6. Mobile optimization
