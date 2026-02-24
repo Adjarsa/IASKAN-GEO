@@ -2538,7 +2538,9 @@ async def analyze_competitor_visibility(brand_name: str, query: str, ai_type: st
         
         user_message = UserMessage(text=query)
         response = await chat.send_message(user_message)
-        response_text = response.text.lower() if response and response.text else ""
+        # Response can be a string or an object with .text attribute
+        response_text = response if isinstance(response, str) else str(response)
+        response_text = response_text.lower() if response_text else ""
         
         # Check if brand is mentioned
         brand_lower = brand_name.lower()
