@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 /**
  * Hook to get a stable portal container for Radix UI components
@@ -6,45 +6,32 @@ import { useState, useEffect, useCallback } from 'react';
  * portal content is rendered into a dedicated, stable container
  */
 export function usePortalContainer() {
-  const [container, setContainer] = useState(null);
+  const [container, setContainer] = useState(() => {
+    if (typeof document === 'undefined') return null;
+    return document.getElementById('radix-portal-root');
+  });
 
   useEffect(() => {
-    // Wait for DOM to be fully ready
-    const getOrCreateContainer = () => {
-      let portalRoot = document.getElementById('radix-portal-root');
-      if (!portalRoot) {
-        portalRoot = document.createElement('div');
-        portalRoot.id = 'radix-portal-root';
-        portalRoot.setAttribute('data-radix-portal', '');
-        document.body.appendChild(portalRoot);
-      }
-      return portalRoot;
-    };
-
-    // Use requestAnimationFrame to ensure DOM is ready
-    const rafId = requestAnimationFrame(() => {
-      setContainer(getOrCreateContainer());
-    });
-
-    return () => cancelAnimationFrame(rafId);
-  }, []);
+    if (container) return;
+    
+    // Fallback: create container if it doesn't exist
+    let portalRoot = document.getElementById('radix-portal-root');
+    if (!portalRoot) {
+      portalRoot = document.createElement('div');
+      portalRoot.id = 'radix-portal-root';
+      portalRoot.setAttribute('data-radix-portal', '');
+      document.body.appendChild(portalRoot);
+    }
+    setContainer(portalRoot);
+  }, [container]);
 
   return container;
 }
 
 /**
- * Creates a portal container element synchronously
- * Use this for SSR or when you need the container immediately
+ * Get portal container synchronously
  */
 export function getPortalContainer() {
   if (typeof document === 'undefined') return null;
-  
-  let portalRoot = document.getElementById('radix-portal-root');
-  if (!portalRoot) {
-    portalRoot = document.createElement('div');
-    portalRoot.id = 'radix-portal-root';
-    portalRoot.setAttribute('data-radix-portal', '');
-    document.body.appendChild(portalRoot);
-  }
-  return portalRoot;
+  return document.getElementById('radix-portal-root');
 }
