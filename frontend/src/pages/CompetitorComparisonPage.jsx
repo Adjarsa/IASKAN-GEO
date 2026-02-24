@@ -347,15 +347,15 @@ const CompetitorComparisonPage = () => {
                           {getRankIcon(data.rank)}
                         </div>
                         <div>
-                          <p className={`font-semibold ${data.is_user_brand ? 'text-violet-700' : 'text-slate-900'}`}>
+                          <div className={`font-semibold ${data.is_user_brand ? 'text-violet-700' : 'text-slate-900'}`}>
                             {brand}
                             {data.is_user_brand && (
                               <Badge className="ml-2 bg-violet-600">Vous</Badge>
                             )}
-                          </p>
-                          <p className="text-sm text-slate-500">
+                          </div>
+                          <div className="text-sm text-slate-500">
                             Rang #{data.rank}
-                          </p>
+                          </div>
                         </div>
                       </div>
                       <div className={`px-4 py-2 rounded-lg ${getScoreBg(data.score)}`}>
