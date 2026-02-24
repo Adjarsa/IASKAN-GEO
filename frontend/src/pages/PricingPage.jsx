@@ -142,7 +142,7 @@ const PricingPage = () => {
           <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
             Tarifs simples et transparents
           </h1>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-700 max-w-2xl mx-auto">
             Choisissez le plan adapté à vos besoins. 1 scan gratuit pour démarrer.
           </p>
         </div>
