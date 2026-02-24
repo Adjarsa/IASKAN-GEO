@@ -116,9 +116,9 @@ const LandingPage = () => {
           </Link>
           
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-slate-600 hover:text-violet-600 transition-colors font-medium">Fonctionnalités</a>
-            <a href="#pricing" className="text-slate-600 hover:text-violet-600 transition-colors font-medium">Tarifs</a>
-            <Link to="/login" className="text-slate-600 hover:text-violet-600 transition-colors font-medium" data-testid="nav-login">Connexion</Link>
+            <a href="#features" className="text-slate-700 hover:text-violet-600 transition-colors font-medium">Fonctionnalités</a>
+            <a href="#pricing" className="text-slate-700 hover:text-violet-600 transition-colors font-medium">Tarifs</a>
+            <Link to="/login" className="text-slate-700 hover:text-violet-600 transition-colors font-medium" data-testid="nav-login">Connexion</Link>
             <Link to="/login">
               <Button className="rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25" data-testid="nav-cta">
                 Essai Gratuit
