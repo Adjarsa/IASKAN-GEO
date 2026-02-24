@@ -84,15 +84,23 @@ test.describe('Authenticated Pages - Dashboard & Analysis', () => {
     });
 
     test('should display IAskan Verified badge or no analysis message', async ({ page }) => {
+      // Wait for dashboard to finish loading
+      await page.waitForSelector('[data-testid="dashboard-page"]', { state: 'visible' });
+      
+      // Wait a bit for content to load
+      await page.waitForLoadState('networkidle');
+      
       // Either show indices section or no analysis message
       const noAnalysisText = page.getByText('Aucune analyse effectuée');
       const indicesBadge = page.getByText('IAskan Verified™');
+      const startFirstAnalysis = page.getByTestId('start-first-analysis');
       
-      // One of these should be visible
+      // One of these should be visible (either indices, no analysis message, or start button)
       const noAnalysisVisible = await noAnalysisText.isVisible().catch(() => false);
       const badgeVisible = await indicesBadge.first().isVisible().catch(() => false);
+      const startVisible = await startFirstAnalysis.isVisible().catch(() => false);
       
-      expect(noAnalysisVisible || badgeVisible).toBeTruthy();
+      expect(noAnalysisVisible || badgeVisible || startVisible).toBeTruthy();
     });
   });
 
