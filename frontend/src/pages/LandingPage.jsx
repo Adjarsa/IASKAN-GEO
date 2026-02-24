@@ -269,7 +269,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">Comment ça marche</h2>
-            <p className="text-xl text-slate-600">3 étapes pour dominer les IA</p>
+            <p className="text-xl text-slate-700">3 étapes pour dominer les IA</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
