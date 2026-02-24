@@ -115,10 +115,10 @@ const ForgotPasswordPage = () => {
                   data-testid="submit-btn"
                 >
                   {loading ? (
-                    <>
+                    <span className="flex items-center">
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Envoi en cours...
-                    </>
+                    </span>
                   ) : (
                     "Envoyer le lien"
                   )}
