@@ -160,8 +160,34 @@ const AnalysisPage = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="spinner w-12 h-12" />
+        <div className="flex items-center justify-center min-h-[60vh]" data-testid="analysis-loading">
+          <Card className="p-8 max-w-lg w-full bg-white border-slate-100">
+            <div className="text-center space-y-6">
+              {/* Animated Logo/Icon */}
+              <div className="relative mx-auto w-20 h-20">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 animate-pulse opacity-20"></div>
+                <div className="absolute inset-2 rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 flex items-center justify-center">
+                  <Shield className="w-8 h-8 text-white animate-pulse" />
+                </div>
+                {/* Spinning ring */}
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-violet-600 border-r-cyan-600 animate-spin"></div>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                  Chargement de l'analyse...
+                </h3>
+                <p className="text-slate-600 text-sm">
+                  Veuillez patienter pendant que nous récupérons vos données
+                </p>
+              </div>
+              
+              {/* Progress bar animation */}
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-violet-600 to-cyan-600 rounded-full animate-loading-bar"></div>
+              </div>
+            </div>
+          </Card>
         </div>
       </DashboardLayout>
     );
