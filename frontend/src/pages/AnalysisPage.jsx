@@ -238,6 +238,50 @@ const AnalysisPage = () => {
     );
   }
 
+  // Show waiting state when we have analysisId but no analysis yet (and no error)
+  if (analysisId && !analysis && !error) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]" data-testid="analysis-waiting">
+          <Card className="p-8 max-w-lg w-full bg-white border-slate-100">
+            <div className="text-center space-y-6">
+              {/* Animated Logo/Icon */}
+              <div className="relative mx-auto w-20 h-20">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 animate-pulse opacity-20"></div>
+                <div className="absolute inset-2 rounded-full bg-gradient-to-r from-violet-600 to-cyan-600 flex items-center justify-center">
+                  <Shield className="w-8 h-8 text-white animate-pulse" />
+                </div>
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-violet-600 border-r-cyan-600 animate-spin"></div>
+              </div>
+              
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                  Préparation de l'analyse...
+                </h3>
+                <p className="text-slate-600 text-sm">
+                  Veuillez patienter pendant que nous initialisons votre analyse
+                </p>
+              </div>
+              
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-violet-600 to-cyan-600 rounded-full animate-loading-bar"></div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/dashboard")}
+                className="mt-4"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Retour au dashboard
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   // Show analysis results if we have an analysis
   if (analysis) {
     const indices = analysis.indices || {};
