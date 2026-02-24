@@ -62,7 +62,8 @@ const AuthProvider = ({ children }) => {
 
     try {
       const response = await axios.get(`${API}/auth/me`, {
-        withCredentials: true
+        withCredentials: true,
+        timeout: 5000 // 5 second timeout to prevent infinite loading
       });
       setUser(response.data.user);
       setSubscription(response.data.subscription);
@@ -72,7 +73,8 @@ const AuthProvider = ({ children }) => {
       if (savedProjectId) {
         try {
           const projectResponse = await axios.get(`${API}/projects/${savedProjectId}`, {
-            withCredentials: true
+            withCredentials: true,
+            timeout: 5000
           });
           setCurrentProject(projectResponse.data.project);
         } catch (e) {
