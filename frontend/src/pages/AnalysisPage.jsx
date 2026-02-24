@@ -35,6 +35,7 @@ const AnalysisPage = () => {
   const [starting, setStarting] = useState(false);
   const [polling, setPolling] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (analysisId) {
@@ -56,6 +57,7 @@ const AnalysisPage = () => {
 
   const fetchAnalysis = async (id) => {
     try {
+      setError(null);
       const response = await axios.get(`${API}/analysis/${id}`, { withCredentials: true });
       setAnalysis(response.data.analysis);
       
@@ -66,6 +68,7 @@ const AnalysisPage = () => {
       }
     } catch (error) {
       console.error("Analysis error:", error);
+      setError(error.response?.data?.detail || "Erreur lors du chargement de l'analyse");
       toast.error("Erreur lors du chargement de l'analyse");
     } finally {
       setLoading(false);
