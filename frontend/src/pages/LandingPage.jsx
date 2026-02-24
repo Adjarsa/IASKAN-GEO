@@ -237,7 +237,7 @@ const LandingPage = () => {
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
               La plateforme GEO complète
             </h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            <p className="text-xl text-slate-700 max-w-2xl mx-auto">
               Tout ce dont vous avez besoin pour dominer la visibilité IA
             </p>
           </div>
