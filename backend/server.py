@@ -235,18 +235,24 @@ async def create_session(request: Request, response: Response):
     if not session_id:
         raise HTTPException(status_code=400, detail="session_id requis")
     
-    # Call Emergent Auth to get user data
+    # Call Emergent Auth to get user data with timeout
     # REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    async with httpx.AsyncClient() as client:
-        auth_response = await client.get(
-            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
-            headers={"X-Session-ID": session_id}
-        )
-        
-        if auth_response.status_code != 200:
-            raise HTTPException(status_code=401, detail="Session invalide")
-        
-        auth_data = auth_response.json()
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            auth_response = await client.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": session_id}
+            )
+            
+            if auth_response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Session invalide")
+            
+            auth_data = auth_response.json()
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=408, detail="Timeout lors de la vérification de session. Veuillez réessayer.")
+    except Exception as e:
+        logger.error(f"Auth session error: {e}")
+        raise HTTPException(status_code=401, detail="Session invalide")
     
     user_id = f"user_{uuid.uuid4().hex[:12]}"
     email = auth_data.get("email")
