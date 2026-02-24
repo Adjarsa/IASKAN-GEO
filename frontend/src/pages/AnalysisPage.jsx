@@ -452,53 +452,126 @@ const AnalysisPage = () => {
                 </Card>
               )}
 
-              {/* Query Results */}
+              {/* Questions Analysées - Section dédiée */}
               {analysis.query_scores && analysis.query_scores.length > 0 && (
                 <Card className="p-6 bg-white border-slate-100">
-                  <h3 className="text-lg font-semibold text-slate-900 mb-6">Détail par requête</h3>
-                  <div className="space-y-4">
-                    {analysis.query_scores.map((query, index) => (
-                      <div key={index} className="p-4 rounded-lg bg-slate-50 border border-slate-100">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="text-slate-900 font-medium">{query.query_text}</p>
-                              {query.stability?.consistent && (
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" title="Résultats stables" />
-                              )}
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900">Questions Analysées</h3>
+                      <p className="text-sm text-slate-600">
+                        {analysis.query_scores.length} requêtes simulant des utilisateurs réels
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-slate-600">Taux de mention global</p>
+                      <p className="text-2xl font-bold text-violet-600">
+                        {Math.round(analysis.query_scores.reduce((acc, q) => acc + (q.mention_rate || 0), 0) / analysis.query_scores.length)}%
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Liste des questions groupées par type */}
+                  <div className="space-y-6">
+                    {Object.entries(
+                      analysis.query_scores.reduce((groups, query) => {
+                        const type = query.query_type || 'général';
+                        if (!groups[type]) groups[type] = [];
+                        groups[type].push(query);
+                        return groups;
+                      }, {})
+                    ).map(([type, queries]) => {
+                      const typeLabels = {
+                        transactional: { label: "Questions Transactionnelles", desc: "Intentions d'achat", color: "border-l-violet-500" },
+                        comparative: { label: "Questions Comparatives", desc: "Recherche du meilleur", color: "border-l-cyan-500" },
+                        informational: { label: "Questions Informationnelles", desc: "Recherche d'information", color: "border-l-emerald-500" },
+                        local: { label: "Questions Locales", desc: "Recherche géographique", color: "border-l-amber-500" },
+                        exploratory: { label: "Questions Exploratoires", desc: "Demande de recommandation", color: "border-l-purple-500" }
+                      };
+                      const typeInfo = typeLabels[type] || { label: type, desc: "", color: "border-l-slate-500" };
+                      
+                      return (
+                        <div key={type} className={`border-l-4 ${typeInfo.color} pl-4`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <h4 className="font-semibold text-slate-900">{typeInfo.label}</h4>
+                              <p className="text-xs text-slate-500">{typeInfo.desc}</p>
                             </div>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 capitalize">
-                              {query.query_type || "général"}
-                            </span>
+                            <span className="text-sm text-slate-600">{queries.length} questions</span>
                           </div>
-                          <div className="text-right">
-                            <span className={`text-lg font-bold ${getScoreColor(query.avg_score)}`}>
-                              {Math.round(query.avg_score)}
-                            </span>
-                            <p className="text-xs text-slate-600">{Math.round(query.mention_rate || 0)}% mentions</p>
+                          <div className="space-y-2">
+                            {queries.map((query, qIndex) => (
+                              <div 
+                                key={qIndex} 
+                                className="p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1">
+                                    <p className="text-slate-800 font-medium text-sm">
+                                      "{query.query_text}"
+                                    </p>
+                                    <div className="flex items-center gap-3 mt-2 text-xs">
+                                      <span className={`px-2 py-0.5 rounded-full ${
+                                        query.mention_rate >= 50 
+                                          ? "bg-emerald-100 text-emerald-700" 
+                                          : query.mention_rate > 0 
+                                            ? "bg-amber-100 text-amber-700"
+                                            : "bg-red-100 text-red-700"
+                                      }`}>
+                                        {Math.round(query.mention_rate || 0)}% mentions
+                                      </span>
+                                      {query.stability?.consistent && (
+                                        <span className="flex items-center gap-1 text-emerald-600">
+                                          <CheckCircle2 className="w-3 h-3" />
+                                          Stable
+                                        </span>
+                                      )}
+                                      <span className="text-slate-500">
+                                        Score: {Math.round(query.avg_score || 0)}/100
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1 max-w-[200px]">
+                                    {query.responses?.slice(0, 3).map((resp, rIndex) => (
+                                      <span
+                                        key={rIndex}
+                                        className={`text-xs px-1.5 py-0.5 rounded ${
+                                          resp.brand_mentioned
+                                            ? "bg-emerald-100 text-emerald-700"
+                                            : "bg-slate-200 text-slate-500"
+                                        }`}
+                                        title={`${resp.ai_type}: ${resp.role}`}
+                                      >
+                                        {resp.ai_type?.charAt(0).toUpperCase()}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {query.responses?.slice(0, 6).map((resp, rIndex) => (
-                            <span
-                              key={rIndex}
-                              className={`text-xs px-2 py-1 rounded-full ${
-                                resp.brand_mentioned
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-slate-200 text-slate-600"
-                              }`}
-                            >
-                              {resp.ai_type} #{resp.run_id}: {resp.role || "absent"}
-                            </span>
-                          ))}
-                          {query.responses?.length > 6 && (
-                            <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-600">
-                              +{query.responses.length - 6} autres
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Légende */}
+                  <div className="mt-6 pt-4 border-t border-slate-200">
+                    <p className="text-xs text-slate-500 mb-2">Légende des réponses IA :</p>
+                    <div className="flex flex-wrap gap-3 text-xs">
+                      <span className="flex items-center gap-1">
+                        <span className="w-4 h-4 rounded bg-emerald-100"></span>
+                        <span className="text-slate-600">Marque mentionnée</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-4 h-4 rounded bg-slate-200"></span>
+                        <span className="text-slate-600">Marque absente</span>
+                      </span>
+                      <span className="text-slate-500">|</span>
+                      <span className="text-slate-600">C = ChatGPT</span>
+                      <span className="text-slate-600">C = Claude</span>
+                      <span className="text-slate-600">G = Gemini</span>
+                      <span className="text-slate-600">P = Perplexity</span>
+                    </div>
                   </div>
                 </Card>
               )}
