@@ -339,24 +339,39 @@ const AnalysisPage = () => {
             </div>
             
             {analysis.status === "completed" && (
-              <Button
-                onClick={downloadPDF}
-                disabled={downloading}
-                className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25"
-                data-testid="download-pdf-btn"
-              >
-                {downloading ? (
-                  <span className="flex items-center">
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Génération du rapport...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <FileDown className="w-4 h-4 mr-2" />
-                    Exporter Rapport PDF
-                  </span>
-                )}
-              </Button>
+              <div className="flex gap-3">
+                <ReportPreviewModal 
+                  analysisData={analysis} 
+                  projectData={currentProject}
+                >
+                  <Button
+                    variant="outline"
+                    className="border-violet-200 text-violet-700 hover:bg-violet-50"
+                    data-testid="preview-report-btn"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Prévisualiser
+                  </Button>
+                </ReportPreviewModal>
+                <Button
+                  onClick={downloadPDF}
+                  disabled={downloading}
+                  className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25"
+                  data-testid="download-pdf-btn"
+                >
+                  {downloading ? (
+                    <span className="flex items-center">
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Génération du rapport...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <FileDown className="w-4 h-4 mr-2" />
+                      Exporter PDF
+                    </span>
+                  )}
+                </Button>
+              </div>
             )}
           </div>
 
