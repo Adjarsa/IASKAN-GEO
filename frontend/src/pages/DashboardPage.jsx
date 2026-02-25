@@ -23,9 +23,11 @@ import {
   Activity,
   CheckCircle2,
   FileDown,
-  Loader2
+  Loader2,
+  Eye
 } from "lucide-react";
 import { generatePDFReport } from "@/services/pdfReportGenerator";
+import ReportPreviewModal from "@/components/ReportPreviewModal";
 
 const DashboardPage = () => {
   const { user, subscription, refreshSubscription, currentProject } = useAuth();
