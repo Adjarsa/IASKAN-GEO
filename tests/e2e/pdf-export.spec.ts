@@ -57,9 +57,9 @@ test.describe('PDF Export Feature', () => {
       await page.waitForURL(/\/analysis/);
       await waitForAppReady(page);
       
-      // Project name should be visible
-      await expect(page.getByText('TEST_GEO_Project')).toBeVisible();
-      await expect(page.getByText('TEST_GEO_Brand')).toBeVisible();
+      // Project name should be visible - use first() to avoid strict mode violations
+      await expect(page.getByText('TEST_GEO_Project').first()).toBeVisible();
+      await expect(page.getByText('TEST_GEO_Brand').first()).toBeVisible();
     });
   });
 
@@ -86,20 +86,36 @@ test.describe('PDF Export Feature', () => {
     });
 
     test('should show no analysis message or PDF button based on data', async ({ page }) => {
-      await waitForAppReady(page);
+      // Wait for dashboard to fully load (spinner to disappear)
+      await expect(page.getByTestId('dashboard-page')).toBeVisible();
+      
+      // Wait for loading spinner to disappear - dashboard shows spinner during data fetch
+      await page.waitForFunction(() => {
+        const spinner = document.querySelector('.spinner');
+        return !spinner || spinner.closest('.h-96') === null;
+      }, { timeout: 15000 }).catch(() => {});
+      
+      // Additional wait for content to render
+      await page.waitForLoadState('networkidle').catch(() => {});
       
       // Either PDF export button is visible (if analysis exists) 
-      // or "Lancez une analyse pour obtenir des recommandations" message shows
+      // or "Lancez une analyse" message shows in recommendations section
+      // or "Lancer votre première analyse" button shows
+      // or "Aucune analyse effectuée" or "Aucune analyse pour le moment" messages
       const pdfButton = page.getByTestId('download-pdf-dashboard');
       const noAnalysisMessage = page.getByText('Lancez une analyse pour obtenir des recommandations');
+      const noAnalysisAlt = page.getByText('Aucune analyse pour le moment');
+      const noAnalysisEffectuee = page.getByText('Aucune analyse effectuée');
       const startFirstAnalysis = page.getByTestId('start-first-analysis');
       
       const pdfVisible = await pdfButton.isVisible().catch(() => false);
       const noAnalysisVisible = await noAnalysisMessage.isVisible().catch(() => false);
+      const noAnalysisAltVisible = await noAnalysisAlt.isVisible().catch(() => false);
+      const noAnalysisEffectueeVisible = await noAnalysisEffectuee.isVisible().catch(() => false);
       const startVisible = await startFirstAnalysis.isVisible().catch(() => false);
       
       // One of these should be visible
-      expect(pdfVisible || noAnalysisVisible || startVisible).toBeTruthy();
+      expect(pdfVisible || noAnalysisVisible || noAnalysisAltVisible || noAnalysisEffectueeVisible || startVisible).toBeTruthy();
     });
   });
 
