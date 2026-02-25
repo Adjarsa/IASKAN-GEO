@@ -7,8 +7,8 @@ test.describe('Authenticated Pages - Dashboard & Analysis', () => {
     // Set up test session cookie
     await page.context().addCookies([{
       name: 'session_token',
-      value: 'test_session_1771941962434',
-      domain: 'ai-visibility-hub-4.preview.emergentagent.com',
+      value: 'test_session_1772018666518',
+      domain: 'visibility-ai-5.preview.emergentagent.com',
       path: '/',
       httpOnly: true,
       secure: true,
@@ -36,8 +36,8 @@ test.describe('Authenticated Pages - Dashboard & Analysis', () => {
       await hideEmergentBadge(page);
       
       // Check for the test project
-      await expect(page.getByText('Test Project')).toBeVisible();
-      await expect(page.getByText('TestBrand')).toBeVisible();
+      await expect(page.getByText('TEST_GEO_Project')).toBeVisible();
+      await expect(page.getByText('TEST_GEO_Brand')).toBeVisible();
     });
 
     test('should navigate to dashboard when selecting a project', async ({ page }) => {
@@ -46,7 +46,7 @@ test.describe('Authenticated Pages - Dashboard & Analysis', () => {
       await hideEmergentBadge(page);
       
       // Click on the test project card
-      await page.getByText('Test Project').click();
+      await page.getByText('TEST_GEO_Project').click();
       
       // Should navigate to dashboard
       await page.waitForURL(/\/dashboard/);
@@ -63,7 +63,7 @@ test.describe('Authenticated Pages - Dashboard & Analysis', () => {
       await hideEmergentBadge(page);
       
       // Click on the test project
-      await page.getByText('Test Project').click();
+      await page.getByText('TEST_GEO_Project').click();
       await page.waitForURL(/\/dashboard/);
     });
 
@@ -72,7 +72,7 @@ test.describe('Authenticated Pages - Dashboard & Analysis', () => {
     });
 
     test('should display brand name on dashboard', async ({ page }) => {
-      await expect(page.getByRole('heading', { name: 'TestBrand' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'TEST_GEO_Brand' })).toBeVisible();
     });
 
     test('should have new analysis button', async ({ page }) => {
@@ -111,7 +111,7 @@ test.describe('Authenticated Pages - Dashboard & Analysis', () => {
       await page.goto('/projects');
       await waitForAppReady(page);
       await hideEmergentBadge(page);
-      await page.getByText('Test Project').click();
+      await page.getByText('TEST_GEO_Project').click();
       await page.waitForURL(/\/dashboard/);
     });
 
