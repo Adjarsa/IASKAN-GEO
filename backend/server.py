@@ -14,6 +14,7 @@ from datetime import datetime, timezone, timedelta
 import httpx
 import json
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import io
 import secrets
 from fpdf import FPDF
@@ -21,6 +22,9 @@ from authlib.integrations.starlette_client import OAuth
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 import resend
+
+# Thread pool for LLM calls to avoid blocking the event loop
+llm_executor = ThreadPoolExecutor(max_workers=4)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
