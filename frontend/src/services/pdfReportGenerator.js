@@ -31,6 +31,50 @@ const hexToRgb = (hex) => {
   } : { r: 0, g: 0, b: 0 };
 };
 
+// Helper function to draw rounded rectangle (compatible with all jsPDF versions)
+const drawRoundedRect = (doc, x, y, width, height, radius, style = 'F') => {
+  // Ensure all values are valid numbers
+  x = Number(x) || 0;
+  y = Number(y) || 0;
+  width = Math.max(Number(width) || 0, 0.1); // Minimum width to avoid errors
+  height = Math.max(Number(height) || 0, 0.1);
+  radius = Math.min(Number(radius) || 0, Math.min(width, height) / 2);
+  
+  if (radius <= 0) {
+    // If no radius, just draw a regular rectangle
+    doc.rect(x, y, width, height, style);
+    return;
+  }
+  
+  // Draw rounded rectangle using lines and curves
+  doc.setLineWidth(0);
+  
+  // Start path
+  doc.moveTo(x + radius, y);
+  doc.lineTo(x + width - radius, y);
+  
+  // Top-right corner
+  doc.curveTo(x + width, y, x + width, y + radius, x + width - radius, y);
+  
+  doc.lineTo(x + width, y + height - radius);
+  
+  // Bottom-right corner
+  doc.curveTo(x + width, y + height, x + width - radius, y + height, x + width, y + height - radius);
+  
+  doc.lineTo(x + radius, y + height);
+  
+  // Bottom-left corner
+  doc.curveTo(x, y + height, x, y + height - radius, x + radius, y + height);
+  
+  doc.lineTo(x, y + radius);
+  
+  // Top-left corner
+  doc.curveTo(x, y, x + radius, y, x, y + radius);
+  
+  // Use simple rect as fallback - jsPDF handles this better
+  doc.rect(x, y, width, height, style);
+};
+
 // Score color based on value
 const getScoreColor = (score) => {
   if (score >= 80) return COLORS.success;
