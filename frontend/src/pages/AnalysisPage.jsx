@@ -22,8 +22,10 @@ import {
   BarChart3,
   Activity,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  FileDown
 } from "lucide-react";
+import { generatePDFReport } from "@/services/pdfReportGenerator";
 
 const AnalysisPage = () => {
   const { analysisId } = useParams();
