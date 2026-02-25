@@ -346,6 +346,22 @@ const AppRouter = () => {
         }
       />
       <Route
+        path="/visibility"
+        element={
+          <ProjectRequiredRoute>
+            <VisibilityPage />
+          </ProjectRequiredRoute>
+        }
+      />
+      <Route
+        path="/content-audit"
+        element={
+          <ProjectRequiredRoute>
+            <ContentAuditPage />
+          </ProjectRequiredRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
           <ProtectedRoute>
