@@ -21,8 +21,11 @@ import {
   Shield,
   Award,
   Activity,
-  CheckCircle2
+  CheckCircle2,
+  FileDown,
+  Loader2
 } from "lucide-react";
+import { generatePDFReport } from "@/services/pdfReportGenerator";
 
 const DashboardPage = () => {
   const { user, subscription, refreshSubscription, currentProject } = useAuth();
