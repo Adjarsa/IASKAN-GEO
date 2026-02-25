@@ -1182,7 +1182,14 @@ Sois précis et factuel dans tes recommandations."""
             chat.with_model("openai", "gpt-5.2")
         
         user_message = UserMessage(text=query_text)
-        response = await chat.send_message(user_message)
+        
+        # Run LLM call in thread pool to avoid blocking the event loop
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            llm_executor, 
+            lambda: asyncio.run(chat.send_message(user_message))
+        )
+        
         response_text = response if isinstance(response, str) else str(response)
         response_lower = response_text.lower()
         brand_lower = brand_name.lower()
