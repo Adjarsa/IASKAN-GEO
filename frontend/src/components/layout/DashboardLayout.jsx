@@ -24,7 +24,9 @@ import {
   ChevronDown,
   ArrowLeftRight,
   Users,
-  TrendingUp
+  TrendingUp,
+  Eye,
+  FileText
 } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
