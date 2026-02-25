@@ -34,6 +34,25 @@ const DashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [checkingPayment, setCheckingPayment] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    if (!stats?.latest_analysis || !currentProject) {
+      toast.error("Aucune analyse disponible pour générer le rapport");
+      return;
+    }
+    
+    setDownloadingPDF(true);
+    try {
+      await generatePDFReport(stats.latest_analysis, currentProject);
+      toast.success("Rapport PDF téléchargé avec succès !");
+    } catch (error) {
+      console.error("PDF download error:", error);
+      toast.error("Erreur lors de la génération du PDF");
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
 
   useEffect(() => {
     const paymentStatus = searchParams.get("payment");
