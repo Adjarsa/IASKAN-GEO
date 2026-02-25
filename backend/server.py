@@ -3506,7 +3506,7 @@ def call_llm_for_content(prompt: str) -> str:
         from emergentintegrations.llm.chat import chat, LlmModel
         
         response = chat(
-            api_key=EMERGENT_API_KEY,
+            api_key=EMERGENT_LLM_KEY,
             model=LlmModel.OPENAI_GPT4O,
             system_prompt="Tu es un expert en content marketing et GEO (Generative Engine Optimization). Tu crees du contenu optimise pour etre cite par les LLMs comme ChatGPT, Claude, Gemini. Reponds toujours en francais.",
             user_prompt=prompt
