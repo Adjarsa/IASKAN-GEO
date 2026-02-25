@@ -220,11 +220,13 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 
 ## Key Files
 - `/app/backend/server.py` - Main API server with GEO Protocol™ engine
+- `/app/frontend/src/services/pdfReportGenerator.js` - **NEW: PDF Report Generator**
+- `/app/frontend/src/components/PDFExportButton.jsx` - **NEW: PDF Export Components**
 - `/app/frontend/src/pages/ContentGeneratorPage.jsx` - Content generation page
 - `/app/frontend/src/pages/VisibilityPage.jsx` - Visibility tracking page
 - `/app/frontend/src/pages/ContentAuditPage.jsx` - Content audit page
-- `/app/frontend/src/pages/AnalysisPage.jsx` - Analysis V2 with indices
-- `/app/frontend/src/pages/DashboardPage.jsx` - Main dashboard
+- `/app/frontend/src/pages/AnalysisPage.jsx` - Analysis V2 with indices + PDF export
+- `/app/frontend/src/pages/DashboardPage.jsx` - Main dashboard + PDF export
 - `/app/frontend/src/components/layout/DashboardLayout.jsx` - Sidebar navigation
 
 ## Test Reports
