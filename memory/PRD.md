@@ -169,6 +169,31 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 
 ## Recent Updates
 
+### Feb 25, 2026 - PDF Export Report Implementation
+- **NEW: Professional PDF Report Generator** (/app/frontend/src/services/pdfReportGenerator.js)
+  - 10 sections complètes basées sur le modèle utilisateur:
+    1. Introduction - Scores globaux, méthodologie, résumé exécutif
+    2. Localisation - Zone géographique ciblée (France)
+    3. Requêtes - Distribution par type et exemples de requêtes testées
+    4. Citations IA - Performance par moteur IA et analyse des rôles
+    5. Contenu - Analyse on-page, microdonnées Schema.org
+    6. Technique - HTTPS, mobile, vitesse, robots.txt, sitemap, etc.
+    7. Confiance - Score E-E-A-T et indicateurs de confiance
+    8. Concurrence - Benchmark concurrentiel et analyse des écarts
+    9. Requêtes IA - Détail des réponses par requête
+    10. Plan d'Action - Recommandations prioritaires
+  - Couleurs IAskan (violet #7C3AED, cyan #06B6D4)
+  - Génération côté client avec jsPDF + jspdf-autotable
+  - Bouton export sur la page d'analyse et le dashboard
+  - Design professionnel avec header gradient et scores visuels
+- **Dépendances ajoutées**: jspdf, jspdf-autotable, html2canvas
+- **Composants créés**:
+  - PDFExportButton.jsx - Bouton d'export réutilisable
+  - PDFExportCard.jsx - Carte avec preview des sections
+- **Pages mises à jour**:
+  - AnalysisPage.jsx - Bouton export + carte PDF en bas de page
+  - DashboardPage.jsx - Bouton export dans le header
+
 ### Feb 25, 2026 - Content Generation Implementation
 - **NEW: Content Generator Page** (/content-generator)
   - 3 onglets: Générer, Optimiser, Formats GEO
