@@ -3472,7 +3472,7 @@ Format de reponse:
     try:
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
-            executor,
+            llm_executor,
             lambda: call_llm_for_content(prompt)
         )
         
