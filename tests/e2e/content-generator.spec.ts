@@ -85,7 +85,7 @@ test.describe('Content Generator Page', () => {
     test('should show Generate tab by default', async ({ page }) => {
       // Generate tab should be active by default - check for Configuration section
       await expect(page.getByText('Configuration')).toBeVisible();
-      await expect(page.getByText('Type de contenu')).toBeVisible();
+      await expect(page.getByText('Type de contenu', { exact: true })).toBeVisible();
     });
 
     test('should switch to Optimize tab', async ({ page }) => {
@@ -135,7 +135,8 @@ test.describe('Content Generator Page', () => {
 
     test('should display brand name from current project', async ({ page }) => {
       await expect(page.getByText('Marque ciblee:')).toBeVisible();
-      await expect(page.getByText('TEST_GEO_Brand')).toBeVisible();
+      // Brand name appears in the generator form card
+      await expect(page.getByTestId('content-generator-page').getByText('TEST_GEO_Brand')).toBeVisible();
     });
 
     test('should display empty state message before generation', async ({ page }) => {
