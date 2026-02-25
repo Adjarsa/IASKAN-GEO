@@ -126,31 +126,19 @@ const AnalysisPage = () => {
   };
 
   const downloadPDF = async () => {
-    if (!analysis?.analysis_id) return;
+    if (!analysis?.analysis_id || !currentProject) {
+      toast.error("Données insuffisantes pour générer le rapport");
+      return;
+    }
     
     setDownloading(true);
     try {
-      const response = await axios.get(
-        `${API}/analysis/${analysis.analysis_id}/pdf`,
-        { 
-          withCredentials: true,
-          responseType: 'blob'
-        }
-      );
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `IAskan_Rapport_${analysis.analysis_id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      toast.success("Rapport PDF téléchargé !");
+      // Use client-side PDF generation with full 10-section report
+      await generatePDFReport(analysis, currentProject);
+      toast.success("Rapport PDF téléchargé avec succès !");
     } catch (error) {
       console.error("PDF download error:", error);
-      toast.error("Erreur lors du téléchargement du rapport");
+      toast.error("Erreur lors de la génération du rapport PDF");
     } finally {
       setDownloading(false);
     }
