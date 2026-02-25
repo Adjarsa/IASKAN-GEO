@@ -48,10 +48,12 @@ const DashboardLayout = ({ children }) => {
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/analysis", label: "Analyses", icon: BarChart3 },
-    { path: "/history", label: "Évolution", icon: TrendingUp },
-    { path: "/competitors", label: "Concurrents", icon: Users },
+    { path: "/visibility", label: "Visibilite", icon: Eye },
+    { path: "/content-audit", label: "Audit Contenu", icon: FileText },
+    { path: "/competitors", label: "Benchmark", icon: Users },
+    { path: "/history", label: "Evolution", icon: TrendingUp },
     { path: "/recommendations", label: "Recommandations", icon: Target },
-    { path: "/settings", label: "Paramètres", icon: Settings },
+    { path: "/settings", label: "Parametres", icon: Settings },
   ];
 
   const isActive = (path) => {
