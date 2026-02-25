@@ -398,7 +398,7 @@ const HistoryChartsPage = () => {
                 <h3 className="font-semibold text-slate-900 mb-6">Évolution du Classement Concurrentiel</h3>
                 {comparisonHistory?.ranking_evolution?.length > 0 ? (
                   <>
-                    <div className="h-80">
+                    <div className="w-full h-80 min-h-[320px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={comparisonHistory.ranking_evolution}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -430,7 +430,7 @@ const HistoryChartsPage = () => {
                     {/* Dominance Index Evolution */}
                     <div className="mt-8">
                       <h4 className="font-medium text-slate-900 mb-4">Indice de Dominance</h4>
-                      <div className="h-48">
+                      <div className="w-full h-48 min-h-[192px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={comparisonHistory.dominance_evolution}>
                             <defs>
