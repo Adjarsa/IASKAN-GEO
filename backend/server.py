@@ -3501,23 +3501,52 @@ Format de reponse:
 
 
 def call_llm_for_content(prompt: str) -> str:
-    """Call LLM for content generation using Emergent LLM Key"""
+    """Call LLM for content generation using Emergent LLM Key - synchronous wrapper"""
+    import asyncio
+    
+    async def _async_call():
+        try:
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            import uuid
+            
+            # Initialize chat with system message for GEO content
+            chat = LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=f"geo-content-{uuid.uuid4().hex[:8]}",
+                system_message="Tu es un expert en content marketing et GEO (Generative Engine Optimization). Tu crees du contenu optimise pour etre cite par les LLMs comme ChatGPT, Claude, Gemini. Reponds toujours en francais avec un contenu riche, structure et factuel. Utilise le format Markdown."
+            )
+            
+            # Use GPT-4o for content generation
+            chat = chat.with_model("openai", "gpt-4o")
+            
+            # Create user message
+            user_message = UserMessage(text=prompt)
+            
+            # Send message and get response
+            response = await chat.send_message(user_message)
+            return response
+            
+        except Exception as e:
+            print(f"LLM async call error: {e}")
+            import traceback
+            traceback.print_exc()
+            raise e
+    
     try:
-        from emergentintegrations.llm.chat import LlmChat
-        
-        llm = LlmChat(api_key=EMERGENT_LLM_KEY)
-        llm = llm.with_model("openai/gpt-4o")
-        
-        # Set system prompt
-        system_prompt = "Tu es un expert en content marketing et GEO (Generative Engine Optimization). Tu crees du contenu optimise pour etre cite par les LLMs comme ChatGPT, Claude, Gemini. Reponds toujours en francais avec un contenu riche, structure et factuel."
-        
-        # Send message and get response
-        response = llm.send_message(f"{system_prompt}\n\n{prompt}")
-        return response
+        # Run the async function in the current event loop or create new one
+        try:
+            loop = asyncio.get_running_loop()
+            # If we're already in an async context, we need to run in thread
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(asyncio.run, _async_call())
+                return future.result(timeout=120)
+        except RuntimeError:
+            # No running loop, create new one
+            return asyncio.run(_async_call())
+            
     except Exception as e:
         print(f"LLM call error: {e}")
-        import traceback
-        traceback.print_exc()
         # Fallback response
         return f"""# Contenu genere pour: {prompt[:50]}...
 
