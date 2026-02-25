@@ -26,7 +26,8 @@ import {
   Users,
   TrendingUp,
   Eye,
-  FileText
+  FileText,
+  Wand2
 } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
