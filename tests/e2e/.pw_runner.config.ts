@@ -2,13 +2,13 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '/app/tests/e2e',
-  outputDir: '/root/.emergent/automation_output/20260225_120718/test-results',
+  outputDir: '/root/.emergent/automation_output/20260225_120735/test-results',
   timeout: 60000,
   retries: 0,
   workers: 1,
   reporter: [
     ['line'],
-    ['json', { outputFile: '/root/.emergent/automation_output/20260225_120718/results.json' }],
+    ['json', { outputFile: '/root/.emergent/automation_output/20260225_120735/results.json' }],
   ],
   use: {
     baseURL: 'https://visibility-ai-5.preview.emergentagent.com',
