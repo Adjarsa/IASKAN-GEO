@@ -1,0 +1,107 @@
+{
+  "summary": "Comprehensive testing of new GEO features: Visibility Page (/visibility) and Content Audit Page (/content-audit). All tests passed. Navigation sidebar updated with new entries (Visibilite, Audit Contenu, Benchmark). API endpoints /api/visibility/{project_id} and /api/content-audit/{project_id} working correctly. Both pages load with mock data fallback when no analysis data available.",
+  "mode": "generate",
+  "baseline_commit": "6c7cab2768f2d0d0e74822f4be227d4376a22ba0",
+  "head_commit": "a2472663541259991fd1f98673021e2b857abec1",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "regression_results": {
+    "total_specs": 46,
+    "passed": 46,
+    "failed": 0,
+    "skipped": 0
+  },
+  "backend_test_results": {
+    "total": 13,
+    "passed": 13,
+    "failed": 0
+  },
+  "specs_created": [
+    "/app/tests/e2e/geo-features.spec.ts",
+    "/app/backend/tests/test_geo_api.py"
+  ],
+  "specs_updated": [
+    "/app/tests/e2e/dashboard-analysis.spec.ts"
+  ],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/tests/e2e/geo-features.spec.ts",
+    "/app/tests/e2e/iaskan-protocol.spec.ts",
+    "/app/tests/e2e/page-rendering.spec.ts",
+    "/app/tests/e2e/dashboard-analysis.spec.ts",
+    "/app/backend/tests/test_geo_api.py"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/tests/e2e/geo-features.spec.ts",
+    "/app/tests/e2e/dashboard-analysis.spec.ts",
+    "/app/backend/tests/test_geo_api.py"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13 tests passed)",
+    "frontend": "100% (46/46 tests passed)"
+  },
+  "seed_data_creation": "Created test user (test-user-1772018666518), session (test_session_1772018666518), subscription, and project (proj_test_1772018666518) for authenticated page testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "GEO features (Visibility and Content Audit pages) fully tested. Test infrastructure includes: 1) geo-features.spec.ts for new GEO pages (navigation, visibility page, content audit page), 2) test_geo_api.py for backend API endpoints. Test data created with session token 'test_session_1772018666518' and project ID 'proj_test_1772018666518'. Mock data fallback is working correctly when API returns no analysis data.",
+  "verified_features": {
+    "visibility_page": {
+      "route": "/visibility",
+      "page_testid": "visibility-page",
+      "features_verified": [
+        "Page loads correctly",
+        "Page title and description displayed",
+        "Global visibility score section",
+        "AI engines breakdown section",
+        "Position distribution section",
+        "Thematic visibility section",
+        "IAskan Verified badge",
+        "Refresh button (data-testid: refresh-visibility)"
+      ],
+      "api_endpoint": "GET /api/visibility/{project_id}",
+      "mock_data_fallback": "Working - getMockVisibilityData()"
+    },
+    "content_audit_page": {
+      "route": "/content-audit",
+      "page_testid": "content-audit-page",
+      "features_verified": [
+        "Page loads correctly",
+        "Page title and description displayed",
+        "Citability score card",
+        "Structure score card",
+        "Schema.org coverage card",
+        "Content gaps section",
+        "Page analysis section",
+        "Structure recommendations section",
+        "Citability info box",
+        "Refresh button (data-testid: refresh-audit)"
+      ],
+      "api_endpoint": "GET /api/content-audit/{project_id}",
+      "mock_data_fallback": "Working - getMockAuditData()"
+    },
+    "navigation_updates": {
+      "new_entries": [
+        "Visibilite (nav-visibilite) -> /visibility",
+        "Audit Contenu (nav-audit contenu) -> /content-audit",
+        "Benchmark (nav-benchmark) -> /competitors"
+      ],
+      "navigation_working": true
+    },
+    "api_endpoints": {
+      "visibility": "GET /api/visibility/{project_id} - Returns visibility data structure with global_visibility_score, ai_engines, position_distribution, thematic_visibility, recent_queries",
+      "content_audit": "GET /api/content-audit/{project_id} - Returns audit data structure with global_citability_score, pages_analyzed, structure_score, content_gaps, schema_coverage, pages, gaps, structure_recommendations"
+    }
+  },
+  "notes": {
+    "mock_data": "Both VisibilityPage and ContentAuditPage use mock data (getMockVisibilityData, getMockAuditData) as fallback when API returns no analysis data. This is expected behavior.",
+    "recharts_warning_fix": "HistoryChartsPage now uses min-h-[Xpx] classes on chart containers to ensure proper dimensions for ResponsiveContainer"
+  }
+}
