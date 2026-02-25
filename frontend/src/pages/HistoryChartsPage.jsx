@@ -359,7 +359,7 @@ const HistoryChartsPage = () => {
             {activeTab === "ai" && (
               <Card className="p-6">
                 <h3 className="font-semibold text-slate-900 mb-6">Évolution par Moteur IA</h3>
-                <div className="h-80">
+                <div className="w-full h-80 min-h-[320px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={analysisHistory.score_evolution.map((item, index) => ({
                       date: item.date,
