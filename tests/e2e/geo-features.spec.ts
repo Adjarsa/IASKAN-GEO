@@ -37,6 +37,7 @@ test.describe('GEO Features - Visibility & Content Audit', () => {
       // Check for new navigation entries
       await expect(page.getByTestId('nav-visibilite')).toBeVisible();
       await expect(page.getByTestId('nav-audit contenu')).toBeVisible();
+      await expect(page.getByTestId('nav-generateur')).toBeVisible();
       await expect(page.getByTestId('nav-benchmark')).toBeVisible();
     });
 
@@ -68,6 +69,21 @@ test.describe('GEO Features - Visibility & Content Audit', () => {
       await page.getByTestId('nav-audit contenu').click();
       await page.waitForURL(/\/content-audit/);
       await expect(page.getByTestId('content-audit-page')).toBeVisible();
+    });
+
+    test('should navigate to Content Generator page from sidebar', async ({ page }) => {
+      await page.goto('/projects');
+      await waitForAppReady(page);
+      await hideEmergentBadge(page);
+      
+      await page.getByText('TEST_GEO_Project').click();
+      await page.waitForURL(/\/dashboard/);
+      await hideEmergentBadge(page);
+      
+      // Click on Generateur nav item
+      await page.getByTestId('nav-generateur').click();
+      await page.waitForURL(/\/content-generator/);
+      await expect(page.getByTestId('content-generator-page')).toBeVisible();
     });
   });
 
