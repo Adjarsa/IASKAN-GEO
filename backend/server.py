@@ -3383,7 +3383,7 @@ Format: Markdown avec tableaux"""
         # Use Emergent LLM Key for generation
         loop = asyncio.get_event_loop()
         generated_text = await loop.run_in_executor(
-            executor,
+            llm_executor,
             lambda: call_llm_for_content(prompt)
         )
         
