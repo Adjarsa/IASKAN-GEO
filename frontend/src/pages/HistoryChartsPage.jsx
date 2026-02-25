@@ -294,7 +294,7 @@ const HistoryChartsPage = () => {
             {activeTab === "rate" && (
               <Card className="p-6">
                 <h3 className="font-semibold text-slate-900 mb-6">Évolution des Scores R.A.T.E.™</h3>
-                <div className="h-80">
+                <div className="w-full h-80 min-h-[320px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={analysisHistory.rate_evolution}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
