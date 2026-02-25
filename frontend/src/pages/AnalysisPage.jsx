@@ -902,24 +902,39 @@ const AnalysisPage = () => {
                       ))}
                     </div>
 
-                    <Button
-                      onClick={downloadPDF}
-                      disabled={downloading}
-                      className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 text-white"
-                      data-testid="pdf-export-card-button"
-                    >
-                      {downloading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Génération en cours...
-                        </>
-                      ) : (
-                        <>
-                          <FileDown className="h-4 w-4 mr-2" />
-                          Télécharger le rapport PDF
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex gap-3">
+                      <ReportPreviewModal 
+                        analysisData={analysis} 
+                        projectData={currentProject}
+                      >
+                        <Button
+                          variant="outline"
+                          className="border-violet-200 text-violet-700 hover:bg-violet-50"
+                          data-testid="pdf-preview-card-button"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Prévisualiser
+                        </Button>
+                      </ReportPreviewModal>
+                      <Button
+                        onClick={downloadPDF}
+                        disabled={downloading}
+                        className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 text-white"
+                        data-testid="pdf-export-card-button"
+                      >
+                        {downloading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Génération en cours...
+                          </>
+                        ) : (
+                          <>
+                            <FileDown className="h-4 w-4 mr-2" />
+                            Télécharger PDF
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>
