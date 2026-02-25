@@ -172,6 +172,27 @@ const DashboardPage = () => {
               <RefreshCw className="w-4 h-4 mr-2" />
               Actualiser
             </Button>
+            {latestAnalysis && (
+              <Button 
+                variant="outline" 
+                onClick={handleDownloadPDF}
+                disabled={downloadingPDF}
+                className="border-violet-200 text-violet-700 hover:bg-violet-50"
+                data-testid="download-pdf-dashboard"
+              >
+                {downloadingPDF ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Génération...
+                  </>
+                ) : (
+                  <>
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Rapport PDF
+                  </>
+                )}
+              </Button>
+            )}
             <Link to="/analysis">
               <Button className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25" data-testid="new-analysis-btn">
                 <Plus className="w-4 h-4 mr-2" />
