@@ -346,12 +346,12 @@ const AnalysisPage = () => {
                 {downloading ? (
                   <span className="flex items-center">
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Génération...
+                    Génération du rapport...
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <Download className="w-4 h-4 mr-2" />
-                    Télécharger PDF
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Exporter Rapport PDF
                   </span>
                 )}
               </Button>
