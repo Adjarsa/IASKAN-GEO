@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 class IAskanAPITester:
-    def __init__(self, base_url="https://visibility-ai-5.preview.emergentagent.com"):
+    def __init__(self, base_url="https://visibility-track.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_token = None
         self.user_id = None
