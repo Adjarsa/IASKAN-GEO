@@ -8,7 +8,7 @@ test.describe('Authenticated Pages - Dashboard & Analysis', () => {
     await page.context().addCookies([{
       name: 'session_token',
       value: 'test_session_1772018666518',
-      domain: 'visibility-ai-5.preview.emergentagent.com',
+      domain: 'visibility-track.preview.emergentagent.com',
       path: '/',
       httpOnly: true,
       secure: true,
