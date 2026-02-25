@@ -45,8 +45,10 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 - Dashboard statistics API
 - Payment webhooks
 - PDF Report Generation
-- **NEW: Visibility Tracking API** (/api/visibility/{project_id})
-- **NEW: Content Audit API** (/api/content-audit/{project_id})
+- Visibility Tracking API (/api/visibility/{project_id})
+- Content Audit API (/api/content-audit/{project_id})
+- **NEW: Content Generation API** (/api/content/generate)
+- **NEW: Content Reformulation API** (/api/content/reformulate)
 
 ### Frontend (React + Tailwind CSS)
 - Landing page with IAskan Verified GEO Protocol™ section
@@ -59,8 +61,9 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 - Settings page (account, subscription, security)
 - Competitor Comparison page (benchmark)
 - History Charts page (évolution)
-- **NEW: Visibility Page** - Tracking de présence dans les moteurs IA
-- **NEW: Content Audit Page** - Score de citabilité et analyse de structure
+- Visibility Page - Tracking de présence dans les moteurs IA
+- Content Audit Page - Score de citabilité et analyse de structure
+- **NEW: Content Generator Page** - Génération et optimisation de contenu GEO
 - French language UI
 - Responsive design
 - Protected routes
@@ -69,7 +72,7 @@ IAskan est la première plateforme GEO pour l'Europe, permettant aux entreprises
 - Emergent Google OAuth (SSO)
 - Microsoft OAuth2 SSO (requires MICROSOFT_CLIENT_ID & MICROSOFT_CLIENT_SECRET)
 - LinkedIn OAuth2 SSO (requires LINKEDIN_CLIENT_ID & LINKEDIN_CLIENT_SECRET)
-- Emergent LLM Key (OpenAI GPT-5.2, Claude, Gemini)
+- Emergent LLM Key (OpenAI GPT-4o, Claude, Gemini)
 - Stripe Checkout (payment processing)
 - MongoDB (data storage)
 - FPDF2 (PDF generation)
@@ -82,7 +85,7 @@ Frontend: React 18.2.0 + Tailwind CSS + Framer Motion
 Backend: FastAPI + Motor (async MongoDB)
 Database: MongoDB
 Auth: Emergent Google OAuth + Microsoft OAuth2 + LinkedIn OAuth2
-AI: Emergent LLM Key (GPT-5.2, Claude, Gemini)
+AI: Emergent LLM Key (GPT-4o, Claude, Gemini)
 Payments: Stripe
 PDF: FPDF2 with DejaVu Unicode fonts
 OAuth: Authlib for Microsoft/LinkedIn
@@ -92,51 +95,69 @@ Email: Resend API
 **⚠️ CRITICAL: React 18.2.0 - DO NOT UPGRADE TO REACT 19**
 React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash caused by Radix UI compatibility issues.
 
-## NEW GEO Features (Feb 25, 2026)
+## NEW Content Generation Features (Feb 25, 2026)
+
+### Génération de Contenu GEO (/content-generator)
+**Onglet "Générer"**
+- Sélection du type de contenu (Article, FAQ, Fiche Entité, Guide, Comparatif)
+- Input sujet et mots-clés
+- Génération par IA avec score GEO et conseils
+- Export Markdown et copie presse-papiers
+
+**Onglet "Optimiser"**
+- Coller du contenu existant
+- Reformulation GEO automatique
+- Liste des améliorations appliquées
+- Comparaison avant/après
+
+**Onglet "Formats GEO"**
+- Templates pour FAQ optimisées (format Q/R adoré par les LLMs)
+- Fiches d'entité (Knowledge Graph)
+- Guides définitifs (contenu pilier)
+- Comparatifs structurés (tableaux)
+- Articles E-E-A-T
+
+### API Endpoints
+- `POST /api/content/generate` - Génère du contenu GEO selon le type
+- `POST /api/content/reformulate` - Optimise du contenu existant
+
+## Previous GEO Features (Feb 25, 2026)
 
 ### Visibilité Générative (/visibility)
 - Tracking de présence dans ChatGPT, Perplexity, Gemini, Claude
 - Score de citation par moteur génératif
 - Position dans les réponses (1er, 2e, 3e...)
-- Fréquence d'apparition par thématique/requête
-- Distribution des positions (graphique)
-- Requêtes récentes analysées
+- Distribution des positions
+- Visibilité par thématique
 
 ### Audit de Contenu (/content-audit)
-- Score de "citabilité" des pages (probabilité d'être cité par un LLM)
-- Détection des lacunes (sujets où vous devriez être cité mais ne l'êtes pas)
-- Analyse de la structure (formats privilégiés par les LLMs)
-- Vérification des données structurées / schema.org
-- Recommandations de structure page par page
-- Impact potentiel des améliorations
-
-### Benchmark Concurrentiel (existant, amélioré)
-- Qui est cité à votre place et pourquoi
-- Comparaison de visibilité GEO par thématique
-- Sources préférées des LLMs dans votre secteur
-- Gap analysis (opportunités non couvertes)
+- Score de citabilité des pages
+- Analyse de structure (formats LLM-friendly)
+- Couverture Schema.org
+- Détection des lacunes de contenu
+- Recommandations de structure
 
 ## Prioritized Backlog
 
 ### P0 - Critical (Completed)
 - [x] IAskan Verified GEO Protocol™ implementation
-- [x] Microsoft SSO integration (requires API keys)
-- [x] LinkedIn SSO integration (requires API keys)
-- [x] Magic Link email authentication
-- [x] Email notifications (requires RESEND_API_KEY)
 - [x] Visibility Page implementation
 - [x] Content Audit Page implementation
+- [x] Content Generator Page implementation
 
 ### P1 - High Priority
 - [x] Competitor comparison detailed view
 - [x] PDF report generation
 - [x] Analysis history charts
 - [x] Fix Recharts dimension warning
+- [ ] Microsoft SSO integration (requires API keys)
+- [ ] LinkedIn SSO integration (requires API keys)
 - [ ] Team/multi-user support
 
 ### P2 - Medium Priority
+- [ ] Stripe subscription management complète
 - [ ] API access for Business plan
-- [ ] GEO article generation
+- [ ] GEO article generation avec images
 - [ ] Waitlist system for launch
 - [ ] Referral program
 
@@ -148,34 +169,33 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 
 ## Recent Updates
 
-### Feb 25, 2026 - GEO Features Implementation
-- **NEW: Visibility Page** (/visibility)
-  - Tracking de présence dans les moteurs IA génératives
-  - Score par moteur (ChatGPT, Claude, Gemini, Perplexity)
-  - Distribution des positions
-  - Visibilité par thématique
-  - Requêtes récentes analysées
-- **NEW: Content Audit Page** (/content-audit)
-  - Score de citabilité global
-  - Score de structure
-  - Couverture Schema.org
-  - Détection des lacunes de contenu
-  - Analyse page par page
-  - Recommandations de structure
-- **Navigation mise à jour** avec les nouvelles entrées
-- **Fix Recharts** - Ajout de min-h-[Xpx] pour éviter le warning de dimensions
+### Feb 25, 2026 - Content Generation Implementation
+- **NEW: Content Generator Page** (/content-generator)
+  - 3 onglets: Générer, Optimiser, Formats GEO
+  - 5 types de contenu: Article, FAQ, Fiche Entité, Guide, Comparatif
+  - Génération IA via Emergent LLM Key (GPT-4o)
+  - Optimisation de contenu existant
+  - Score GEO et conseils d'utilisation
+  - Export Markdown
+- **API Content Generation**
+  - POST /api/content/generate
+  - POST /api/content/reformulate
+- **Navigation mise à jour** avec entrée "Générateur"
+- **Tests**: 80/80 frontend, 13/13 nouveaux tests backend
 
-### Feb 24, 2026 - UX Improvements
-- Added visual loading indicators with progress bars
-- Added 5-second timeout on auth checks
-- Improved loading states with animated spinners
-- Enhanced analysis "running" state with step-by-step progress
+### Feb 25, 2026 - GEO Features Implementation
+- Visibility Page (/visibility)
+- Content Audit Page (/content-audit)
+- Fix Recharts dimension warning
+- Navigation update
 
 ## Known Issues
-- None critical
+- Microsoft/LinkedIn SSO nécessite des clés API (actuellement vides)
+- LLM budget doit être rechargé régulièrement
 
 ## Key Files
 - `/app/backend/server.py` - Main API server with GEO Protocol™ engine
+- `/app/frontend/src/pages/ContentGeneratorPage.jsx` - Content generation page
 - `/app/frontend/src/pages/VisibilityPage.jsx` - Visibility tracking page
 - `/app/frontend/src/pages/ContentAuditPage.jsx` - Content audit page
 - `/app/frontend/src/pages/AnalysisPage.jsx` - Analysis V2 with indices
@@ -183,4 +203,4 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 - `/app/frontend/src/components/layout/DashboardLayout.jsx` - Sidebar navigation
 
 ## Test Reports
-- `/app/test_reports/iteration_5.json` - Latest test report (100% pass rate)
+- `/app/test_reports/iteration_6.json` - Latest test report (100% pass rate for new features)
