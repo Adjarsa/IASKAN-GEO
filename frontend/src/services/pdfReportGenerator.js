@@ -183,7 +183,7 @@ class IAskanPDFReport {
     // Section background
     const rgb = hexToRgb(COLORS.primary);
     this.doc.setFillColor(rgb.r, rgb.g, rgb.b);
-    this.doc.roundedRect(this.margin, this.currentY, this.contentWidth, 12, 2, 2, 'F');
+    this.doc.rect(this.margin, this.currentY, this.contentWidth, 12, 'F');
     
     // Section title text
     this.doc.setTextColor(255, 255, 255);
@@ -238,7 +238,7 @@ class IAskanPDFReport {
     
     // Card background
     this.doc.setFillColor(248, 250, 252);
-    this.doc.roundedRect(this.margin, this.currentY, this.contentWidth, cardHeight, 2, 2, 'F');
+    this.doc.rect(this.margin, this.currentY, this.contentWidth, cardHeight, 'F');
     
     // Score circle
     this.doc.setFillColor(rgb.r, rgb.g, rgb.b);
@@ -271,11 +271,11 @@ class IAskanPDFReport {
     
     // Background bar
     this.doc.setFillColor(226, 232, 240);
-    this.doc.roundedRect(barX, barY, barWidth, 4, 1, 1, 'F');
+    this.doc.rect(barX, barY, barWidth, 4, 'F');
     
     // Progress bar
     this.doc.setFillColor(rgb.r, rgb.g, rgb.b);
-    this.doc.roundedRect(barX, barY, barWidth * (score / maxScore), 4, 1, 1, 'F');
+    this.doc.rect(barX, barY, barWidth * (score / maxScore), 4, 'F');
     
     this.currentY += cardHeight + 5;
   }
@@ -383,7 +383,7 @@ class IAskanPDFReport {
     // Project info box
     const rgb = hexToRgb(COLORS.light);
     this.doc.setFillColor(rgb.r, rgb.g, rgb.b);
-    this.doc.roundedRect(this.margin, this.currentY, this.contentWidth, 25, 3, 3, 'F');
+    this.doc.rect(this.margin, this.currentY, this.contentWidth, 25, 'F');
     
     this.doc.setTextColor(...Object.values(hexToRgb(COLORS.dark)));
     this.doc.setFontSize(14);
@@ -468,7 +468,7 @@ class IAskanPDFReport {
     // Location info box
     const rgb = hexToRgb(COLORS.light);
     this.doc.setFillColor(rgb.r, rgb.g, rgb.b);
-    this.doc.roundedRect(this.margin, this.currentY, this.contentWidth, 20, 3, 3, 'F');
+    this.doc.rect(this.margin, this.currentY, this.contentWidth, 20, 'F');
     
     this.doc.setTextColor(...Object.values(hexToRgb(COLORS.primary)));
     this.doc.setFontSize(12);
@@ -974,7 +974,7 @@ class IAskanPDFReport {
         // Priority header
         const rgb = hexToRgb(color);
         this.doc.setFillColor(rgb.r, rgb.g, rgb.b, 0.1);
-        this.doc.roundedRect(this.margin, this.currentY, this.contentWidth, 8, 1, 1, 'F');
+        this.doc.rect(this.margin, this.currentY, this.contentWidth, 8, 'F');
         
         this.doc.setTextColor(rgb.r, rgb.g, rgb.b);
         this.doc.setFontSize(10);
@@ -990,7 +990,7 @@ class IAskanPDFReport {
           
           // Action card
           this.doc.setFillColor(248, 250, 252);
-          this.doc.roundedRect(this.margin, this.currentY, this.contentWidth, 22, 2, 2, 'F');
+          this.doc.rect(this.margin, this.currentY, this.contentWidth, 22, 'F');
           
           // Number
           this.doc.setFillColor(rgb.r, rgb.g, rgb.b);
