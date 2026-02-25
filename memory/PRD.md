@@ -186,13 +186,18 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
   - Génération côté client avec jsPDF + jspdf-autotable
   - Bouton export sur la page d'analyse et le dashboard
   - Design professionnel avec header gradient et scores visuels
+- **NEW: Report Preview Modal** (/app/frontend/src/components/ReportPreviewModal.jsx)
+  - Prévisualisation complète des 10 sections avant téléchargement
+  - Navigation par onglets pour parcourir les sections
+  - Bouton de téléchargement intégré dans la modal
+  - Interface utilisateur intuitive avec sidebar de navigation
 - **Dépendances ajoutées**: jspdf, jspdf-autotable, html2canvas
 - **Composants créés**:
   - PDFExportButton.jsx - Bouton d'export réutilisable
-  - PDFExportCard.jsx - Carte avec preview des sections
+  - ReportPreviewModal.jsx - Modal de prévisualisation avec 10 sections
 - **Pages mises à jour**:
-  - AnalysisPage.jsx - Bouton export + carte PDF en bas de page
-  - DashboardPage.jsx - Bouton export dans le header
+  - AnalysisPage.jsx - Bouton "Prévisualiser" + "Exporter PDF" + carte PDF
+  - DashboardPage.jsx - Boutons "Prévisualiser" + "PDF" dans le header
 
 ### Feb 25, 2026 - Content Generation Implementation
 - **NEW: Content Generator Page** (/content-generator)
