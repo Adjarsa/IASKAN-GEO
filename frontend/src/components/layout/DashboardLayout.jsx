@@ -51,6 +51,7 @@ const DashboardLayout = ({ children }) => {
     { path: "/analysis", label: "Analyses", icon: BarChart3 },
     { path: "/visibility", label: "Visibilite", icon: Eye },
     { path: "/content-audit", label: "Audit Contenu", icon: FileText },
+    { path: "/content-generator", label: "Generateur", icon: Wand2 },
     { path: "/competitors", label: "Benchmark", icon: Users },
     { path: "/history", label: "Evolution", icon: TrendingUp },
     { path: "/recommendations", label: "Recommandations", icon: Target },
