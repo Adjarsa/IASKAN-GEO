@@ -175,25 +175,40 @@ const DashboardPage = () => {
               Actualiser
             </Button>
             {latestAnalysis && (
-              <Button 
-                variant="outline" 
-                onClick={handleDownloadPDF}
-                disabled={downloadingPDF}
-                className="border-violet-200 text-violet-700 hover:bg-violet-50"
-                data-testid="download-pdf-dashboard"
-              >
-                {downloadingPDF ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Génération...
-                  </>
-                ) : (
-                  <>
-                    <FileDown className="w-4 h-4 mr-2" />
-                    Rapport PDF
-                  </>
-                )}
-              </Button>
+              <>
+                <ReportPreviewModal 
+                  analysisData={stats?.latest_analysis} 
+                  projectData={currentProject}
+                >
+                  <Button 
+                    variant="outline" 
+                    className="border-violet-200 text-violet-700 hover:bg-violet-50"
+                    data-testid="preview-report-dashboard"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Prévisualiser
+                  </Button>
+                </ReportPreviewModal>
+                <Button 
+                  variant="outline" 
+                  onClick={handleDownloadPDF}
+                  disabled={downloadingPDF}
+                  className="border-cyan-200 text-cyan-700 hover:bg-cyan-50"
+                  data-testid="download-pdf-dashboard"
+                >
+                  {downloadingPDF ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      PDF...
+                    </>
+                  ) : (
+                    <>
+                      <FileDown className="w-4 h-4 mr-2" />
+                      PDF
+                    </>
+                  )}
+                </Button>
+              </>
             )}
             <Link to="/analysis">
               <Button className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25" data-testid="new-analysis-btn">
