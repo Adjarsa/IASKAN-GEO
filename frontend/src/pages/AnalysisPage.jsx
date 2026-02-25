@@ -23,9 +23,11 @@ import {
   Activity,
   CheckCircle2,
   AlertTriangle,
-  FileDown
+  FileDown,
+  Eye
 } from "lucide-react";
 import { generatePDFReport } from "@/services/pdfReportGenerator";
+import ReportPreviewModal from "@/components/ReportPreviewModal";
 
 const AnalysisPage = () => {
   const { analysisId } = useParams();
