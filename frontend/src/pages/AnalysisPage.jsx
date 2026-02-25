@@ -846,6 +846,66 @@ const AnalysisPage = () => {
                   </div>
                 </Card>
               )}
+
+              {/* PDF Export Card - After Recommendations */}
+              <Card className="p-6 bg-gradient-to-br from-violet-50 to-cyan-50 border border-violet-100">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-white rounded-lg shadow-sm">
+                    <FileDown className="h-6 w-6 text-violet-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-slate-800 mb-1">
+                      Rapport d'Audit PDF Complet
+                    </h3>
+                    <p className="text-sm text-slate-600 mb-4">
+                      Générez un rapport professionnel avec les 10 sections d'analyse : 
+                      Introduction, Localisation, Requêtes, Citations IA, Contenu, 
+                      Technique, Confiance, Concurrence, Requêtes IA et Plan d'Action.
+                    </p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {[
+                        'Introduction',
+                        'Localisation', 
+                        'Requêtes',
+                        'Citations IA',
+                        'Contenu',
+                        'Technique',
+                        'Confiance',
+                        'Concurrence',
+                        'Requêtes IA',
+                        'Plan d\'Action'
+                      ].map((section, i) => (
+                        <span 
+                          key={i}
+                          className="text-xs px-2 py-1 bg-white/70 rounded-full text-slate-600 border border-slate-200"
+                        >
+                          {section}
+                        </span>
+                      ))}
+                    </div>
+
+                    <Button
+                      onClick={downloadPDF}
+                      disabled={downloading}
+                      className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 text-white"
+                      data-testid="pdf-export-card-button"
+                    >
+                      {downloading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Génération en cours...
+                        </>
+                      ) : (
+                        <>
+                          <FileDown className="h-4 w-4 mr-2" />
+                          Télécharger le rapport PDF
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
             </>
           )}
         </div>
