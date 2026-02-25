@@ -3503,17 +3503,21 @@ Format de reponse:
 def call_llm_for_content(prompt: str) -> str:
     """Call LLM for content generation using Emergent LLM Key"""
     try:
-        from emergentintegrations.llm.chat import chat, LlmModel
+        from emergentintegrations.llm.chat import LlmChat
         
-        response = chat(
-            api_key=EMERGENT_LLM_KEY,
-            model=LlmModel.OPENAI_GPT4O,
-            system_prompt="Tu es un expert en content marketing et GEO (Generative Engine Optimization). Tu crees du contenu optimise pour etre cite par les LLMs comme ChatGPT, Claude, Gemini. Reponds toujours en francais.",
-            user_prompt=prompt
-        )
+        llm = LlmChat(api_key=EMERGENT_LLM_KEY)
+        llm = llm.with_model("openai/gpt-4o")
+        
+        # Set system prompt
+        system_prompt = "Tu es un expert en content marketing et GEO (Generative Engine Optimization). Tu crees du contenu optimise pour etre cite par les LLMs comme ChatGPT, Claude, Gemini. Reponds toujours en francais avec un contenu riche, structure et factuel."
+        
+        # Send message and get response
+        response = llm.send_message(f"{system_prompt}\n\n{prompt}")
         return response
     except Exception as e:
         print(f"LLM call error: {e}")
+        import traceback
+        traceback.print_exc()
         # Fallback response
         return f"""# Contenu genere pour: {prompt[:50]}...
 
