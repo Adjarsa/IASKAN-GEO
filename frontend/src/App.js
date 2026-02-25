@@ -363,6 +363,14 @@ const AppRouter = () => {
         }
       />
       <Route
+        path="/content-generator"
+        element={
+          <ProjectRequiredRoute>
+            <ContentGeneratorPage />
+          </ProjectRequiredRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
           <ProtectedRoute>
