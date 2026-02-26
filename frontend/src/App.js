@@ -410,6 +410,9 @@ const AppRouter = () => {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/faq" element={<FAQPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/gdpr" element={<GDPRPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
