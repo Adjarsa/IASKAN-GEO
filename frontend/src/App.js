@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 import axios from "axios";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
+import { getFingerprintAsync } from "@/hooks/useFingerprint";
 
 // Initialize portal container for Radix UI components immediately
 // This fixes the React 19 + Radix UI "insertBefore" error
