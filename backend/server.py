@@ -2172,6 +2172,7 @@ async def run_analysis_v2(analysis_id: str, project: dict, ai_engines: List[str]
                 "ai_scores": final_ai_scores,
                 "query_scores": query_results,
                 "recommendations": recommendations,
+                "competitor_comparison": competitor_comparison,
                 "indices": indices,
                 "stability_data": stability_data,
                 "query_type_breakdown": query_type_breakdown,
