@@ -169,6 +169,23 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 
 ## Recent Updates
 
+### Feb 26, 2026 - Logo, Website Link & Dynamic Competitors
+- **Logo & Website Display**:
+  - Ajout automatique du favicon/logo via Google Favicon Service
+  - Affichage du logo et du lien du site dans le header du Dashboard
+  - Nouveau champ `logo_url` dans le modèle Project
+- **Analyse Concurrentielle Dynamique**:
+  - Nouvelle fonction `identify_competitors_from_analysis()` pour identifier les concurrents depuis les réponses IA
+  - Nouveau champ `discovered_competitors` dans le modèle Project
+  - Séparation visuelle entre "Concurrents Découverts par l'IA" et "Concurrents Définis"
+  - Affichage du nombre de mentions et sources IA pour chaque concurrent découvert
+  - Mise à jour du PDF et de la prévisualisation pour afficher les deux types de concurrents
+- **Fichiers modifiés**:
+  - `backend/server.py`: Nouvelles fonctions `get_favicon_url()`, `extract_competitors_from_response()`, `identify_competitors_from_analysis()`
+  - `frontend/src/pages/DashboardPage.jsx`: Affichage logo + lien site
+  - `frontend/src/components/ReportPreviewModal.jsx`: Section Concurrence améliorée
+  - `frontend/src/services/pdfReportGenerator.js`: Section Concurrence avec concurrents découverts
+
 ### Feb 25, 2026 - PDF Export Report Implementation
 - **NEW: Professional PDF Report Generator** (/app/frontend/src/services/pdfReportGenerator.js)
   - 10 sections complètes basées sur le modèle utilisateur:
