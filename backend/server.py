@@ -248,24 +248,24 @@ SUBSCRIPTION_PLANS = {
     "pro": {
         "name": "Pro",
         "price": 149.00,
-        "queries_limit": 7500,  # ~13 prompts × 3 runs × 4 IA × 50 scans ≈ 7500
+        "queries_limit": 10400,  # 13 prompts × 4 runs × 4 IA × 50 scans = 10400
         "scans_limit": 50,
         "projects_limit": 5,
-        "num_prompts": 13,  # 625 prompts/mois ÷ 50 scans ≈ 13
-        "runs_per_query": 3,
+        "num_prompts": 13,
+        "runs_per_query": 4,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["50 scans/mois", "13 prompts/scan", "156 requêtes/scan", "7 500 requêtes/mois", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Benchmark concurrents", "Analyse de stabilité", "5 projets", "Support prioritaire"]
+        "features": ["50 scans/mois", "13 prompts/scan", "4 runs/requête", "208 requêtes/scan", "10 400 requêtes/mois", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Benchmark concurrents", "Analyse de stabilité avancée", "5 projets", "Support prioritaire"]
     },
     "business": {
         "name": "Business",
         "price": 349.00,
-        "queries_limit": 22500,  # ~13 prompts × 3 runs × 4 IA × 150 scans ≈ 22500
+        "queries_limit": 39000,  # 13 prompts × 5 runs × 4 IA × 150 scans = 39000
         "scans_limit": 150,
         "projects_limit": -1,  # illimité
-        "num_prompts": 13,  # 1875 prompts/mois ÷ 150 scans ≈ 13
-        "runs_per_query": 3,
+        "num_prompts": 13,
+        "runs_per_query": 5,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["150 scans/mois", "13 prompts/scan", "156 requêtes/scan", "22 500 requêtes/mois", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Génération d'articles GEO", "Intelligence stratégique", "Projets illimités", "API access", "Support dédié"]
+        "features": ["150 scans/mois", "13 prompts/scan", "5 runs/requête", "260 requêtes/scan", "39 000 requêtes/mois", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Génération d'articles GEO", "Intelligence stratégique", "Projets illimités", "API access", "Support dédié"]
     }
 }
 
