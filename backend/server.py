@@ -245,13 +245,13 @@ SUBSCRIPTION_PLANS = {
     "business": {
         "name": "Business",
         "price": 349.00,
-        "queries_limit": 1500,
-        "scans_limit": -1,  # illimité
-        "projects_limit": -1,
-        "num_prompts": 30,
+        "queries_limit": 22500,  # ~13 prompts × 3 runs × 4 IA × 150 scans ≈ 22500
+        "scans_limit": 150,
+        "projects_limit": -1,  # illimité
+        "num_prompts": 13,  # 1875 prompts/mois ÷ 150 scans ≈ 13
         "runs_per_query": 3,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["Scans illimités", "30 prompts/scan", "Toutes les IA", "Génération d'articles GEO", "Intelligence stratégique", "Projets illimités", "API access", "Support dédié"]
+        "features": ["150 scans/mois", "13 prompts/scan", "156 requêtes/scan", "22 500 requêtes/mois", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Génération d'articles GEO", "Intelligence stratégique", "Projets illimités", "API access", "Support dédié"]
     }
 }
 
