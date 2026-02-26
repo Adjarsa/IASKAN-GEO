@@ -770,6 +770,76 @@ async def logout(request: Request, response: Response):
     response.delete_cookie("session_token", path="/")
     return {"message": "Déconnexion réussie"}
 
+# ================== EMAIL VERIFICATION ENDPOINTS ==================
+
+@api_router.post("/auth/verify-email")
+async def verify_email_endpoint(request: Request):
+    """Verify email with token"""
+    body = await request.json()
+    token = body.get("token")
+    
+    if not token:
+        raise HTTPException(status_code=400, detail="Token requis")
+    
+    result = await verify_email_token(token)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["error"])
+    
+    return {
+        "success": True,
+        "message": "Email vérifié avec succès !",
+        "email": result["email"]
+    }
+
+@api_router.post("/auth/resend-verification")
+async def resend_verification_email(user: dict = Depends(get_current_user)):
+    """Resend verification email to current user"""
+    email = user.get("email")
+    name = user.get("name")
+    user_id = user.get("user_id")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Email non trouvé")
+    
+    # Check if already verified
+    if user.get("email_verified"):
+        return {"success": True, "message": "Votre email est déjà vérifié"}
+    
+    # Check rate limiting (max 3 emails per hour)
+    one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+    recent_tokens = await db.email_verification_tokens.count_documents({
+        "user_id": user_id,
+        "created_at": {"$gte": one_hour_ago.isoformat()}
+    })
+    
+    if recent_tokens >= 3:
+        raise HTTPException(
+            status_code=429, 
+            detail="Trop de demandes. Veuillez attendre avant de réessayer."
+        )
+    
+    # Create and send new verification token
+    verification_token = await create_verification_token(user_id, email)
+    success = await send_verification_email(email, name, verification_token)
+    
+    if success:
+        return {"success": True, "message": "Email de vérification envoyé !"}
+    else:
+        raise HTTPException(
+            status_code=500, 
+            detail="Erreur lors de l'envoi de l'email. Veuillez réessayer."
+        )
+
+@api_router.get("/auth/verification-status")
+async def get_verification_status(user: dict = Depends(get_current_user)):
+    """Check if user's email is verified"""
+    return {
+        "email": user.get("email"),
+        "email_verified": user.get("email_verified", False),
+        "email_verified_at": user.get("email_verified_at")
+    }
+
 # ================== MICROSOFT & LINKEDIN OAUTH ==================
 
 async def create_oauth_user_session(email: str, name: str, picture: str, provider: str, response: Response):
