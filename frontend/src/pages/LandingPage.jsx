@@ -372,55 +372,27 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-slate-100 bg-white">
+      <footer className="py-8 px-6 border-t border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            {/* Brand */}
-            <div>
-              <Logo size="small" />
-              <p className="mt-4 text-sm text-slate-600">
-                La plateforme de Generative Engine Optimization pour améliorer votre visibilité dans les réponses IA.
-              </p>
-            </div>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-6">
+            <Logo size="small" />
             
-            {/* Product */}
-            <div>
-              <h4 className="font-semibold text-slate-900 mb-4">Produit</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li><a href="#features" className="hover:text-violet-600 transition-colors">Fonctionnalités</a></li>
-                <li><a href="#pricing" className="hover:text-violet-600 transition-colors">Tarifs</a></li>
-                <li><Link to="/faq" className="hover:text-violet-600 transition-colors">FAQ</Link></li>
-              </ul>
-            </div>
-            
-            {/* Company */}
-            <div>
-              <h4 className="font-semibold text-slate-900 mb-4">Entreprise</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li><Link to="/about" className="hover:text-violet-600 transition-colors">À propos</Link></li>
-                <li><Link to="/contact" className="hover:text-violet-600 transition-colors">Contact</Link></li>
-              </ul>
-            </div>
-            
-            {/* Legal */}
-            <div>
-              <h4 className="font-semibold text-slate-900 mb-4">Légal</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li><Link to="/legal" className="hover:text-violet-600 transition-colors">Mentions légales</Link></li>
-                <li><Link to="/privacy" className="hover:text-violet-600 transition-colors">Confidentialité</Link></li>
-                <li><Link to="/terms" className="hover:text-violet-600 transition-colors">CGV</Link></li>
-                <li><Link to="/gdpr" className="hover:text-violet-600 transition-colors">RGPD</Link></li>
-              </ul>
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-600">
+              <a href="#features" className="hover:text-violet-600 transition-colors">Fonctionnalités</a>
+              <a href="#pricing" className="hover:text-violet-600 transition-colors">Tarifs</a>
+              <Link to="/faq" className="hover:text-violet-600 transition-colors">FAQ</Link>
+              <Link to="/about" className="hover:text-violet-600 transition-colors">À propos</Link>
+              <Link to="/contact" className="hover:text-violet-600 transition-colors">Contact</Link>
+              <span className="text-slate-300">|</span>
+              <Link to="/legal" className="hover:text-violet-600 transition-colors">Mentions légales</Link>
+              <Link to="/privacy" className="hover:text-violet-600 transition-colors">Confidentialité</Link>
+              <Link to="/terms" className="hover:text-violet-600 transition-colors">CGV</Link>
+              <Link to="/gdpr" className="hover:text-violet-600 transition-colors">RGPD</Link>
             </div>
           </div>
           
-          <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-sm text-slate-600">
-              © 2025 IAskan. Tous droits réservés.
-            </div>
-            <div className="flex items-center gap-4 text-sm text-slate-500">
-              <span>Fait avec passion à Paris</span>
-            </div>
+          <div className="text-center text-sm text-slate-500">
+            © 2025 IAskan. Tous droits réservés.
           </div>
         </div>
       </footer>
