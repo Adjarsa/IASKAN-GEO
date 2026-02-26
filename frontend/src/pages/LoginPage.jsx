@@ -258,9 +258,9 @@ const LoginPage = () => {
             {/* Terms */}
             <p className="text-xs text-slate-600 text-center mt-10">
               En vous connectant, vous acceptez nos{" "}
-              <a href="#" className="text-violet-600 hover:underline">Conditions d'utilisation</a>
+              <Link to="/terms" className="text-violet-600 hover:underline">Conditions d'utilisation</Link>
               {" "}et notre{" "}
-              <a href="#" className="text-violet-600 hover:underline">Politique de confidentialité</a>
+              <Link to="/privacy" className="text-violet-600 hover:underline">Politique de confidentialité</Link>
             </p>
           </motion.div>
         </div>
