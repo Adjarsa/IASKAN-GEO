@@ -505,6 +505,7 @@ async def create_session(request: Request, response: Response):
     """Exchange session_id from Emergent Auth for session_token"""
     body = await request.json()
     session_id = body.get("session_id")
+    fingerprint = body.get("fingerprint", "unknown")  # Browser fingerprint
     
     if not session_id:
         raise HTTPException(status_code=400, detail="session_id requis")
@@ -534,17 +535,36 @@ async def create_session(request: Request, response: Response):
     picture = auth_data.get("picture")
     session_token = auth_data.get("session_token")
     
+    # ===== ANTI-ABUSE: Check for temporary email =====
+    if is_temporary_email(email):
+        logger.warning(f"Blocked temporary email registration: {email}")
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "temporary_email_blocked",
+                "message": "Les adresses email temporaires ne sont pas autorisées. Veuillez utiliser une adresse email permanente (Gmail, Outlook, email professionnel, etc.)."
+            }
+        )
+    
+    # Get client IP for logging
+    client_ip = get_client_ip(request)
+    
     # Check if user exists
     existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+    is_new_user = False
+    
     if existing_user:
         user_id = existing_user["user_id"]
     else:
+        is_new_user = True
         # Create new user
         user_doc = {
             "user_id": user_id,
             "email": email,
             "name": name,
             "picture": picture,
+            "registration_ip": client_ip,
+            "registration_fingerprint": fingerprint,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.users.insert_one(user_doc)
@@ -563,6 +583,8 @@ async def create_session(request: Request, response: Response):
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.subscriptions.insert_one(free_sub)
+        
+        logger.info(f"New user registered: email={email}, ip={client_ip}")
     
     # Create session
     expires_at = datetime.now(timezone.utc) + timedelta(days=30)
