@@ -200,6 +200,33 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
   - Collection `email_verification_tokens` pour les tokens
   - Champ `email_verified` dans users
 
+### Feb 26, 2026 - Complete Scan Enhancement (v2.1)
+- **Détection Avancée des Variantes de Marque** :
+  - Génération automatique de variantes : fautes de frappe, abréviations, produits
+  - Analyse des mentions avec qualité (forte, modérée, faible, variante uniquement)
+  - Tracking des variantes effectivement trouvées dans les réponses IA
+- **Analyse d'Enrichissement du Site (Citabilité)** :
+  - Détection Schema.org et types de données structurées
+  - Vérification présence FAQ, page À propos, Contact
+  - Identification des signaux de confiance (SSL, RGPD, certifications)
+  - Score de citabilité 0-100
+  - Recommandations personnalisées pour améliorer la citabilité
+- **Historique et Diff entre Scans** :
+  - Comparaison automatique avec le scan précédent
+  - Évolution du score global avec pourcentage de changement
+  - Évolution par métrique R.A.T.E. et par IA
+  - Identification des améliorations et régressions
+  - Tendances et insights automatiques
+- **Protocole mis à jour** : IAskan Verified GEO Protocol™ v2.1
+- **Nouveaux composants Frontend** :
+  - `ScanDiffCard` - Affichage de l'évolution
+  - `SiteEnrichmentCard` - Analyse de citabilité
+  - `BrandAnalysisCard` - Détection de variantes
+- **Fichiers modifiés** :
+  - `backend/server.py` : Nouvelles fonctions `generate_brand_variants()`, `detect_brand_mentions_advanced()`, `analyze_site_enrichment()`, `calculate_scan_diff()`
+  - `frontend/src/components/AdvancedScanCards.jsx` (nouveau)
+  - `frontend/src/pages/AnalysisPage.jsx` : Intégration des nouvelles cartes
+
 ### Feb 26, 2026 - Background Analysis Notification System
 - **Système de notifications pour analyses en arrière-plan** :
   - Notification in-app créée automatiquement quand une analyse se termine (succès ou échec)
