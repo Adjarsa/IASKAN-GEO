@@ -194,7 +194,7 @@ const DashboardPage = () => {
                   className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700 transition-colors"
                 >
                   <ExternalLink className="w-3 h-3" />
-                  {currentProject.website_url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                  {currentProject.website_url.replace(/^https?:\/\/(www\.)?/, '')}
                 </a>
               )}
               {!currentProject?.website_url && (
