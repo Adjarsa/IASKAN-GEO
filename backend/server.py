@@ -3228,7 +3228,7 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
             "competitors_analyzed": all_competitors_analyzed[:10],
             "discovered_competitors": discovered_competitors[:10],
             "user_defined_competitors": competitors[:5],
-            "protocol_version": "IAskan Verified GEO Protocol™ v2.0",
+            "protocol_version": "IAskan Verified GEO Protocol™ v2.1",
             "methodology": {
                 "formula": f"{num_prompts} prompts × {runs_per_query} runs × {len(ai_engines)} IA = {total_api_calls} requêtes",
                 "multi_runs": True,
@@ -3236,7 +3236,10 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
                 "multi_ai": len(ai_engines) > 1,
                 "query_distribution": QUERY_TYPE_DISTRIBUTION,
                 "analysis_layers": ["presence", "role", "credibility", "conversion"],
-                "anti_hallucination": True
+                "anti_hallucination": True,
+                "brand_variants_detection": True,
+                "site_enrichment_analysis": bool(site_enrichment),
+                "historical_diff": previous_analysis is not None
             }
         }
         
@@ -3262,6 +3265,51 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
                     "user_defined": True
                 })
         
+        # ===== PHASE 11: Calculate Historical Diff =====
+        scan_diff = await calculate_scan_diff(
+            {
+                "global_score": rate_score["total"],
+                "rate_score": rate_score,
+                "ai_scores": final_ai_scores,
+                "indices": indices,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            },
+            previous_analysis
+        )
+        
+        # ===== PHASE 12: Aggregate Brand Mention Analysis =====
+        brand_analysis = {
+            "variants_used": brand_variants[:20],
+            "mention_details": brand_mention_details[:50],  # Top 50 mention instances
+            "mention_quality_distribution": {},
+            "variants_found_summary": {}
+        }
+        
+        # Summarize mention quality distribution
+        quality_counts = {}
+        variants_found_counts = {}
+        for detail in brand_mention_details:
+            quality = detail.get("mention_quality", "unknown")
+            quality_counts[quality] = quality_counts.get(quality, 0) + 1
+            for variant in detail.get("variants_found", []):
+                variants_found_counts[variant] = variants_found_counts.get(variant, 0) + 1
+        
+        brand_analysis["mention_quality_distribution"] = quality_counts
+        brand_analysis["variants_found_summary"] = dict(sorted(variants_found_counts.items(), key=lambda x: -x[1])[:10])
+        
+        # ===== Add site enrichment recommendations to main recommendations =====
+        if site_enrichment and site_enrichment.get("recommendations"):
+            for enrichment_rec in site_enrichment.get("recommendations", [])[:3]:
+                recommendations.append({
+                    "priority": enrichment_rec.get("priority", "medium"),
+                    "category": "site_enrichment",
+                    "title": enrichment_rec.get("action", ""),
+                    "description": enrichment_rec.get("impact", ""),
+                    "impact": enrichment_rec.get("priority", "moyen"),
+                    "effort": "faible",
+                    "metrics_impacted": ["citability", "authority"]
+                })
+        
         # Update analysis with complete results
         await db.analyses.update_one(
             {"analysis_id": analysis_id},
@@ -3279,7 +3327,11 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
                 "query_type_breakdown": query_type_breakdown,
                 "analysis_summary": analysis_summary,
                 "current_phase": "completed",
-                "completed_at": datetime.now(timezone.utc).isoformat()
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                # NEW: Enhanced scan data
+                "site_enrichment": site_enrichment,
+                "scan_diff": scan_diff,
+                "brand_analysis": brand_analysis
             }}
         )
         
