@@ -4977,6 +4977,71 @@ async def delete_notification(notification_id: str, user: dict = Depends(get_cur
     
     return {"success": True, "notification_id": notification_id}
 
+# ================== CONTACT ENDPOINT ==================
+
+class ContactForm(BaseModel):
+    name: str
+    email: EmailStr
+    company: Optional[str] = None
+    subject: str
+    message: str
+
+@api_router.post("/contact")
+async def send_contact_message(form: ContactForm):
+    """Handle contact form submission"""
+    try:
+        # Store contact message in database
+        contact_doc = {
+            "contact_id": f"contact_{uuid.uuid4().hex[:12]}",
+            "name": form.name,
+            "email": form.email,
+            "company": form.company,
+            "subject": form.subject,
+            "message": form.message,
+            "status": "new",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.contact_messages.insert_one(contact_doc)
+        
+        # Send notification email to admin
+        if RESEND_API_KEY:
+            subject_labels = {
+                "demo": "Demande de démo",
+                "pricing": "Question tarifs",
+                "support": "Support technique",
+                "partnership": "Partenariat",
+                "other": "Autre"
+            }
+            subject_label = subject_labels.get(form.subject, form.subject)
+            
+            try:
+                params = {
+                    "from": "IAskan Contact <noreply@resend.dev>",
+                    "to": ["contact@iaskan.com"],  # Admin email
+                    "reply_to": form.email,
+                    "subject": f"[IAskan Contact] {subject_label} - {form.name}",
+                    "html": f"""
+                    <h2>Nouveau message de contact</h2>
+                    <p><strong>Nom:</strong> {form.name}</p>
+                    <p><strong>Email:</strong> {form.email}</p>
+                    <p><strong>Entreprise:</strong> {form.company or 'Non renseigné'}</p>
+                    <p><strong>Sujet:</strong> {subject_label}</p>
+                    <hr>
+                    <h3>Message:</h3>
+                    <p>{form.message}</p>
+                    """
+                }
+                await asyncio.to_thread(resend.Emails.send, params)
+                logger.info(f"Contact email sent for {form.email}")
+            except Exception as e:
+                logger.error(f"Failed to send contact email: {e}")
+        
+        return {"success": True, "message": "Message reçu"}
+        
+    except Exception as e:
+        logger.error(f"Contact form error: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de l'envoi du message")
+
 @api_router.get("/")
 async def root():
     return {"message": "IAskan API v1.0", "status": "healthy"}
