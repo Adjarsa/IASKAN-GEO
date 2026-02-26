@@ -30,6 +30,7 @@ import {
 import { generatePDFReport } from "@/services/pdfReportGenerator";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
 import { useFingerprint } from "@/hooks/useFingerprint";
+import { ScanDiffCard, SiteEnrichmentCard, BrandAnalysisCard } from "@/components/AdvancedScanCards";
 
 const AnalysisPage = () => {
   const { analysisId } = useParams();
