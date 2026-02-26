@@ -138,6 +138,47 @@ class Subscription(BaseModel):
     queries_used: int = 0
     trial_ends_at: Optional[datetime] = None
     current_period_start: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ================== ANTI-ABUSE SYSTEM ==================
+
+class FreeTrialUsage(BaseModel):
+    """Track free trial usage to prevent abuse"""
+    model_config = ConfigDict(extra="ignore")
+    usage_id: str = Field(default_factory=lambda: f"ftu_{uuid.uuid4().hex[:12]}")
+    email: str
+    email_domain: str
+    ip_address: str
+    fingerprint: str
+    analyzed_domain: str  # The domain that was analyzed for free
+    user_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# List of known temporary/disposable email domains
+BLOCKED_EMAIL_DOMAINS = {
+    # Common disposable email services
+    "tempmail.com", "temp-mail.org", "guerrillamail.com", "guerrillamail.org",
+    "10minutemail.com", "10minutemail.net", "mailinator.com", "mailinator.net",
+    "throwaway.email", "throwawaymail.com", "fakeinbox.com", "sharklasers.com",
+    "trashmail.com", "trashmail.net", "trashmail.org", "mailnesia.com",
+    "tempail.com", "dispostable.com", "mintemail.com", "tempr.email",
+    "discard.email", "discardmail.com", "spamgourmet.com", "mytrashmail.com",
+    "mailexpire.com", "maildrop.cc", "getairmail.com", "getnada.com",
+    "yopmail.com", "yopmail.fr", "yopmail.net", "cool.fr.nf", "jetable.fr.nf",
+    "nospam.ze.tc", "nomail.xl.cx", "mega.zik.dj", "speed.1s.fr", "courriel.fr.nf",
+    "moncourrier.fr.nf", "monemail.fr.nf", "monmail.fr.nf", "hide.biz.st",
+    "myspaceppl.com", "soodonims.com", "uggsrock.com", "hochsitze.com",
+    "hulapla.de", "teleworm.us", "superrito.com", "binkmail.com", "safetymail.info",
+    "spamobox.com", "spambox.us", "spam4.me", "grr.la", "spamfree24.org",
+    "spamfree24.de", "spamfree24.eu", "spamfree24.info", "spamfree24.net",
+    "emailondeck.com", "tempsky.com", "tempmailaddress.com", "burnermail.io",
+    "mohmal.com", "emailfake.com", "emaillime.com", "emailsensei.com",
+    "fakemail.net", "fakemailgenerator.com", "generator.email", "inboxalias.com",
+    "mailcatch.com", "mailsac.com", "mailslurp.com", "moakt.com", "mt2015.com",
+    "mytemp.email", "one-time.email", "onetimeusemail.com", "privy-mail.com",
+    "spamherelots.com", "tempinbox.com", "tempmails.net", "tmpmail.net",
+    "tmpmail.org", "wegwerfmail.de", "wegwerfmail.net", "wegwerfmail.org",
+    "zoemail.com", "ezehe.com", "xcodes.net", "nwytg.net", "edumail.icu",
+}
     current_period_end: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(days=30))
     stripe_subscription_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
