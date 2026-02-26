@@ -750,6 +750,245 @@ async def send_scan_complete_email(user_email: str, user_name: str, project_name
         logger.error(f"Failed to send scan complete email: {e}")
         return False
 
+
+# ================== SCHEDULED SCANS FUNCTIONS ==================
+
+def calculate_next_run(schedule: dict) -> str:
+    """Calculate the next run time based on schedule configuration"""
+    from datetime import datetime, timedelta
+    import pytz
+    
+    try:
+        tz = pytz.timezone(schedule.get("timezone", "Europe/Paris"))
+    except:
+        tz = pytz.timezone("Europe/Paris")
+    
+    now = datetime.now(tz)
+    frequency = schedule.get("frequency", "weekly")
+    hour = schedule.get("hour", 9)
+    minute = schedule.get("minute", 0)
+    
+    if frequency == "daily":
+        # Next occurrence at the specified time
+        next_run = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if next_run <= now:
+            next_run += timedelta(days=1)
+    
+    elif frequency == "weekly":
+        day_of_week = schedule.get("day_of_week", 0)  # 0=Monday
+        days_ahead = day_of_week - now.weekday()
+        if days_ahead < 0:
+            days_ahead += 7
+        next_run = now + timedelta(days=days_ahead)
+        next_run = next_run.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if next_run <= now:
+            next_run += timedelta(weeks=1)
+    
+    elif frequency == "monthly":
+        day_of_month = min(schedule.get("day_of_month", 1), 28)
+        next_run = now.replace(day=day_of_month, hour=hour, minute=minute, second=0, microsecond=0)
+        if next_run <= now:
+            # Move to next month
+            if now.month == 12:
+                next_run = next_run.replace(year=now.year + 1, month=1)
+            else:
+                next_run = next_run.replace(month=now.month + 1)
+    else:
+        next_run = now + timedelta(days=7)
+    
+    return next_run.isoformat()
+
+
+async def send_scheduled_report_email(
+    user_email: str,
+    user_name: str,
+    project_name: str,
+    analysis_id: str,
+    global_score: float,
+    grade: str,
+    recipients: List[str] = None
+):
+    """Send scheduled scan report email with PDF attachment link"""
+    if not RESEND_API_KEY:
+        logger.warning("Resend API key not configured")
+        return False
+    
+    try:
+        score_color = "#10b981" if global_score >= 70 else "#f59e0b" if global_score >= 40 else "#ef4444"
+        frontend_url = os.environ.get("FRONTEND_URL", "https://brand-ai-lens.preview.emergentagent.com")
+        analysis_url = f"{frontend_url}/analysis/{analysis_id}"
+        
+        # Build recipient list
+        all_recipients = [user_email]
+        if recipients:
+            all_recipients.extend([r for r in recipients if r and r != user_email])
+        
+        params = {
+            "from": "IAskan <noreply@resend.dev>",
+            "to": all_recipients,
+            "subject": f"📊 Rapport GEO programmé - {project_name} - Score: {int(global_score)}/100",
+            "html": f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; margin: 0; padding: 20px; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 40px 20px; }}
+                    .header {{ text-align: center; margin-bottom: 30px; }}
+                    .logo {{ font-size: 28px; font-weight: bold; background: linear-gradient(135deg, #7c3aed, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+                    .badge {{ display: inline-block; background: #7c3aed; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 20px; }}
+                    .score-box {{ background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius: 16px; padding: 30px; text-align: center; margin: 20px 0; border: 1px solid #e2e8f0; }}
+                    .score {{ font-size: 48px; font-weight: bold; color: {score_color}; }}
+                    .grade {{ display: inline-block; background: {score_color}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-left: 10px; }}
+                    .button {{ display: inline-block; background: linear-gradient(135deg, #7c3aed, #06b6d4); color: white !important; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; margin: 20px 0; }}
+                    .button-secondary {{ display: inline-block; background: #f1f5f9; color: #475569 !important; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; margin: 10px; border: 1px solid #e2e8f0; }}
+                    .footer {{ text-align: center; color: #64748b; font-size: 14px; margin-top: 30px; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="logo">IAskan</div>
+                        <p style="color: #64748b; margin-top: 5px;">Generative Engine Optimization</p>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <span class="badge">🗓️ Rapport Programmé</span>
+                    </div>
+                    
+                    <h2 style="text-align: center; margin-bottom: 10px;">Votre audit GEO est prêt</h2>
+                    <p style="text-align: center; color: #64748b;">Projet : <strong>{project_name}</strong></p>
+                    
+                    <div class="score-box">
+                        <p style="margin: 0 0 10px 0; color: #64748b;">Score de Visibilité IA</p>
+                        <span class="score">{int(global_score)}</span>
+                        <span class="grade">Grade {grade}</span>
+                        <p style="margin: 15px 0 0 0; font-size: 14px; color: #64748b;">/100</p>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <a href="{analysis_url}" class="button">Voir le rapport complet</a>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <a href="{analysis_url}?download=pdf" class="button-secondary">📥 Télécharger le PDF</a>
+                    </div>
+                    
+                    <p style="text-align: center; font-size: 14px; color: #64748b; margin-top: 20px;">
+                        Ce rapport a été généré automatiquement selon votre programmation.
+                    </p>
+                    
+                    <div class="footer">
+                        <p>© 2026 IAskan - Optimisation pour les Moteurs de Réponse IA</p>
+                        <p style="font-size: 12px;">Vous recevez cet email car vous avez configuré un scan programmé sur IAskan.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+        }
+        
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Scheduled report email sent to {all_recipients}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send scheduled report email: {e}")
+        return False
+
+
+async def run_scheduled_scan(schedule: dict):
+    """Execute a scheduled scan for a project"""
+    try:
+        project_id = schedule.get("project_id")
+        user_id = schedule.get("user_id")
+        
+        # Get project
+        project = await db.projects.find_one({"project_id": project_id, "user_id": user_id}, {"_id": 0})
+        if not project:
+            logger.error(f"Scheduled scan: Project {project_id} not found")
+            return False
+        
+        # Get user subscription
+        subscription = await db.subscriptions.find_one({"user_id": user_id}, {"_id": 0})
+        if not subscription:
+            logger.error(f"Scheduled scan: No subscription for user {user_id}")
+            return False
+        
+        plan = subscription.get("plan", "free")
+        
+        # Only Pro and Business can use scheduled scans
+        if plan not in ["pro", "business"]:
+            logger.warning(f"Scheduled scan: User {user_id} has {plan} plan, scheduled scans require Pro or Business")
+            return False
+        
+        # Check quota
+        scans_used = subscription.get("scans_used", 0)
+        plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["pro"])
+        scans_limit = plan_config.get("scans_limit", 50)
+        
+        if scans_used >= scans_limit:
+            logger.warning(f"Scheduled scan: User {user_id} has reached scan limit")
+            return False
+        
+        # Create analysis
+        analysis_id = f"ana_{uuid.uuid4().hex[:12]}"
+        analysis_doc = {
+            "analysis_id": analysis_id,
+            "project_id": project_id,
+            "user_id": user_id,
+            "status": "pending",
+            "scheduled": True,
+            "schedule_id": schedule.get("schedule_id"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "current_phase": "initializing"
+        }
+        await db.analyses.insert_one(analysis_doc)
+        
+        # Run analysis in background
+        asyncio.create_task(run_analysis_v2(analysis_id, project, plan_config))
+        
+        # Update schedule
+        await db.scan_schedules.update_one(
+            {"schedule_id": schedule.get("schedule_id")},
+            {"$set": {
+                "last_run": datetime.now(timezone.utc).isoformat(),
+                "next_run": calculate_next_run(schedule),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        logger.info(f"Scheduled scan started: {analysis_id} for project {project_id}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to run scheduled scan: {e}")
+        return False
+
+
+async def check_scheduled_scans():
+    """Background task to check and run due scheduled scans"""
+    while True:
+        try:
+            now = datetime.now(timezone.utc)
+            
+            # Find schedules that are due
+            due_schedules = await db.scan_schedules.find({
+                "enabled": True,
+                "next_run": {"$lte": now.isoformat()}
+            }, {"_id": 0}).to_list(100)
+            
+            for schedule in due_schedules:
+                await run_scheduled_scan(schedule)
+            
+        except Exception as e:
+            logger.error(f"Error checking scheduled scans: {e}")
+        
+        # Check every 5 minutes
+        await asyncio.sleep(300)
+
+
 async def get_session_from_token(token: str) -> Optional[dict]:
     """Validate session token and return session data"""
     session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
