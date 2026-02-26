@@ -5217,6 +5217,169 @@ async def delete_notification(notification_id: str, user: dict = Depends(get_cur
     
     return {"success": True, "notification_id": notification_id}
 
+# ================== SCHEDULED SCANS ENDPOINTS ==================
+
+class ScheduleCreate(BaseModel):
+    project_id: str
+    frequency: str = "weekly"  # daily, weekly, monthly
+    day_of_week: int = 0  # 0-6 for weekly
+    day_of_month: int = 1  # 1-28 for monthly
+    hour: int = 9  # 0-23
+    minute: int = 0  # 0-59
+    send_report_email: bool = True
+    report_recipients: List[str] = []
+
+class ScheduleUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    frequency: Optional[str] = None
+    day_of_week: Optional[int] = None
+    day_of_month: Optional[int] = None
+    hour: Optional[int] = None
+    minute: Optional[int] = None
+    send_report_email: Optional[bool] = None
+    report_recipients: Optional[List[str]] = None
+
+@api_router.get("/schedules")
+async def get_user_schedules(user: dict = Depends(get_current_user)):
+    """Get all scan schedules for the user"""
+    # Check if user has Pro or Business plan
+    subscription = await db.subscriptions.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    plan = subscription.get("plan", "free") if subscription else "free"
+    
+    if plan not in ["pro", "business"]:
+        return {"schedules": [], "available": False, "reason": "Les scans programmés nécessitent un plan Pro ou Business."}
+    
+    schedules = await db.scan_schedules.find(
+        {"user_id": user["user_id"]},
+        {"_id": 0}
+    ).to_list(100)
+    
+    return {"schedules": schedules, "available": True}
+
+@api_router.get("/schedules/{project_id}")
+async def get_project_schedule(project_id: str, user: dict = Depends(get_current_user)):
+    """Get schedule for a specific project"""
+    schedule = await db.scan_schedules.find_one(
+        {"project_id": project_id, "user_id": user["user_id"]},
+        {"_id": 0}
+    )
+    
+    return {"schedule": schedule}
+
+@api_router.post("/schedules")
+async def create_schedule(schedule_data: ScheduleCreate, user: dict = Depends(get_current_user)):
+    """Create a new scan schedule"""
+    # Check if user has Pro or Business plan
+    subscription = await db.subscriptions.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    plan = subscription.get("plan", "free") if subscription else "free"
+    
+    if plan not in ["pro", "business"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Les scans programmés nécessitent un plan Pro ou Business."
+        )
+    
+    # Check if project exists
+    project = await db.projects.find_one(
+        {"project_id": schedule_data.project_id, "user_id": user["user_id"]},
+        {"_id": 0}
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    # Check if schedule already exists for this project
+    existing = await db.scan_schedules.find_one(
+        {"project_id": schedule_data.project_id, "user_id": user["user_id"]}
+    )
+    if existing:
+        raise HTTPException(status_code=400, detail="Une programmation existe déjà pour ce projet")
+    
+    # Create schedule
+    schedule = ScanSchedule(
+        project_id=schedule_data.project_id,
+        user_id=user["user_id"],
+        frequency=schedule_data.frequency,
+        day_of_week=schedule_data.day_of_week,
+        day_of_month=schedule_data.day_of_month,
+        hour=schedule_data.hour,
+        minute=schedule_data.minute,
+        send_report_email=schedule_data.send_report_email,
+        report_recipients=schedule_data.report_recipients
+    )
+    
+    schedule_dict = schedule.model_dump()
+    schedule_dict["next_run"] = calculate_next_run(schedule_dict)
+    
+    await db.scan_schedules.insert_one(schedule_dict)
+    
+    # Remove _id for response
+    schedule_dict.pop("_id", None)
+    
+    return {"success": True, "schedule": schedule_dict}
+
+@api_router.put("/schedules/{schedule_id}")
+async def update_schedule(schedule_id: str, updates: ScheduleUpdate, user: dict = Depends(get_current_user)):
+    """Update a scan schedule"""
+    # Get existing schedule
+    schedule = await db.scan_schedules.find_one(
+        {"schedule_id": schedule_id, "user_id": user["user_id"]},
+        {"_id": 0}
+    )
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Programmation non trouvée")
+    
+    # Apply updates
+    update_dict = {k: v for k, v in updates.model_dump().items() if v is not None}
+    if update_dict:
+        update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+        
+        # Merge with existing schedule for next_run calculation
+        merged = {**schedule, **update_dict}
+        update_dict["next_run"] = calculate_next_run(merged)
+        
+        await db.scan_schedules.update_one(
+            {"schedule_id": schedule_id},
+            {"$set": update_dict}
+        )
+    
+    # Get updated schedule
+    updated_schedule = await db.scan_schedules.find_one(
+        {"schedule_id": schedule_id},
+        {"_id": 0}
+    )
+    
+    return {"success": True, "schedule": updated_schedule}
+
+@api_router.delete("/schedules/{schedule_id}")
+async def delete_schedule(schedule_id: str, user: dict = Depends(get_current_user)):
+    """Delete a scan schedule"""
+    result = await db.scan_schedules.delete_one({
+        "schedule_id": schedule_id,
+        "user_id": user["user_id"]
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Programmation non trouvée")
+    
+    return {"success": True}
+
+@api_router.post("/schedules/{schedule_id}/run-now")
+async def run_schedule_now(schedule_id: str, user: dict = Depends(get_current_user)):
+    """Manually trigger a scheduled scan immediately"""
+    schedule = await db.scan_schedules.find_one(
+        {"schedule_id": schedule_id, "user_id": user["user_id"]},
+        {"_id": 0}
+    )
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Programmation non trouvée")
+    
+    success = await run_scheduled_scan(schedule)
+    
+    if not success:
+        raise HTTPException(status_code=400, detail="Impossible de lancer le scan. Vérifiez vos quotas.")
+    
+    return {"success": True, "message": "Scan lancé avec succès"}
+
 # ================== CONTACT ENDPOINT ==================
 
 class ContactForm(BaseModel):
