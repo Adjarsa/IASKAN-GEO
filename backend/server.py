@@ -2515,11 +2515,10 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         # Extract plan parameters
         ai_engines = plan_config.get("ai_engines", ["chatgpt"])
         num_prompts = plan_config.get("num_prompts", 10)
-        variations_per_prompt = plan_config.get("variations_per_prompt", 3)
         runs_per_query = plan_config.get("runs_per_query", 3)
         
-        # Calculate total queries for display
-        total_api_calls = num_prompts * variations_per_prompt * runs_per_query * len(ai_engines)
+        # Calculate total queries: prompts × runs × engines
+        total_api_calls = num_prompts * runs_per_query * len(ai_engines)
         
         brand_name = project.get("brand_name", "")
         keywords = project.get("keywords", [])
