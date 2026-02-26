@@ -169,6 +169,22 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 
 ## Recent Updates
 
+### Feb 26, 2026 - Email Verification System
+- **Vérification email obligatoire** à la création de compte :
+  - Email de vérification automatique via Resend avec design IAskan
+  - Token sécurisé avec expiration 24h
+  - Blocage de l'essai gratuit tant que l'email n'est pas vérifié
+- **Endpoints API** :
+  - `POST /api/auth/verify-email` - Vérifie le token
+  - `POST /api/auth/resend-verification` - Renvoie l'email (rate limit: 3/heure)
+  - `GET /api/auth/verification-status` - Statut de vérification
+- **Composants frontend** :
+  - `VerifyEmailPage.jsx` - Page de vérification avec états (loading/success/error)
+  - `EmailVerificationBanner.jsx` - Bannière dans le dashboard pour relancer l'email
+- **Base de données** :
+  - Collection `email_verification_tokens` pour les tokens
+  - Champ `email_verified` dans users
+
 ### Feb 26, 2026 - Anti-Abuse System for Free Trial
 - **1 essai gratuit sécurisé** avec protection multi-niveaux :
   - Blocage par **email** (email déjà utilisé)
