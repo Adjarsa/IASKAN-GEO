@@ -189,6 +189,112 @@ SUBSCRIPTION_PLANS = {
 
 # ================== AUTH HELPERS ==================
 
+async def get_favicon_url(website_url: str) -> Optional[str]:
+    """Extract favicon/logo URL from a website"""
+    try:
+        # Clean the URL
+        if not website_url.startswith(('http://', 'https://')):
+            website_url = f"https://{website_url}"
+        
+        from urllib.parse import urlparse
+        parsed = urlparse(website_url)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+        
+        # Try common favicon locations
+        favicon_options = [
+            f"https://www.google.com/s2/favicons?domain={parsed.netloc}&sz=128",
+            f"https://icon.horse/icon/{parsed.netloc}",
+            f"{base_url}/favicon.ico",
+            f"{base_url}/apple-touch-icon.png",
+        ]
+        
+        # Use Google's favicon service as it's most reliable
+        return favicon_options[0]
+    except Exception as e:
+        logger.error(f"Error fetching favicon: {e}")
+        return None
+
+def extract_competitors_from_response(response_text: str, brand_name: str) -> List[Dict[str, Any]]:
+    """Extract competitor brand names mentioned in AI responses"""
+    competitors_found = []
+    brand_lower = brand_name.lower()
+    
+    # Common patterns that indicate competitor mentions
+    competitor_indicators = [
+        r'(?:comme|tel que|notamment|par exemple|également|aussi)\s+([A-Z][a-zA-Z0-9\-\.]+)',
+        r'(?:alternatives?|concurrents?|similaires?)\s*(?:comme|:)?\s*([A-Z][a-zA-Z0-9\-\.]+)',
+        r'([A-Z][a-zA-Z0-9]+(?:\.[a-z]{2,4})?)\s+(?:propose|offre|permet|est)',
+        r'(?:vs\.?|versus|contre|ou)\s+([A-Z][a-zA-Z0-9\-\.]+)',
+        r'(?:meilleur que|mieux que|supérieur à|comparable à)\s+([A-Z][a-zA-Z0-9\-\.]+)',
+    ]
+    
+    import re
+    
+    # Find all potential brand names (capitalized words, possibly with .com/.fr etc)
+    potential_brands = re.findall(r'\b([A-Z][a-zA-Z0-9]*(?:\.[a-z]{2,4})?)\b', response_text)
+    
+    # Filter and count mentions
+    brand_counts = {}
+    for brand in potential_brands:
+        brand_clean = brand.lower().replace('.com', '').replace('.fr', '').replace('.io', '')
+        # Skip if it's the user's brand or common words
+        skip_words = {'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'en', 'pour', 'avec', 
+                      'sur', 'par', 'dans', 'qui', 'que', 'est', 'sont', 'cette', 'ces',
+                      'ai', 'ia', 'seo', 'geo', 'url', 'api', 'http', 'https', 'www',
+                      'france', 'paris', 'europe', 'monde', 'web', 'site', 'page'}
+        
+        if (brand_clean not in skip_words and 
+            brand_clean != brand_lower and 
+            len(brand_clean) > 2):
+            brand_counts[brand] = brand_counts.get(brand, 0) + 1
+    
+    # Convert to list sorted by frequency
+    for brand, count in sorted(brand_counts.items(), key=lambda x: -x[1]):
+        if count >= 1:  # Mentioned at least once
+            competitors_found.append({
+                "name": brand,
+                "mentions": count,
+                "source": "ai_analysis"
+            })
+    
+    return competitors_found[:10]  # Return top 10
+
+async def identify_competitors_from_analysis(analysis_responses: List[Dict[str, Any]], brand_name: str) -> List[Dict[str, Any]]:
+    """Analyze all AI responses to identify competitors mentioned"""
+    all_competitors = {}
+    
+    for response in analysis_responses:
+        for ai_name, ai_data in response.get("ai_responses", {}).items():
+            response_text = ai_data.get("response_text", "") or ai_data.get("full_response", "")
+            
+            found = extract_competitors_from_response(response_text, brand_name)
+            
+            for comp in found:
+                name = comp["name"]
+                if name in all_competitors:
+                    all_competitors[name]["mentions"] += comp["mentions"]
+                    all_competitors[name]["ai_sources"].add(ai_name)
+                else:
+                    all_competitors[name] = {
+                        "name": name,
+                        "mentions": comp["mentions"],
+                        "ai_sources": {ai_name},
+                        "discovered": True
+                    }
+    
+    # Convert to list and sort by mentions
+    result = []
+    for name, data in sorted(all_competitors.items(), key=lambda x: -x[1]["mentions"]):
+        result.append({
+            "name": data["name"],
+            "mentions": data["mentions"],
+            "ai_sources": list(data["ai_sources"]),
+            "discovered": True,
+            "visibility_score": min(100, data["mentions"] * 10)  # Estimated visibility
+        })
+    
+    return result[:15]  # Return top 15 discovered competitors
+
 async def get_session_from_token(token: str) -> Optional[dict]:
     """Validate session token and return session data"""
     session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
