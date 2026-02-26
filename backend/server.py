@@ -467,6 +467,133 @@ def get_client_ip(request: Request) -> str:
     
     return "unknown"
 
+# ================== EMAIL VERIFICATION FUNCTIONS ==================
+
+async def create_verification_token(user_id: str, email: str) -> str:
+    """Create a new email verification token"""
+    # Invalidate any existing tokens for this user
+    await db.email_verification_tokens.update_many(
+        {"user_id": user_id, "used": False},
+        {"$set": {"used": True}}
+    )
+    
+    # Create new token
+    token = EmailVerificationToken(user_id=user_id, email=email)
+    doc = token.model_dump()
+    doc["expires_at"] = doc["expires_at"].isoformat()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.email_verification_tokens.insert_one(doc)
+    
+    return token.token
+
+async def send_verification_email(email: str, user_name: str, token: str) -> bool:
+    """Send verification email using Resend"""
+    if not RESEND_API_KEY:
+        logger.warning("RESEND_API_KEY not configured, skipping verification email")
+        return False
+    
+    # Build verification URL
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://visibility-track.preview.emergentagent.com')
+    verification_url = f"{frontend_url}/verify-email?token={token}"
+    
+    try:
+        params = {
+            "from": "IAskan <noreply@resend.dev>",
+            "to": [email],
+            "subject": "Vérifiez votre adresse email - IAskan",
+            "html": f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 40px 20px; }}
+                    .header {{ text-align: center; margin-bottom: 30px; }}
+                    .logo {{ font-size: 28px; font-weight: bold; background: linear-gradient(135deg, #7c3aed, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+                    .content {{ background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 30px; }}
+                    .button {{ display: inline-block; background: linear-gradient(135deg, #7c3aed, #06b6d4); color: white !important; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; margin: 20px 0; }}
+                    .footer {{ text-align: center; color: #64748b; font-size: 14px; }}
+                    .warning {{ background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin-top: 20px; font-size: 13px; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="logo">IAskan</div>
+                        <p style="color: #64748b; margin-top: 5px;">Generative Engine Optimization</p>
+                    </div>
+                    <div class="content">
+                        <h2 style="margin-top: 0;">Bienvenue {user_name or 'chez IAskan'} ! 👋</h2>
+                        <p>Merci de vous être inscrit sur IAskan. Pour activer votre compte et accéder à votre essai gratuit, veuillez confirmer votre adresse email en cliquant sur le bouton ci-dessous :</p>
+                        <div style="text-align: center;">
+                            <a href="{verification_url}" class="button">Vérifier mon email</a>
+                        </div>
+                        <p style="font-size: 14px; color: #64748b;">Ou copiez ce lien dans votre navigateur :</p>
+                        <p style="font-size: 12px; word-break: break-all; color: #7c3aed;">{verification_url}</p>
+                        <div class="warning">
+                            ⚠️ Ce lien expire dans <strong>24 heures</strong>. Si vous n'avez pas créé de compte, ignorez cet email.
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>© 2026 IAskan - Optimisation pour les Moteurs de Réponse IA</p>
+                        <p>Cet email a été envoyé à {email}</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+        }
+        
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Verification email sent to {email}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send verification email: {e}")
+        return False
+
+async def verify_email_token(token: str) -> Dict[str, Any]:
+    """Verify an email verification token"""
+    # Find the token
+    token_doc = await db.email_verification_tokens.find_one({"token": token}, {"_id": 0})
+    
+    if not token_doc:
+        return {"success": False, "error": "Token invalide ou expiré"}
+    
+    if token_doc.get("used"):
+        return {"success": False, "error": "Ce lien a déjà été utilisé"}
+    
+    # Check expiration
+    expires_at = token_doc.get("expires_at")
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if expires_at < datetime.now(timezone.utc):
+        return {"success": False, "error": "Ce lien a expiré. Veuillez demander un nouveau lien de vérification."}
+    
+    # Mark token as used
+    await db.email_verification_tokens.update_one(
+        {"token": token},
+        {"$set": {"used": True}}
+    )
+    
+    # Update user's email_verified status
+    await db.users.update_one(
+        {"user_id": token_doc["user_id"]},
+        {"$set": {"email_verified": True, "email_verified_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    logger.info(f"Email verified for user {token_doc['user_id']}")
+    
+    return {
+        "success": True,
+        "user_id": token_doc["user_id"],
+        "email": token_doc["email"]
+    }
+
 async def get_session_from_token(token: str) -> Optional[dict]:
     """Validate session token and return session data"""
     session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
