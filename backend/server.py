@@ -3025,6 +3025,9 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
     - Advanced indices: Stability Index™, Dominance Index™, Trust Gap™, Opportunity Score™
     - R.A.T.E.™ score with adjusted weights
     - Anti-hallucination checks
+    - Brand variants detection (typos, products, abbreviations)
+    - Site enrichment analysis (schema.org, FAQ, trust signals)
+    - Historical diff (comparison with previous scan)
     """
     try:
         # Extract plan parameters
@@ -3038,25 +3041,56 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         brand_name = project.get("brand_name", "")
         keywords = project.get("keywords", [])
         competitors = project.get("competitors", [])
+        website_url = project.get("website_url", "")
+        products = project.get("products", [])  # Product names for variant detection
         
         if not brand_name:
             raise ValueError("Nom de marque requis")
+        
+        # ===== PRE-PHASE: Generate Brand Variants =====
+        brand_variants = generate_brand_variants(brand_name, products)
         
         # Update status with phase info
         await db.analyses.update_one(
             {"analysis_id": analysis_id},
             {"$set": {
-                "current_phase": "query_generation",
+                "current_phase": "initializing",
                 "plan_config": {
                     "num_prompts": num_prompts,
                     "runs_per_query": runs_per_query,
                     "ai_engines": ai_engines,
                     "total_api_calls": total_api_calls
-                }
+                },
+                "brand_variants": brand_variants[:20]  # Store top 20 variants
             }}
         )
         
+        # ===== PRE-PHASE: Site Enrichment Analysis =====
+        site_enrichment = {}
+        if website_url:
+            await db.analyses.update_one(
+                {"analysis_id": analysis_id},
+                {"$set": {"current_phase": "site_analysis"}}
+            )
+            site_enrichment = await analyze_site_enrichment(website_url)
+        
+        # ===== PRE-PHASE: Get Previous Analysis for Diff =====
+        previous_analysis = await db.analyses.find_one(
+            {
+                "project_id": project.get("project_id"),
+                "user_id": project.get("user_id"),
+                "status": "completed",
+                "analysis_id": {"$ne": analysis_id}
+            },
+            {"_id": 0},
+            sort=[("created_at", -1)]
+        )
+        
         # ===== PHASE 1: Generate Multi-Dimension Queries =====
+        await db.analyses.update_one(
+            {"analysis_id": analysis_id},
+            {"$set": {"current_phase": "query_generation"}}
+        )
         queries = generate_queries_multi_dimension(brand_name, keywords, competitors, num_prompts)
         
         await db.analyses.update_one(
