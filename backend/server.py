@@ -1798,6 +1798,404 @@ QUERY_VARIATIONS = {
     "recommendation": lambda q: f"Peux-tu me recommander : {q}"
 }
 
+# ================== BRAND VARIANTS DETECTION ==================
+
+def generate_brand_variants(brand_name: str, products: List[str] = None) -> List[str]:
+    """
+    Generate brand name variants including common typos, abbreviations, and products
+    """
+    variants = [brand_name.lower()]
+    brand_lower = brand_name.lower()
+    
+    # Common typo patterns
+    typo_variants = []
+    
+    # Missing letters
+    for i in range(len(brand_lower)):
+        typo_variants.append(brand_lower[:i] + brand_lower[i+1:])
+    
+    # Double letters
+    for i in range(len(brand_lower)):
+        typo_variants.append(brand_lower[:i] + brand_lower[i] + brand_lower[i:])
+    
+    # Adjacent key swaps (common typos)
+    for i in range(len(brand_lower) - 1):
+        swapped = brand_lower[:i] + brand_lower[i+1] + brand_lower[i] + brand_lower[i+2:]
+        typo_variants.append(swapped)
+    
+    # Add only valid variants (length > 2, not same as original)
+    for v in typo_variants:
+        if len(v) > 2 and v != brand_lower and v not in variants:
+            variants.append(v)
+    
+    # Abbreviations (first letters of each word if multi-word brand)
+    words = brand_name.split()
+    if len(words) > 1:
+        abbreviation = "".join(w[0].lower() for w in words)
+        if len(abbreviation) > 1:
+            variants.append(abbreviation)
+    
+    # Without spaces/dashes
+    variants.append(brand_lower.replace(" ", ""))
+    variants.append(brand_lower.replace("-", ""))
+    variants.append(brand_lower.replace("_", ""))
+    
+    # With common domain extensions
+    variants.append(f"{brand_lower}.com")
+    variants.append(f"{brand_lower}.fr")
+    variants.append(f"www.{brand_lower}")
+    
+    # Product names as variants
+    if products:
+        for product in products[:10]:  # Limit to 10 products
+            variants.append(product.lower())
+    
+    # Remove duplicates and empty strings
+    variants = list(set(v for v in variants if v and len(v) > 1))
+    
+    return variants[:50]  # Limit total variants
+
+
+def detect_brand_mentions_advanced(response_text: str, brand_name: str, variants: List[str]) -> Dict[str, Any]:
+    """
+    Advanced brand mention detection including variants, products, and typos
+    """
+    response_lower = response_text.lower()
+    brand_lower = brand_name.lower()
+    
+    # Primary brand detection
+    primary_mentioned = brand_lower in response_lower
+    primary_count = response_lower.count(brand_lower)
+    primary_positions = []
+    
+    if primary_mentioned:
+        start = 0
+        while True:
+            pos = response_lower.find(brand_lower, start)
+            if pos == -1:
+                break
+            primary_positions.append(pos)
+            start = pos + 1
+    
+    # Variant detection
+    variant_mentions = {}
+    total_variant_mentions = 0
+    
+    for variant in variants:
+        if variant != brand_lower and variant in response_lower:
+            count = response_lower.count(variant)
+            variant_mentions[variant] = count
+            total_variant_mentions += count
+    
+    # Calculate overall mention metrics
+    total_mentions = primary_count + total_variant_mentions
+    first_position = min(primary_positions) if primary_positions else -1
+    
+    # Determine mention quality
+    mention_quality = "absent"
+    if total_mentions > 0:
+        if primary_mentioned:
+            if total_mentions >= 3:
+                mention_quality = "strong"
+            elif total_mentions >= 2:
+                mention_quality = "moderate"
+            else:
+                mention_quality = "weak"
+        else:
+            mention_quality = "variant_only"
+    
+    return {
+        "primary_mentioned": primary_mentioned,
+        "primary_count": primary_count,
+        "primary_positions": primary_positions[:5],  # First 5 positions
+        "variant_mentions": variant_mentions,
+        "total_variant_mentions": total_variant_mentions,
+        "total_mentions": total_mentions,
+        "first_position": first_position,
+        "mention_quality": mention_quality,
+        "variants_found": list(variant_mentions.keys())
+    }
+
+
+# ================== SITE ENRICHMENT ANALYSIS ==================
+
+async def analyze_site_enrichment(website_url: str) -> Dict[str, Any]:
+    """
+    Analyze website for GEO-relevant enrichment signals:
+    - Schema.org structured data
+    - FAQ presence
+    - About/Team pages
+    - Trust signals (contact, legal, certifications)
+    """
+    enrichment = {
+        "schema_org": {"detected": False, "types": []},
+        "faq_presence": False,
+        "about_page": False,
+        "contact_info": False,
+        "trust_signals": [],
+        "key_pages": [],
+        "score": 0,
+        "recommendations": []
+    }
+    
+    try:
+        # Clean URL
+        if not website_url.startswith(('http://', 'https://')):
+            website_url = f"https://{website_url}"
+        
+        from urllib.parse import urlparse
+        parsed = urlparse(website_url)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+        
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            # Fetch main page
+            response = await client.get(website_url)
+            html_content = response.text.lower()
+            
+            # 1. Schema.org detection
+            schema_types = []
+            if "application/ld+json" in html_content:
+                enrichment["schema_org"]["detected"] = True
+                # Detect common schema types
+                schema_patterns = [
+                    ("Organization", "organization"),
+                    ("LocalBusiness", "localbusiness"),
+                    ("Product", "product"),
+                    ("FAQPage", "faqpage"),
+                    ("Article", "article"),
+                    ("WebSite", "website"),
+                    ("BreadcrumbList", "breadcrumblist"),
+                    ("Review", "review"),
+                    ("AggregateRating", "aggregaterating")
+                ]
+                for name, pattern in schema_patterns:
+                    if pattern in html_content:
+                        schema_types.append(name)
+                enrichment["schema_org"]["types"] = schema_types
+            
+            # 2. FAQ detection
+            faq_indicators = ["faq", "questions fréquentes", "frequently asked", "f.a.q", "questions-réponses"]
+            enrichment["faq_presence"] = any(ind in html_content for ind in faq_indicators)
+            
+            # 3. About page detection
+            about_indicators = ["à propos", "about us", "qui sommes-nous", "notre histoire", "notre équipe", "about-us"]
+            enrichment["about_page"] = any(ind in html_content for ind in about_indicators)
+            
+            # 4. Contact info detection
+            contact_indicators = ["contact", "email", "@", "téléphone", "phone", "adresse", "address"]
+            enrichment["contact_info"] = any(ind in html_content for ind in contact_indicators)
+            
+            # 5. Trust signals
+            trust_patterns = [
+                ("ssl_secure", "https://" in website_url),
+                ("privacy_policy", any(p in html_content for p in ["politique de confidentialité", "privacy policy", "rgpd", "gdpr"])),
+                ("legal_mentions", any(p in html_content for p in ["mentions légales", "legal notice", "terms"])),
+                ("certifications", any(p in html_content for p in ["certifié", "certified", "iso", "label", "agrément"])),
+                ("reviews", any(p in html_content for p in ["avis", "review", "témoignage", "testimonial"])),
+                ("social_proof", any(p in html_content for p in ["client", "partenaire", "partner", "they trust us"]))
+            ]
+            
+            for signal_name, detected in trust_patterns:
+                if detected:
+                    enrichment["trust_signals"].append(signal_name)
+            
+            # 6. Key pages detection
+            key_page_patterns = [
+                ("pricing", ["tarif", "pricing", "prix", "plans"]),
+                ("features", ["fonctionnalités", "features", "solutions"]),
+                ("blog", ["blog", "actualités", "news", "articles"]),
+                ("case_studies", ["cas client", "case study", "études de cas", "success story"]),
+                ("documentation", ["documentation", "docs", "guide", "support"])
+            ]
+            
+            for page_type, patterns in key_page_patterns:
+                if any(p in html_content for p in patterns):
+                    enrichment["key_pages"].append(page_type)
+            
+            # Calculate enrichment score
+            score = 0
+            if enrichment["schema_org"]["detected"]:
+                score += 25 + len(enrichment["schema_org"]["types"]) * 3
+            if enrichment["faq_presence"]:
+                score += 15
+            if enrichment["about_page"]:
+                score += 10
+            if enrichment["contact_info"]:
+                score += 10
+            score += len(enrichment["trust_signals"]) * 5
+            score += len(enrichment["key_pages"]) * 3
+            
+            enrichment["score"] = min(100, score)
+            
+            # Generate recommendations
+            if not enrichment["schema_org"]["detected"]:
+                enrichment["recommendations"].append({
+                    "priority": "high",
+                    "action": "Ajouter des données structurées Schema.org",
+                    "impact": "Les IAs utilisent les données structurées pour mieux comprendre votre contenu"
+                })
+            elif "FAQPage" not in enrichment["schema_org"]["types"]:
+                enrichment["recommendations"].append({
+                    "priority": "medium",
+                    "action": "Ajouter un Schema FAQPage",
+                    "impact": "Améliore la citabilité dans les réponses de type Q&A"
+                })
+            
+            if not enrichment["faq_presence"]:
+                enrichment["recommendations"].append({
+                    "priority": "high",
+                    "action": "Créer une page FAQ complète",
+                    "impact": "Les FAQs sont fréquemment citées par les IAs"
+                })
+            
+            if not enrichment["about_page"]:
+                enrichment["recommendations"].append({
+                    "priority": "medium",
+                    "action": "Enrichir la page 'À propos'",
+                    "impact": "Renforce l'E-E-A-T et la crédibilité"
+                })
+            
+            if "case_studies" not in enrichment["key_pages"]:
+                enrichment["recommendations"].append({
+                    "priority": "medium",
+                    "action": "Ajouter des études de cas",
+                    "impact": "Preuves concrètes citées par les IAs"
+                })
+                
+    except Exception as e:
+        logger.error(f"Error analyzing site enrichment: {e}")
+        enrichment["error"] = str(e)
+    
+    return enrichment
+
+
+# ================== HISTORICAL DIFF ANALYSIS ==================
+
+async def calculate_scan_diff(current_analysis: dict, previous_analysis: dict) -> Dict[str, Any]:
+    """
+    Calculate differences between current and previous scan for trend analysis
+    """
+    diff = {
+        "has_previous": previous_analysis is not None,
+        "days_between_scans": 0,
+        "score_evolution": {},
+        "rate_evolution": {},
+        "ai_evolution": {},
+        "stability_evolution": {},
+        "trends": [],
+        "improvements": [],
+        "regressions": []
+    }
+    
+    if not previous_analysis:
+        return diff
+    
+    # Calculate days between scans
+    try:
+        current_date = datetime.fromisoformat(current_analysis.get("created_at", "").replace("Z", "+00:00"))
+        prev_date = datetime.fromisoformat(previous_analysis.get("created_at", "").replace("Z", "+00:00"))
+        diff["days_between_scans"] = (current_date - prev_date).days
+    except:
+        diff["days_between_scans"] = 0
+    
+    # Score evolution
+    current_score = current_analysis.get("global_score", 0)
+    prev_score = previous_analysis.get("global_score", 0)
+    score_change = current_score - prev_score
+    
+    diff["score_evolution"] = {
+        "current": round(current_score, 1),
+        "previous": round(prev_score, 1),
+        "change": round(score_change, 1),
+        "change_percent": round((score_change / prev_score * 100) if prev_score > 0 else 0, 1),
+        "direction": "up" if score_change > 0 else "down" if score_change < 0 else "stable"
+    }
+    
+    # R.A.T.E. evolution
+    current_rate = current_analysis.get("rate_score", {})
+    prev_rate = previous_analysis.get("rate_score", {})
+    
+    for metric in ["relevance", "authority", "truthfulness", "endorsement"]:
+        curr_val = current_rate.get(metric, 0)
+        prev_val = prev_rate.get(metric, 0)
+        change = curr_val - prev_val
+        
+        diff["rate_evolution"][metric] = {
+            "current": round(curr_val, 1),
+            "previous": round(prev_val, 1),
+            "change": round(change, 1),
+            "direction": "up" if change > 0 else "down" if change < 0 else "stable"
+        }
+        
+        # Track significant changes
+        if change >= 5:
+            diff["improvements"].append(f"{metric.capitalize()} +{round(change, 1)}%")
+        elif change <= -5:
+            diff["regressions"].append(f"{metric.capitalize()} {round(change, 1)}%")
+    
+    # AI-specific evolution
+    current_ai = current_analysis.get("ai_scores", {})
+    prev_ai = previous_analysis.get("ai_scores", {})
+    
+    for ai in ["chatgpt", "claude", "gemini", "perplexity"]:
+        curr_val = current_ai.get(ai, 0)
+        prev_val = prev_ai.get(ai, 0)
+        change = curr_val - prev_val
+        
+        diff["ai_evolution"][ai] = {
+            "current": round(curr_val, 1),
+            "previous": round(prev_val, 1),
+            "change": round(change, 1),
+            "direction": "up" if change > 0 else "down" if change < 0 else "stable"
+        }
+        
+        if change >= 10:
+            diff["improvements"].append(f"{ai.capitalize()} +{round(change, 1)} pts")
+        elif change <= -10:
+            diff["regressions"].append(f"{ai.capitalize()} {round(change, 1)} pts")
+    
+    # Stability evolution
+    current_indices = current_analysis.get("indices", {})
+    prev_indices = previous_analysis.get("indices", {})
+    
+    stability_curr = current_indices.get("stability_index", 0)
+    stability_prev = prev_indices.get("stability_index", 0)
+    stability_change = stability_curr - stability_prev
+    
+    diff["stability_evolution"] = {
+        "current": round(stability_curr, 1),
+        "previous": round(stability_prev, 1),
+        "change": round(stability_change, 1),
+        "direction": "up" if stability_change > 0 else "down" if stability_change < 0 else "stable"
+    }
+    
+    # Generate trend insights
+    if diff["score_evolution"]["direction"] == "up":
+        if diff["score_evolution"]["change"] >= 10:
+            diff["trends"].append({"type": "positive", "message": f"Forte progression du score (+{diff['score_evolution']['change']})"})
+        else:
+            diff["trends"].append({"type": "positive", "message": "Score en légère amélioration"})
+    elif diff["score_evolution"]["direction"] == "down":
+        if abs(diff["score_evolution"]["change"]) >= 10:
+            diff["trends"].append({"type": "negative", "message": f"Baisse significative du score ({diff['score_evolution']['change']})"})
+        else:
+            diff["trends"].append({"type": "warning", "message": "Score en légère baisse"})
+    else:
+        diff["trends"].append({"type": "neutral", "message": "Score stable depuis le dernier scan"})
+    
+    # Identify best/worst performing area
+    rate_changes = {k: v["change"] for k, v in diff["rate_evolution"].items()}
+    if rate_changes:
+        best = max(rate_changes, key=rate_changes.get)
+        worst = min(rate_changes, key=rate_changes.get)
+        
+        if rate_changes[best] > 0:
+            diff["trends"].append({"type": "positive", "message": f"Meilleure progression: {best.capitalize()}"})
+        if rate_changes[worst] < 0:
+            diff["trends"].append({"type": "negative", "message": f"À surveiller: {worst.capitalize()}"})
+    
+    return diff
+
 async def query_ai_engine_v2(query_text: str, brand_name: str, competitors: List[str], ai_type: str, run_id: int = 1) -> Dict[str, Any]:
     """
     IAskan Verified GEO Protocol™ - Advanced AI Query Engine
