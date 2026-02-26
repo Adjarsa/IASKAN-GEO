@@ -378,10 +378,10 @@ const LandingPage = () => {
             <Logo size="small" />
             
             <div className="flex items-center gap-6 text-sm text-slate-600">
-              <a href="#" className="hover:text-violet-600 transition-colors">Mentions légales</a>
-              <a href="#" className="hover:text-violet-600 transition-colors">Politique de confidentialité</a>
-              <a href="#" className="hover:text-violet-600 transition-colors">CGV</a>
-              <a href="#" className="hover:text-violet-600 transition-colors">Contact</a>
+              <Link to="/legal" className="hover:text-violet-600 transition-colors">Mentions légales</Link>
+              <Link to="/privacy" className="hover:text-violet-600 transition-colors">Politique de confidentialité</Link>
+              <Link to="/terms" className="hover:text-violet-600 transition-colors">CGV</Link>
+              <Link to="/contact" className="hover:text-violet-600 transition-colors">Contact</Link>
             </div>
             
             <div className="text-sm text-slate-600">
