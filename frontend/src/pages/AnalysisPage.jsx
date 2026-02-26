@@ -1097,6 +1097,30 @@ const AnalysisPage = () => {
                 </ul>
               </div>
 
+              {/* Eligibility Error Message */}
+              {eligibilityError && (
+                <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-red-800">Essai gratuit non disponible</h4>
+                      <p className="text-sm text-red-600 mt-1">{eligibilityError.reason}</p>
+                      <p className="text-xs text-red-500 mt-2">
+                        Pour continuer, veuillez souscrire à un abonnement.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-3 border-red-200 text-red-700 hover:bg-red-50"
+                        onClick={() => navigate('/pricing')}
+                      >
+                        Voir les abonnements
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <Button
                 size="lg"
                 className="w-full bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25"
