@@ -625,6 +625,109 @@ async def verify_email_token(token: str) -> Dict[str, Any]:
         "email": token_doc["email"]
     }
 
+# ================== NOTIFICATION FUNCTIONS ==================
+
+async def create_notification(
+    user_id: str,
+    notification_type: str,
+    title: str,
+    message: str,
+    data: Dict[str, Any] = None
+) -> str:
+    """Create a notification for a user"""
+    notification = Notification(
+        user_id=user_id,
+        type=notification_type,
+        title=title,
+        message=message,
+        data=data or {}
+    )
+    
+    doc = notification.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.notifications.insert_one(doc)
+    
+    logger.info(f"Notification created for user {user_id}: {notification_type}")
+    return notification.notification_id
+
+async def send_scan_complete_email(user_email: str, user_name: str, project_name: str, analysis_id: str, global_score: float) -> bool:
+    """Send email notification when scan is complete"""
+    if not RESEND_API_KEY:
+        logger.warning("RESEND_API_KEY not configured, skipping scan complete email")
+        return False
+    
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://visibility-track.preview.emergentagent.com')
+    analysis_url = f"{frontend_url}/analysis/{analysis_id}"
+    
+    # Score color
+    score_color = "#10b981" if global_score >= 60 else "#f59e0b" if global_score >= 40 else "#ef4444"
+    grade = "A" if global_score >= 80 else "B" if global_score >= 60 else "C" if global_score >= 40 else "D"
+    
+    try:
+        params = {
+            "from": "IAskan <noreply@resend.dev>",
+            "to": [user_email],
+            "subject": f"✅ Scan terminé - {project_name} ({int(global_score)}/100)",
+            "html": f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1e293b; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 40px 20px; }}
+                    .header {{ text-align: center; margin-bottom: 30px; }}
+                    .logo {{ font-size: 28px; font-weight: bold; background: linear-gradient(135deg, #7c3aed, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+                    .score-box {{ background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius: 16px; padding: 30px; text-align: center; margin: 20px 0; }}
+                    .score {{ font-size: 48px; font-weight: bold; color: {score_color}; }}
+                    .grade {{ display: inline-block; background: {score_color}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-left: 10px; }}
+                    .button {{ display: inline-block; background: linear-gradient(135deg, #7c3aed, #06b6d4); color: white !important; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; margin: 20px 0; }}
+                    .footer {{ text-align: center; color: #64748b; font-size: 14px; margin-top: 30px; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="logo">IAskan</div>
+                        <p style="color: #64748b; margin-top: 5px;">Generative Engine Optimization</p>
+                    </div>
+                    
+                    <h2 style="text-align: center; margin-bottom: 10px;">Votre scan est terminé ! 🎉</h2>
+                    <p style="text-align: center; color: #64748b;">Projet : <strong>{project_name}</strong></p>
+                    
+                    <div class="score-box">
+                        <p style="margin: 0 0 10px 0; color: #64748b;">Score de Visibilité IA</p>
+                        <span class="score">{int(global_score)}</span>
+                        <span class="grade">Grade {grade}</span>
+                        <p style="margin: 15px 0 0 0; font-size: 14px; color: #64748b;">/100</p>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <a href="{analysis_url}" class="button">Voir le rapport complet</a>
+                    </div>
+                    
+                    <p style="text-align: center; font-size: 14px; color: #64748b;">
+                        Consultez les recommandations pour améliorer votre visibilité dans les réponses IA.
+                    </p>
+                    
+                    <div class="footer">
+                        <p>© 2026 IAskan - Optimisation pour les Moteurs de Réponse IA</p>
+                        <p style="font-size: 12px;">Vous recevez cet email car vous avez lancé un scan sur IAskan.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+        }
+        
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Scan complete email sent to {user_email}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send scan complete email: {e}")
+        return False
+
 async def get_session_from_token(token: str) -> Optional[dict]:
     """Validate session token and return session data"""
     session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
