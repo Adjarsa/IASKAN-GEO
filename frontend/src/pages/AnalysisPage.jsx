@@ -1087,23 +1087,23 @@ const AnalysisPage = () => {
                 <ul className="text-sm text-slate-700 space-y-2">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>10 prompts stratégiques</strong> - Requêtes transactionnelles, comparatives, informationnelles, locales</span>
+                    <span><strong>Prompts stratégiques</strong> - Requêtes transactionnelles, comparatives, informationnelles, locales</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>3 variations par prompt</strong> - Reformulations pour une analyse approfondie</span>
+                    <span><strong>3 runs par prompt</strong> - Mesure de la stabilité des réponses IA</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>3 runs par variation</strong> - Mesure de la stabilité des réponses IA</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>= 90 requêtes IA analysées</strong> - 10 × 3 × 3 = 90 appels API</span>
+                    <span><strong>Formule</strong> - Prompts × 3 runs × Moteurs IA = Requêtes totales</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
                     <span><strong>4 couches d'analyse</strong> - Présence, Rôle, Crédibilité, Conversion</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                    <span><strong>Indices avancés</strong> - Stability Index™, Dominance Index™, Trust Gap™</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
