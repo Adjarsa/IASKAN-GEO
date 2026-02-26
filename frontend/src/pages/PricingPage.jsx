@@ -113,7 +113,6 @@ const PricingPage = () => {
         "Génération d'articles GEO",
         "Intelligence stratégique",
         "Projets illimités",
-        "API access",
         "Support dédié"
       ],
       popular: false
