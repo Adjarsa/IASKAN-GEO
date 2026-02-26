@@ -3102,6 +3102,7 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         all_responses = []
         ai_scores = {ai: [] for ai in ai_engines}
         query_results = []
+        brand_mention_details = []  # Track detailed mention data
         
         for query_idx, query in enumerate(queries):
             query_text = query["text"]
@@ -3121,6 +3122,23 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
                         ai,
                         run_id
                     )
+                    
+                    # Enhanced: Detect brand variants in response
+                    response_text = response.get("response_excerpt", "")
+                    advanced_mentions = detect_brand_mentions_advanced(response_text, brand_name, brand_variants)
+                    response["advanced_mentions"] = advanced_mentions
+                    
+                    # Track detailed mentions
+                    if advanced_mentions.get("total_mentions", 0) > 0:
+                        brand_mention_details.append({
+                            "query_type": query_type,
+                            "ai_type": ai,
+                            "run_id": run_id,
+                            "mention_quality": advanced_mentions.get("mention_quality"),
+                            "variants_found": advanced_mentions.get("variants_found", []),
+                            "total_mentions": advanced_mentions.get("total_mentions", 0)
+                        })
+                    
                     ai_run_responses.append(response)
                     all_responses.append(response)
                     
@@ -3130,7 +3148,9 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
                 
                 query_all_responses.extend(ai_run_responses)
             
-            # Aggregate query results
+            # Aggregate query results with enhanced mention data
+            mention_count = sum(1 for r in query_all_responses if r.get("brand_mentioned", False) or r.get("advanced_mentions", {}).get("total_mentions", 0) > 0)
+            
             query_result = {
                 "query_text": query_text,
                 "query_type": query_type,
@@ -3138,7 +3158,7 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
                 "responses": query_all_responses,
                 "runs_per_ai": runs_per_query,
                 "avg_score": sum(r.get("role_score", 0) for r in query_all_responses) / len(query_all_responses) * 100 if query_all_responses else 0,
-                "mention_rate": (sum(1 for r in query_all_responses if r.get("brand_mentioned", False)) / len(query_all_responses) * 100) if query_all_responses else 0,
+                "mention_rate": (mention_count / len(query_all_responses) * 100) if query_all_responses else 0,
                 "stability": {
                     "roles": list(set(r.get("role", "absent") for r in query_all_responses)),
                     "consistent": len(set(r.get("role", "absent") for r in query_all_responses)) <= 2
