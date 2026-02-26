@@ -166,6 +166,28 @@ class Notification(BaseModel):
     read: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ================== SCHEDULED SCANS SYSTEM ==================
+
+class ScanSchedule(BaseModel):
+    """Schedule configuration for automated scans"""
+    model_config = ConfigDict(extra="ignore")
+    schedule_id: str = Field(default_factory=lambda: f"sched_{uuid.uuid4().hex[:12]}")
+    project_id: str
+    user_id: str
+    enabled: bool = True
+    frequency: str = "weekly"  # daily, weekly, monthly
+    day_of_week: int = 0  # 0=Monday, 6=Sunday (for weekly)
+    day_of_month: int = 1  # 1-28 (for monthly)
+    hour: int = 9  # 0-23, hour to run scan
+    minute: int = 0  # 0-59
+    timezone: str = "Europe/Paris"
+    send_report_email: bool = True
+    report_recipients: List[str] = []  # Additional email recipients
+    last_run: Optional[str] = None
+    next_run: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # ================== ANTI-ABUSE SYSTEM ==================
 
 class FreeTrialUsage(BaseModel):
