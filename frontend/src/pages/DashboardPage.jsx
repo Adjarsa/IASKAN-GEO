@@ -255,6 +255,9 @@ const DashboardPage = () => {
           </div>
         </div>
 
+        {/* Email Verification Banner */}
+        <EmailVerificationBanner user={user} />
+
         {/* Payment checking notification */}
         {checkingPayment && (
           <Card className="p-4 border-cyan-200 bg-cyan-50">
