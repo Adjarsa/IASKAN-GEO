@@ -179,9 +179,6 @@ BLOCKED_EMAIL_DOMAINS = {
     "tmpmail.org", "wegwerfmail.de", "wegwerfmail.net", "wegwerfmail.org",
     "zoemail.com", "ezehe.com", "xcodes.net", "nwytg.net", "edumail.icu",
 }
-    current_period_end: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(days=30))
-    stripe_subscription_id: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class PaymentTransaction(BaseModel):
     model_config = ConfigDict(extra="ignore")
