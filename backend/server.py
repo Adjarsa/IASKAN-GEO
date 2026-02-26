@@ -327,6 +327,136 @@ async def identify_competitors_from_analysis(analysis_responses: List[Dict[str, 
     
     return result[:15]  # Return top 15 discovered competitors
 
+# ================== ANTI-ABUSE VALIDATION FUNCTIONS ==================
+
+def extract_domain_from_url(url: str) -> str:
+    """Extract the root domain from a URL"""
+    from urllib.parse import urlparse
+    if not url:
+        return ""
+    if not url.startswith(('http://', 'https://')):
+        url = f"https://{url}"
+    parsed = urlparse(url)
+    domain = parsed.netloc.lower()
+    # Remove www. prefix
+    if domain.startswith('www.'):
+        domain = domain[4:]
+    return domain
+
+def extract_email_domain(email: str) -> str:
+    """Extract domain from email address"""
+    if not email or '@' not in email:
+        return ""
+    return email.split('@')[1].lower()
+
+def is_temporary_email(email: str) -> bool:
+    """Check if email is from a known temporary/disposable email service"""
+    domain = extract_email_domain(email)
+    return domain in BLOCKED_EMAIL_DOMAINS
+
+async def check_free_trial_eligibility(
+    email: str,
+    ip_address: str,
+    fingerprint: str,
+    domain_to_analyze: str
+) -> Dict[str, Any]:
+    """
+    Check if user is eligible for free trial
+    Returns: {"eligible": bool, "reason": str, "blocked_by": str}
+    """
+    # Extract domains
+    email_domain = extract_email_domain(email)
+    analyzed_domain = extract_domain_from_url(domain_to_analyze)
+    
+    # Check 1: Temporary email
+    if is_temporary_email(email):
+        return {
+            "eligible": False,
+            "reason": "Les adresses email temporaires ne sont pas autorisées. Veuillez utiliser une adresse email permanente.",
+            "blocked_by": "temporary_email"
+        }
+    
+    # Check 2: Email already used for free trial
+    existing_email = await db.free_trial_usage.find_one({"email": email.lower()})
+    if existing_email:
+        return {
+            "eligible": False,
+            "reason": "Cette adresse email a déjà utilisé l'essai gratuit.",
+            "blocked_by": "email"
+        }
+    
+    # Check 3: IP address already used for free trial
+    existing_ip = await db.free_trial_usage.find_one({"ip_address": ip_address})
+    if existing_ip:
+        return {
+            "eligible": False,
+            "reason": "Un essai gratuit a déjà été utilisé depuis cette connexion.",
+            "blocked_by": "ip_address"
+        }
+    
+    # Check 4: Fingerprint already used for free trial
+    if fingerprint and fingerprint != "unknown":
+        existing_fp = await db.free_trial_usage.find_one({"fingerprint": fingerprint})
+        if existing_fp:
+            return {
+                "eligible": False,
+                "reason": "Un essai gratuit a déjà été utilisé depuis ce navigateur.",
+                "blocked_by": "fingerprint"
+            }
+    
+    # Check 5: Domain already analyzed for free
+    if analyzed_domain:
+        existing_domain = await db.free_trial_usage.find_one({"analyzed_domain": analyzed_domain})
+        if existing_domain:
+            return {
+                "eligible": False,
+                "reason": f"Le domaine '{analyzed_domain}' a déjà bénéficié d'une analyse gratuite.",
+                "blocked_by": "domain"
+            }
+    
+    return {"eligible": True, "reason": "Éligible à l'essai gratuit", "blocked_by": None}
+
+async def record_free_trial_usage(
+    email: str,
+    ip_address: str,
+    fingerprint: str,
+    domain_analyzed: str,
+    user_id: str
+):
+    """Record free trial usage to prevent future abuse"""
+    usage = FreeTrialUsage(
+        email=email.lower(),
+        email_domain=extract_email_domain(email),
+        ip_address=ip_address,
+        fingerprint=fingerprint or "unknown",
+        analyzed_domain=extract_domain_from_url(domain_analyzed),
+        user_id=user_id
+    )
+    
+    doc = usage.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.free_trial_usage.insert_one(doc)
+    
+    logger.info(f"Free trial usage recorded: email={email}, ip={ip_address}, domain={domain_analyzed}")
+
+def get_client_ip(request: Request) -> str:
+    """Get real client IP address considering proxies"""
+    # Check common proxy headers
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        # X-Forwarded-For can contain multiple IPs, first one is the client
+        return forwarded.split(",")[0].strip()
+    
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+    
+    # Fallback to direct client
+    if request.client:
+        return request.client.host
+    
+    return "unknown"
+
 async def get_session_from_token(token: str) -> Optional[dict]:
     """Validate session token and return session data"""
     session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
