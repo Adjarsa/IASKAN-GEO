@@ -41,6 +41,9 @@ import LegalPage from "@/pages/LegalPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import ContactPage from "@/pages/ContactPage";
+import FAQPage from "@/pages/FAQPage";
+import AboutPage from "@/pages/AboutPage";
+import GDPRPage from "@/pages/GDPRPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
