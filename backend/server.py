@@ -2358,6 +2358,16 @@ async def check_analysis_eligibility(request: Request, user: dict = Depends(get_
     plan = subscription.get("plan", "free")
     is_free_trial = plan == "free" and subscription.get("queries_used", 0) == 0
     
+    # Check email verification for free trial
+    if is_free_trial and not user.get("email_verified", False):
+        return {
+            "eligible": False,
+            "reason": "Veuillez vérifier votre adresse email pour accéder à l'essai gratuit.",
+            "blocked_by": "email_not_verified",
+            "is_free_trial": True,
+            "requires_verification": True
+        }
+    
     if not is_free_trial:
         # Paid users are always eligible (within their limits)
         queries_used = subscription.get("queries_used", 0)
