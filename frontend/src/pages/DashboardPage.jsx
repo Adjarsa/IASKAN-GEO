@@ -24,7 +24,9 @@ import {
   CheckCircle2,
   FileDown,
   Loader2,
-  Eye
+  Eye,
+  ExternalLink,
+  Globe
 } from "lucide-react";
 import { generatePDFReport } from "@/services/pdfReportGenerator";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
