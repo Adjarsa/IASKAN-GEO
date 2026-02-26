@@ -2720,7 +2720,7 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
             {"$inc": {"queries_used": total_api_calls, "scans_used": 1}}
         )
         
-        logger.info(f"Analysis {analysis_id} completed: {num_prompts} prompts × {variations_per_prompt} variations × {runs_per_query} runs × {len(ai_engines)} AI = {total_api_calls} total queries")
+        logger.info(f"Analysis {analysis_id} completed: {num_prompts} prompts × {runs_per_query} runs × {len(ai_engines)} AI = {total_api_calls} total queries")
         
     except Exception as e:
         logger.error(f"Analysis error: {e}")
