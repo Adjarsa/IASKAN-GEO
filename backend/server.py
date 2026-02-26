@@ -524,7 +524,7 @@ async def send_verification_email(email: str, user_name: str, token: str) -> boo
         return False
     
     # Build verification URL
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://visibility-track.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://brand-ai-lens.preview.emergentagent.com')
     verification_url = f"{frontend_url}/verify-email?token={token}"
     
     try:
@@ -656,7 +656,7 @@ async def send_scan_complete_email(user_email: str, user_name: str, project_name
         logger.warning("RESEND_API_KEY not configured, skipping scan complete email")
         return False
     
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://visibility-track.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://brand-ai-lens.preview.emergentagent.com')
     analysis_url = f"{frontend_url}/analysis/{analysis_id}"
     
     # Score color
@@ -1038,7 +1038,7 @@ async def create_oauth_user_session(email: str, name: str, picture: str, provide
     
     # Send welcome email for new users (non-blocking)
     if is_new_user and RESEND_API_KEY:
-        frontend_url = "https://visibility-track.preview.emergentagent.com"
+        frontend_url = "https://brand-ai-lens.preview.emergentagent.com"
         asyncio.create_task(send_welcome_email(email, name, frontend_url))
     
     return user_id, session_token

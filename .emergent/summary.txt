@@ -2,160 +2,222 @@
 The user wants to build a highly-detailed SaaS platform named **IAskan**. The platform is a **Generative Engine Optimization (GEO)** tool designed to help businesses improve their visibility in AI-generated responses (like ChatGPT, Gemini, etc.).
 
 **PRODUCT REQUIREMENTS:**
-- **Core Functionality:** An intelligent GEO engine that simulates real user queries across multiple AIs, analyzes brand visibility, benchmarks against competitors, and generates detailed reports with actionable recommendations.
-- **Scoring Algorithm:** A proprietary scoring system named  (Relevance, Authority, Truthfulness, Endorsement) that measures presence, role, credibility, and conversion impact. It must also include a Stability score, a key differentiator.
-- **User Flow:** After login, the user must first select or create a project. Once a project is selected, they access the main dashboard and features for that specific project.
-- **Authentication:** Mandatory SSO (Single Sign-On) with Google as the priority, followed by Microsoft and LinkedIn. A secure magic link for email fallback is also required.
-- **Monetization:** A subscription model with three tiers (Starter, Pro, Business) integrated via Stripe.
-- **AI Integrations:** The analysis engine must query multiple AIs: ChatGPT, Claude, Gemini, and Perplexity, using the Emergent LLM Key.
-- **UI/UX:** A minimalist, premium, fast, and decision-oriented interface with a light, modern color scheme and a custom logo.
-- **Branding:** All Made with Emergent branding must be removed.
+-   **Core Functionality:** An intelligent GEO engine that simulates real user queries across multiple AIs, analyzes brand visibility, benchmarks against competitors, and generates detailed reports with actionable recommendations.
+-   **GEO Audit & Analysis:**
+    -   Track presence, citation score, and position in AI responses.
+    -   Analyze content citability, detect gaps, and verify structured data.
+    -   Benchmark against competitors, including dynamically discovered ones.
+-   **GEO Content Optimization & Generation:**
+    -   Generate and reformulate content (FAQs, articles) optimized for LLM citation.
+-   **Reporting:** Generate a detailed, multi-section PDF audit report based on user-provided samples.
+-   **Authentication & Security:**
+    -   Mandatory SSO with Google, Microsoft, and LinkedIn.
+    -   Mandatory email verification for new accounts.
+    -   A comprehensive anti-abuse system for a one-time free trial, blocking by IP, domain, email, and browser fingerprint.
+-   **Monetization:** A subscription model (Free, Starter, Pro, Business) with defined request quotas, integrated via Stripe.
+-   **User Experience:**
+    -   Analyses must run in the background, allowing the user to navigate away.
+    -   The app must notify users (in-app badge and optional email) when an analysis is complete.
+    -   Display project logos and site links on the dashboard.
+-   **UI/UX:** A minimalist, premium, fast, and decision-oriented interface using the IAskan color scheme.
 
 **User's preferred language**: French
 
 **what currently exists?**
-A full-stack application with a React frontend and FastAPI backend has been developed. The UI implements the user-requested light, modern theme and custom logo. The frontend includes a landing page, login page with SSO buttons, a pricing page, and a dashboard structure. The core user flow is implemented: after a test user logs in, they are presented with a Project Selection page where they can create or choose a project. Upon selection, the main dashboard is displayed, showing the active project. The backend has basic API endpoints for test user authentication, and creating/listing projects. The Made with Emergent branding has been removed.
+A full-stack application (React/FastAPI/MongoDB).
+-   **PDF Reporting:** A complete, client-side PDF report generation system () has been implemented, based on detailed user-provided samples. It includes an in-app preview modal.
+-   **Dynamic Data:** The backend now fetches project favicons on creation and dynamically identifies competitors during an analysis. The frontend displays this information.
+-   **Anti-Abuse System:** A robust system to secure the one-time free trial is in place. It tracks and blocks usage by IP, domain, email (including temporary email providers), and browser fingerprint ().
+-   **Email Verification:** New user sign-ups now require email verification. The system sends a verification link via Resend, and unverified users see a persistent banner. The free trial is blocked until verification is complete.
+-   **Subscription Plans:** The Free, Starter, Pro, and Business plans are fully configured in the backend with the specific and complex query/scan quotas requested by the user.
+-   **Background Tasks:** The backend is configured to run analyses as non-blocking background tasks using .
 
 **Last working item**:
-    - Last item agent was working: The user reported that clicking the start analysis button does nothing. The agent investigated the backend logs and identified a recurring  serialization error when trying to retrieve the status of an analysis. A fix was applied to the  endpoint in  to correctly serialize the MongoDB document to JSON.
+    - Last item agent was working: Implementing a notification system for background analysis tasks. The user requested that when an analysis is finished, the user should be notified with an in-app badge and an optional email. The agent created the backend  model and helper functions in  to support this.
     - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? manual testing by curl
+    - Which testing method agent to use? both. First, the backend should be tested via  to confirm that completing an analysis correctly creates a  entry in the database and triggers the email. Second, the frontend testing agent should be used to verify that the UI polls for new notifications and displays a badge or indicator correctly.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1:  Core analysis feature is broken (Priority: P0)
+  - Issue 1: Backend Performance Degradation / Frontend Timeouts (Priority: P0 - BLOCKER)
+  - Issue 2: jsPDF Download Error (Priority: P1)
+  - Issue 3: Microsoft/LinkedIn SSO Failure (Priority: P1)
   
   Issues Detail:
   - Issue 1: 
-     - Description: When the user clicks the Start Analysis button on the frontend, nothing happens. The analysis process does not initiate, and the UI does not provide any feedback or results. This is a critical failure of the application's main purpose.
-     - Attempted fixes: The agent identified a Python  serialization error in the backend endpoint that fetches analysis results (). A fix was implemented in  to convert the document's  to a string before returning it as JSON.
+     - Description: The application's core analysis feature may hang, leading to a frontend  error. A fix using  was implemented in a previous session but remains unverified by the user.
+     - Attempted fixes: The backend was modified to run blocking LLM calls in a thread pool executor.
      - Next debug checklist: 
-       1.  Use  to manually test the analysis endpoints to confirm the  fix works. First, call  to get an , then use that ID to call  and verify the JSON response is valid.
-       2.  If the backend works, investigate the frontend code in . Check the browser's developer console for errors upon clicking the button.
-       3.  Verify that the frontend is correctly polling the  endpoint and updating the UI based on the response.
-     - Why fix this issue and what will be achieved with the fix? This is the core feature of the IAskan platform. Fixing it will make the application functional and allow the user to perform a GEO analysis, which is the primary value proposition.
-     - Status:  IN PROGRESS
+        1. Ask the user to run a new analysis.
+        2. Confirm with them if the results page loads without a timeout.
+        3. If the timeout persists, the background task implementation may need further review.
+     - Why fix this issue and what will be achieved with the fix? This is the application's primary function. The app is not viable until this is confirmed as stable.
+     - Status:  USER VERIFICATION PENDING
      - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? Both
      - Blocked on other issue: None
+  - Issue 2: 
+     - Description: During the session, the user experienced a  error when trying to download the generated PDF report.
+     - Attempted fixes: The agent replaced all instances of  with  in .
+     - Next debug checklist: 
+        1.  Guide the user to the dashboard or an analysis page.
+        2.  Ask them to click the Télécharger le PDF button.
+        3.  Confirm that the PDF downloads successfully without any console errors.
+     - Why fix this issue and what will be achieved with the fix? It will make the core reporting feature functional for the user.
+     - Status:  USER VERIFICATION PENDING
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Frontend
+     - Blocked on other issue: None
+  - Issue 3: 
+     - Description: User cannot log in with Microsoft or LinkedIn SSO, receiving a  error.
+     - Attempted fixes: The agent identified that the required environment variables (, etc.) are missing. The user was informed.
+     - Next debug checklist: Wait for the user to provide the necessary SSO credentials.
+     - Why fix this issue and what will be achieved with the fix? Fulfills the original product requirement for multi-provider SSO.
+     - Status:  BLOCKED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Backend
+     - Blocked on other issue: Blocked on user providing credentials.
 
 **In progress Task List**:
-There are no tasks in progress; the current focus is on fixing the critical bug.
+  - Task 1:  Complete Background Analysis Notification System (Priority: P0)
+
+ Task Detail:
+  - Task 1: 
+     - Where to resume: 
+        1. **Backend:** In , locate the  function. At the end of the analysis process (inside the  block after ), add calls to the  and  functions.
+        2. **Frontend:** In a high-level component like  or a global context, implement a polling mechanism (e.g., ) to fetch unread notifications from a new backend endpoint (). Display a badge or indicator on a navigation item (e.g., a bell icon) when new notifications are present.
+     - What will be achieved with this? This will complete the user's request for asynchronous analysis and user feedback, significantly improving the user experience.
+     - Status:  IN PROGRESS
+     - Should Test frontend/backend/both after fix? Both
+     - Blocked on something: None
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P0 - Implement Full GEO Analysis Engine:** The current analysis endpoint is a stub. The next step is to implement the complete backend logic in  to connect to the LLMs (ChatGPT, Claude, Gemini, Perplexity) via the Emergent LLM Key, execute the queries, and calculate the initial  score.
-    *   **P0 - Implement Stripe Integration:** Integrate Stripe for handling the three subscription plans. This involves creating checkout sessions on the frontend () and setting up webhooks on the backend () to manage user subscription status.
-    *   **P1 - Implement Google SSO:** Fully integrate Emergent-managed Google Auth on the backend. Currently, only the UI button exists. This requires adding the necessary OAuth2/OIDC routes and logic in .
-
+    *   **P0 - Implement Stripe Integration:** Set up the subscription model via Stripe as per the original requirements. This is the last major piece of the monetization strategy.
+    *   **P1 - Planification de contenu (calendrier éditorial GEO):** A new feature suggested by the agent.
+    *   **P2 - Team/multi-user support:** A new feature suggested by the agent.
 *   **Future Tasks:**
-    *   **P1 - Detailed Reporting Module:** Develop the feature to generate and display the comprehensive analysis reports as specified in the PRD.
-    *   **P2 - Advanced Scoring & AI Features:** Implement the advanced aspects of the GEO engine, including the  score, , and automated recommendation generation.
-    - **P2 - Implement other SSO providers**: Add support for Microsoft and LinkedIn SSO, and the magic link fallback.
-    - **P2 - Onboarding Flow**: Implement the 1-click connection - ready - analysis launched automatically flow.
+    *   **P1 - Advanced Scoring & AI Features:** Refine the  score and .
+    *   **P2 - Onboarding Flow:** Implement the 1-click connection - ready - analysis launched automatically flow.
+    *   **P2 - Detailed Reporting Module**: Enhance the PDF/UI reports.
+    *   **P2 - Implement Magic Link fallback**: Fully test and secure the magic link implementation.
 
 **Completed work in this session**
-- **UI/UX Overhaul:**
-  - Implemented a new light and modern theme with a custom color palette (, ).
-  - Created and integrated a new custom logo ().
-- **User Flow Modification:**
-  - Changed the post-login flow to force project selection before accessing the main dashboard.
-  - Created the  page.
-  - Modified  to reflect the new flow.
-- **Branding Removal:**
-  - Removed all Made with Emergent badges by adding custom CSS to .
-  - Removed a marketing subtitle from the .
-- **Backend Foundation:**
-  - Created initial endpoints for test user registration/login and project creation/listing in .
-- **Bug Fix:**
-  - Resolved an  serialization error that occurred during project creation.
+- **Implemented Full PDF Report Generation:**
+  - Created a client-side PDF generation service in  using .
+  - Added Download PDF and Preview Report buttons to the  and .
+  - Created a preview modal () to display the report's content before download.
+- **Implemented Dynamic Project & Competitor Data:**
+  - The backend now automatically fetches a website's favicon on project creation and stores it ().
+  - The analysis engine dynamically identifies new competitors not listed at project creation ().
+  - The frontend  now displays project logos and links.
+- **Implemented Comprehensive Free Trial Security:**
+  - Created a robust anti-abuse system blocking trial access based on IP address, domain, email, and browser fingerprint (, ).
+  - Integrated a list of disposable email domains to block temporary accounts.
+- **Implemented Mandatory Email Verification:**
+  - New users must now verify their email address via a link sent using Resend.
+  - Created a  and an  to guide users through the process.
+- **Configured Subscription Plan Quotas:**
+  - Precisely implemented the complex query calculation logic for all subscription tiers (Free, Starter, Pro, Business) in .
 
 **Earlier issues found/mentioned but not fixed**
-   - None.
+   - None. The agent addressed all issues raised by the user during this session.
 
 **Known issue recurrence from previous fork**
-  - None.
+  - **Issue recurrence in previous fork:** React DOM .
+  - **Recurrence count:** High.
+  - **Status:** RESOLVED. The solution was to **downgrade and lock React to v18.2.0**. This is a critical constraint. Do not upgrade React or its related dependencies.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend:** React, Tailwind CSS, react-router-dom
-- **Backend:** FastAPI (Python)
+- **Frontend:** React  (locked), Tailwind CSS, Radix UI, Recharts, , , 
+- **Backend:** FastAPI, , , 
 - **Database:** MongoDB
-- **Planned Integrations:** Stripe (Payments), Emergent-managed Google Auth (SSO), OpenAI/Anthropic/Gemini/Perplexity (AI Analysis via Emergent LLM Key).
+- **AI Integration:**  library
 
 **key DB schema**
-  - **users**: 
-  - **projects**: 
-  - **analyses**: 
+  - **users**: {..., : bool, : str}
+  - **projects**: {..., : str, : list}
+  - **analyses**: {..., : str, : dict}
+  - **free_trial_usage**: (New) {, , , , }
+  - **email_verification_tokens**: (New) {, , }
+  - **notifications**: (New) {, , , , }
 
 **changes in tech stack**
-  - None.
+  - ****: Added for client-side PDF generation.
+  - ****: Added for browser fingerprinting as part of the anti-abuse system.
 
 **All files of reference**
-- ****: The monolithic backend file containing all API logic. Last modified to attempt a fix for the analysis bug.
-- ****: The frontend component responsible for starting an analysis. This is likely where the next debugging steps for the UI will be.
-- ****: The new entry point for logged-in users.
-- ****: The main layout for the authenticated part of the app.
-- ****: Contains global styles, including the fix to hide the Made with Emergent badge.
-- ****: The detailed product requirements document.
+- ****: Massively expanded to handle PDF data, logo/competitor fetching, the entire anti-abuse system, email verification logic, plan quotas, and notification models.
+- ****: New file containing all logic for generating the multi-section PDF report.
+- ****: Modified to integrate PDF export/preview, fingerprinting, and error handling for trial eligibility.
+- ****: Modified to display project logos, the email verification banner, and PDF export/preview buttons.
+- ****: New React hook to generate and provide the browser fingerprint.
+- ****: New page to handle the email verification flow.
+- ****: New component shown to unverified users.
+- ****: Modified to add the verification page route and integrate the fingerprint hook at the top level.
 
 **Areas that need refactoring**:
-- The  file contains all application logic and is growing into a monolith. It should be refactored into a more structured package with separate routers for concerns like , , , and .
-- Frontend state management is minimal. For features like managing the currently selected project and user session across the app, a global state manager (like Zustand or Redux Toolkit) should be considered.
+- ****: This file is now critically oversized and complex. It handles authentication, project management, analysis execution, anti-abuse, email, and API routing. It MUST be broken down into a proper package structure (e.g., , , , ).
+- ****: This file is nearly 1000 lines long. The logic for generating each PDF section should be extracted into its own function or module to improve readability and maintainability.
 
 **key api endpoints**
-- : Creates a test user.
-- : Logs in a test user and returns a JWT.
-- : Fetches projects for the current user.
-- : Creates a new project.
-- : **(BROKEN)** Starts a new analysis for a given project.
-- : **(UNDER DEBUG)** Retrieves the status and results of an analysis.
+- : **(New)** Verifies a user's email using a token.
+- : **(New)** Resends the verification email.
+- : **(New)** Checks if a user is eligible for the free trial based on the anti-abuse rules.
+- : **(Modified)** Now performs anti-abuse and email verification checks before starting an analysis.
+- : **(Modified)** Now fetches the project's favicon upon creation.
 
 **Critical Info for New Agent**
-- You MUST respond in French.
-- The most critical issue is that the core analysis feature is broken. The user cannot run an analysis. Debugging this is the top priority.
-- The  serialization error from MongoDB is a recurring problem. Be vigilant about converting  fields to strings in all API responses that return MongoDB documents.
-- The project's full specification is extremely detailed. Refer to  as the single source of truth for all features.
-- The user is highly engaged with the UI/UX. Be prepared for further feedback on design and flow.
+- **Vous DEVEZ répondre en français.**
+- **FINISH NOTIFICATION IMPLEMENTATION:** The immediate priority is to complete the background task notification system. The backend models exist, but the analysis function needs to be updated to create notifications, and the frontend needs to be updated to poll for and display them.
+- **VERIFY CRITICAL FEATURES WITH USER:** The long-standing analysis  issue and the recent PDF download fix ( error) are both implemented but unverified. You must guide the user to test these two things to confirm they are resolved.
+- **PROPOSE REFACTORING:** The  and  files have become unmaintainable. Propose a refactoring task to the user as a high-priority technical debt item.
+- **DO NOT UPGRADE REACT:** The application is locked to **React 18.2.0** to prevent a critical, recurring crash. Do not attempt to upgrade it.
 
 **documents and test reports created in this job**
-  - 
-  - 
+  -  (updated)
+  -  (Note: Agent ran tests successfully, but a report name was not explicitly mentioned. This is the likely path).
 
 **Last 10 User Messages and any pending HUMAN messages** 
- 1. **User**:  (When I start the analysis, nothing happens) - **Status**: IN PROGRESS. This is the current high-priority bug.
- 2. **User**:  (before displaying the menu, first show the projects section...) - **Status**: COMPLETED.
- 3. **User**:  (delete the mention 'The first GEO platform for Europe') - **Status**: COMPLETED.
- 4. **User**:  (change the interface colors I want light and modern colors change the logo) - **Status**: COMPLETED.
- 5. **User**:  (remove all 'Made with Emergent' mentions) - **Status**: COMPLETED.
- 6. **User**:  - **Status**: ACKNOWLEDGED.
- 7. **User**:  - **Status**: ACKNOWLEDGED.
- 8. **User**:  - **Status**: ACKNOWLEDGED.
- 9. **User**:  - **Status**: ACKNOWLEDGED, led to  bug fix for projects.
- 10. **User**:  - **Status**: ACKNOWLEDGED.
+ - 10. **Request for background analysis and notifications**: User wants scans to run in the background and to be notified on completion. (IN PROGRESS)
+ - 9. **Provided BUSINESS plan configuration**: User specified the exact quotas for the Business tier. (COMPLETED)
+ - 8. **Provided PRO plan configuration**: User specified the exact quotas for the Pro tier. (COMPLETED)
+ - 7. **Provided STARTER plan configuration**: User specified the exact quotas for the Starter tier. (COMPLETED)
+ - 6. **Provided FREE plan configuration**: User specified the exact quotas for the Free trial, including the concept of variations. (COMPLETED)
+ - 5. **Request for mandatory email verification**: User asked to force email verification on signup. (COMPLETED)
+ - 4. **continue**: User prompted the agent to proceed after it paused. (ADDRESSED)
+ - 3. **Request for anti-abuse system**: User detailed the requirements for securing the free trial (IP, fingerprint, domain, email blocking). (COMPLETED)
+ - 2. **Question about request count**: User asked for a breakdown of API calls per analysis. (ADDRESSED)
+ - 1. **Request for dynamic data**: User asked to display project logos/links and to discover competitors dynamically during analysis. (COMPLETED)
 
 **Project Health Check:**
-- **Broken**: The core Start Analysis functionality is completely broken and is the highest priority to fix.
-- **Mocked**: SSO, Stripe payments, and the actual AI analysis engine are all placeholders or UI-only stubs.
+- **Broken**: The core analysis feature is still potentially broken due to the unverified  bug.
+- **Mocked**: Microsoft and LinkedIn SSO are present in the UI but non-functional.
 
 **3rd Party Integrations**
-- **Stripe (Payments)**: Planned. Requires User API Key.
-- **Emergent-managed Google Auth**: Planned.
-- **OpenAI, Anthropic, Gemini, Perplexity (AI Analysis)**: Planned. Will use the Emergent LLM Key.
+- **OpenAI, Anthropic, Gemini, Perplexity (AI Analysis)**: Implemented via  library using the Emergent LLM Key. (Operational)
+- **Emergent-managed Google Auth**: Implemented and functional.
+- **Resend (Email)**: Implemented for magic links and now for email verification. (Operational in Sandbox)
+- **Recharts (Charts)**: Implemented.
+- **Stripe (Payments)**: Planned.
+- **Microsoft & LinkedIn SSO**: Placeholder implemented, non-functional (requires user keys).
+- **jspdf (PDF Generation)**: **(New)** Implemented for client-side report generation.
+- **@fingerprintjs/fingerprintjs (Security)**: **(New)** Implemented for browser fingerprinting.
 
 **Testing status**
-  - Testing agent used after significant changes: YES (but not for the most recent changes)
+  - Testing agent used after significant changes: YES, but only after the initial PDF generation feature.
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: ['/app/memory/testing_playbooks/auth_testing.md']
-  - Known regressions: The core Start Analysis feature is non-functional.
+  - Test files created:  (hypothetical, agent did not create a specific test for PDF but tested the endpoints)
+  - Known regressions: None identified, but several major features (anti-abuse, email verification) were added *after* the last test run and are not covered by automated tests.
 
 **Credentials to test flow:**
-Use  to register a new test user, or use the previously created credentials:
-- **Email**: 
-- **Password**: 
+Use Google SSO for authentication. New accounts will now trigger the email verification flow. The free trial is subject to the new anti-abuse rules.
 
 **What agent forgot to execute**
-The agent applied a backend fix for the analysis bug but did not test it or restart the backend service. The immediate next step should be to validate this fix.</analysis>
+- The agent did not complete the implementation of the background task notification system; it was left halfway through.
+- The agent added several critical security and authentication features (anti-abuse, email verification, complex plan logic) *after* the last run of the testing agent. These new, complex workflows are untested and could contain bugs.
+- The agent did not act on the urgent need to refactor , which was noted in the previous handoff and has since become much worse.</analysis>
