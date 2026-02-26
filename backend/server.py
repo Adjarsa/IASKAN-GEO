@@ -2652,7 +2652,6 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         # ===== PHASE 10: Finalize Analysis =====
         analysis_summary = {
             "total_prompts": num_prompts,
-            "variations_per_prompt": variations_per_prompt,
             "runs_per_query": runs_per_query,
             "total_api_calls": total_api_calls,
             "total_responses": len(all_responses),
@@ -2662,10 +2661,9 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
             "user_defined_competitors": competitors[:5],
             "protocol_version": "IAskan Verified GEO Protocol™ v2.0",
             "methodology": {
-                "formula": f"{num_prompts} prompts × {variations_per_prompt} variations × {runs_per_query} runs × {len(ai_engines)} IA = {total_api_calls} requêtes",
+                "formula": f"{num_prompts} prompts × {runs_per_query} runs × {len(ai_engines)} IA = {total_api_calls} requêtes",
                 "multi_runs": True,
-                "variations": variations_per_prompt,
-                "runs_per_variation": runs_per_query,
+                "runs_per_prompt": runs_per_query,
                 "multi_ai": len(ai_engines) > 1,
                 "query_distribution": QUERY_TYPE_DISTRIBUTION,
                 "analysis_layers": ["presence", "role", "credibility", "conversion"],
