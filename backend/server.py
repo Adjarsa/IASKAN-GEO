@@ -2126,6 +2126,53 @@ def generate_recommendations_v2(
     
     return recommendations[:12]
 
+@api_router.post("/analysis/check-eligibility")
+async def check_analysis_eligibility(request: Request, user: dict = Depends(get_current_user)):
+    """Check if user is eligible to start an analysis (anti-abuse check)"""
+    body = await request.json()
+    project_id = body.get("project_id")
+    fingerprint = body.get("fingerprint", "unknown")
+    
+    # Check project exists
+    project = await db.projects.find_one({"project_id": project_id, "user_id": user["user_id"]}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet non trouvé")
+    
+    # Check subscription
+    subscription = await db.subscriptions.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    if not subscription:
+        return {"eligible": False, "reason": "Abonnement requis", "is_free_trial": False}
+    
+    plan = subscription.get("plan", "free")
+    is_free_trial = plan == "free" and subscription.get("queries_used", 0) == 0
+    
+    if not is_free_trial:
+        # Paid users are always eligible (within their limits)
+        queries_used = subscription.get("queries_used", 0)
+        queries_limit = subscription.get("queries_limit", 0)
+        return {
+            "eligible": queries_used < queries_limit,
+            "reason": "Limite d'analyses atteinte" if queries_used >= queries_limit else "Éligible",
+            "is_free_trial": False,
+            "queries_remaining": max(0, queries_limit - queries_used)
+        }
+    
+    # Free trial - check anti-abuse
+    client_ip = get_client_ip(request)
+    eligibility = await check_free_trial_eligibility(
+        email=user.get("email", ""),
+        ip_address=client_ip,
+        fingerprint=fingerprint,
+        domain_to_analyze=project.get("website_url", "")
+    )
+    
+    return {
+        "eligible": eligibility["eligible"],
+        "reason": eligibility["reason"],
+        "blocked_by": eligibility.get("blocked_by"),
+        "is_free_trial": True
+    }
+
 @api_router.post("/analysis/start")
 async def start_analysis(request: Request, user: dict = Depends(get_current_user)):
     """Start a new IAskan Verified GEO Protocol™ analysis"""
