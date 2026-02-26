@@ -1087,11 +1087,19 @@ const AnalysisPage = () => {
                 <ul className="text-sm text-slate-700 space-y-2">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>Multi-runs (3x)</strong> - Chaque requête exécutée 3 fois avec variations pour mesurer la stabilité</span>
+                    <span><strong>10 prompts stratégiques</strong> - Requêtes transactionnelles, comparatives, informationnelles, locales</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>Multi-dimensions</strong> - Requêtes transactionnelles, comparatives, informationnelles, locales, exploratoires</span>
+                    <span><strong>3 variations par prompt</strong> - Reformulations pour une analyse approfondie</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                    <span><strong>3 runs par variation</strong> - Mesure de la stabilité des réponses IA</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
+                    <span><strong>= 90 requêtes IA analysées</strong> - 10 × 3 × 3 = 90 appels API</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
@@ -1099,11 +1107,7 @@ const AnalysisPage = () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>Indices avancés</strong> - Stability Index™, Dominance Index™, Trust Gap™, Opportunity Score™</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-600 mt-0.5 flex-shrink-0" />
-                    <span><strong>Anti-hallucination</strong> - Vérification automatique de la cohérence des réponses IA</span>
+                    <span><strong>Anti-hallucination</strong> - Vérification de la cohérence des réponses IA</span>
                   </li>
                 </ul>
               </div>
