@@ -244,7 +244,21 @@ const ProjectsPage = () => {
             {projects.map((project) => (
               <Card key={project.project_id} className="p-6 bg-white border-slate-100 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center">
+                  {project.logo_url ? (
+                    <img 
+                      src={project.logo_url} 
+                      alt={project.name}
+                      className="w-12 h-12 rounded-xl object-contain bg-white border border-slate-200 p-1"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    className={`w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-cyan-100 items-center justify-center ${project.logo_url ? 'hidden' : 'flex'}`}
+                  >
                     <FolderKanban className="w-6 h-6 text-violet-600" />
                   </div>
                   <div className="flex gap-2">
