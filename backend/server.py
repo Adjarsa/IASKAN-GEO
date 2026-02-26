@@ -2724,14 +2724,13 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
             }}
         )
         
-        # Update subscription usage
-        total_api_calls = len(queries) * runs_per_query * len(ai_engines)
+        # Update subscription usage - use total_api_calls calculated at the start
         await db.subscriptions.update_one(
             {"user_id": project["user_id"]},
-            {"$inc": {"queries_used": total_api_calls}}
+            {"$inc": {"queries_used": total_api_calls, "scans_used": 1}}
         )
         
-        logger.info(f"Analysis {analysis_id} completed successfully with IAskan Verified GEO Protocol™")
+        logger.info(f"Analysis {analysis_id} completed: {num_prompts} prompts × {variations_per_prompt} variations × {runs_per_query} runs × {len(ai_engines)} AI = {total_api_calls} total queries")
         
     except Exception as e:
         logger.error(f"Analysis error: {e}")
