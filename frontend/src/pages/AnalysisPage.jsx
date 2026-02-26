@@ -143,6 +143,17 @@ const AnalysisPage = () => {
         return;
       }
       
+      // Handle email not verified
+      if (detail?.error === "email_not_verified") {
+        setEligibilityError({
+          reason: detail.reason,
+          blocked_by: "email_not_verified",
+          requires_verification: true
+        });
+        toast.error(detail.reason);
+        return;
+      }
+      
       toast.error(detail?.message || detail || "Erreur lors du lancement de l'analyse");
     } finally {
       setStarting(false);
