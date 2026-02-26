@@ -169,6 +169,24 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 
 ## Recent Updates
 
+### Feb 26, 2026 - Anti-Abuse System for Free Trial
+- **1 essai gratuit sécurisé** avec protection multi-niveaux :
+  - Blocage par **email** (email déjà utilisé)
+  - Blocage par **IP** (même connexion)
+  - Blocage par **fingerprint navigateur** (même appareil)
+  - Blocage par **domaine analysé** (même site)
+- **Blocage des emails temporaires** : Liste de 100+ domaines jetables bloqués (tempmail, mailinator, yopmail, etc.)
+- **Tracking des utilisations** : Collection MongoDB `free_trial_usage`
+- **Fingerprint navigateur** : Intégration FingerprintJS pour identifier les appareils
+- **Endpoints API** :
+  - `POST /api/analysis/check-eligibility` - Vérifie l'éligibilité avant analyse
+  - `POST /api/analysis/start` - Inclut maintenant la vérification anti-abus
+- **Fichiers créés/modifiés** :
+  - `backend/server.py` : Fonctions `check_free_trial_eligibility()`, `record_free_trial_usage()`, `is_temporary_email()`, `get_client_ip()`
+  - `frontend/src/hooks/useFingerprint.js` : Hook React pour le fingerprint
+  - `frontend/src/pages/AnalysisPage.jsx` : Affichage des erreurs d'éligibilité
+  - `frontend/src/App.js` : Envoi du fingerprint à l'authentification
+
 ### Feb 26, 2026 - Logo, Website Link & Dynamic Competitors
 - **Logo & Website Display**:
   - Ajout automatique du favicon/logo via Google Favicon Service
