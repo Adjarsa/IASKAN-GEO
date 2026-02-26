@@ -782,52 +782,95 @@ class IAskanPDFReport {
     this.addSectionTitle('Analyse Concurrentielle', '🎯');
     
     this.addText(
-      "Comparaison de votre visibilité IA avec celle de vos principaux concurrents.",
+      "Concurrents identifiés automatiquement par l'analyse IA et comparaison avec les concurrents définis.",
       { fontSize: 9 }
     );
     
     this.addSpacing(5);
     
-    // Competitor comparison
-    const competitors = this.analysis?.competitor_comparison || this.project?.competitors?.map((comp, i) => ({
-      competitor: comp,
-      visibility_rate: 30 + Math.random() * 40,
-      mention_count: Math.floor(Math.random() * 10) + 1,
-      avg_position: Math.random() * 5 + 1
-    })) || [];
+    // Get competitor comparison from analysis
+    const competitorComparison = this.analysis?.competitor_comparison || [];
+    const discoveredCompetitors = competitorComparison.filter(c => c.discovered);
+    const userDefinedCompetitors = this.project?.competitors || [];
     
-    if (competitors.length > 0) {
-      this.addSubsectionTitle('Benchmark Concurrentiel');
+    // Add your brand first
+    const yourVisibility = this.analysis?.indices?.visibility_rate || 38;
+    this.addSubsectionTitle('Votre Position');
+    this.addScoreCard(
+      `${this.project?.brand_name || 'Votre Marque'} (Vous)`,
+      yourVisibility,
+      100,
+      'Votre score de visibilité actuel'
+    );
+    
+    this.addSpacing(5);
+    
+    // Discovered Competitors Section
+    if (discoveredCompetitors.length > 0) {
+      this.addSubsectionTitle('Concurrents Découverts par l\'IA');
       
-      // Add your brand first
-      const yourVisibility = this.analysis?.indices?.visibility_rate || 38;
-      this.addScoreCard(
-        `${this.project?.brand_name || 'Votre Marque'} (Vous)`,
-        yourVisibility,
-        100,
-        'Votre score de visibilité actuel'
-      );
-      
-      // Competitors
-      competitors.slice(0, 5).forEach(comp => {
-        const status = comp.visibility_rate > yourVisibility ? 'danger' : 'success';
+      discoveredCompetitors.slice(0, 6).forEach(comp => {
+        const desc = comp.mentions 
+          ? `${comp.mentions} mentions - via ${(comp.ai_sources || []).join(', ') || 'IA'}`
+          : `Visibilité estimée`;
         this.addScoreCard(
-          comp.competitor || 'Concurrent',
+          comp.competitor || comp.name || 'Concurrent',
           comp.visibility_rate || 0,
           100,
-          `Position moyenne: ${(comp.avg_position || 3).toFixed(1)}`
+          desc
         );
       });
       
-      this.addSpacing(10);
+      this.addSpacing(5);
+    }
+    
+    // User-defined Competitors Section
+    if (userDefinedCompetitors.length > 0) {
+      this.addSubsectionTitle('Concurrents Définis');
       
-      // Gap analysis
+      userDefinedCompetitors.slice(0, 5).forEach(comp => {
+        const compData = competitorComparison.find(
+          c => c.competitor === comp || c.name === comp
+        );
+        this.addScoreCard(
+          comp,
+          compData?.visibility_rate || 0,
+          100,
+          compData?.discovered ? 'Également découvert par l\'IA' : 'Défini par l\'utilisateur'
+        );
+      });
+      
+      this.addSpacing(5);
+    }
+    
+    // Gap analysis if we have competitors
+    if (discoveredCompetitors.length > 0 || userDefinedCompetitors.length > 0) {
       this.addSubsectionTitle('Analyse des Écarts');
       
+      // Calculate gap with top competitor
+      const topCompetitor = [...discoveredCompetitors].sort((a, b) => 
+        (b.visibility_rate || 0) - (a.visibility_rate || 0)
+      )[0];
+      
+      const gap = topCompetitor ? Math.round((topCompetitor.visibility_rate || 0) - yourVisibility) : 0;
+      const gapStatus = gap > 0 ? 'danger' : 'success';
+      
       const gaps = [
-        { label: 'Écart avec le leader', value: '+15%', status: 'danger' },
-        { label: 'Position dans le classement', value: '3ème / 6', status: 'warning' },
-        { label: 'Opportunité de progression', value: 'Élevée', status: 'success' }
+        { 
+          label: 'Écart avec le leader', 
+          value: gap > 0 ? `+${gap}%` : `${gap}%`, 
+          status: gapStatus 
+        },
+        { 
+          label: 'Concurrents identifiés', 
+          value: `${discoveredCompetitors.length} découverts`, 
+          status: 'neutral' 
+        },
+        { 
+          label: 'Opportunité de progression', 
+          value: yourVisibility < 50 ? 'Élevée' : yourVisibility < 75 ? 'Moyenne' : 'Faible', 
+          status: yourVisibility < 50 ? 'success' : 'warning' 
+        }
       ];
       
       gaps.forEach(gap => {
@@ -835,7 +878,7 @@ class IAskanPDFReport {
       });
     } else {
       this.addText(
-        "Aucun concurrent n'a été défini pour ce projet. Ajoutez des concurrents dans les paramètres du projet pour activer l'analyse concurrentielle.",
+        "Lancez une analyse pour découvrir automatiquement vos concurrents à partir des réponses IA.",
         { fontSize: 9, color: COLORS.warning }
       );
     }
