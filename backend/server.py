@@ -2839,6 +2839,37 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         
         logger.info(f"Analysis {analysis_id} completed: {num_prompts} prompts × {runs_per_query} runs × {len(ai_engines)} AI = {total_api_calls} total queries")
         
+        # ===== SEND NOTIFICATIONS =====
+        user_id = project.get("user_id")
+        project_name = project.get("name", "Projet")
+        global_score = rate_score["total"]
+        
+        # Create in-app notification
+        await create_notification(
+            user_id=user_id,
+            notification_type="scan_complete",
+            title="Scan terminé",
+            message=f"L'analyse de {project_name} est terminée. Score: {int(global_score)}/100",
+            data={
+                "analysis_id": analysis_id,
+                "project_id": project.get("project_id"),
+                "project_name": project_name,
+                "global_score": global_score,
+                "grade": rate_score.get("grade", "N/A")
+            }
+        )
+        
+        # Send email notification
+        user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+        if user:
+            await send_scan_complete_email(
+                user_email=user.get("email", ""),
+                user_name=user.get("name", ""),
+                project_name=project_name,
+                analysis_id=analysis_id,
+                global_score=global_score
+            )
+        
     except Exception as e:
         logger.error(f"Analysis error: {e}")
         await db.analyses.update_one(
@@ -2848,6 +2879,22 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
                 "error": str(e),
                 "current_phase": "failed"
             }}
+        )
+        
+        # Create failure notification
+        user_id = project.get("user_id")
+        project_name = project.get("name", "Projet")
+        await create_notification(
+            user_id=user_id,
+            notification_type="scan_failed",
+            title="Échec du scan",
+            message=f"L'analyse de {project_name} a échoué. Veuillez réessayer.",
+            data={
+                "analysis_id": analysis_id,
+                "project_id": project.get("project_id"),
+                "project_name": project_name,
+                "error": str(e)
+            }
         )
 
 @api_router.get("/analysis/{analysis_id}")
