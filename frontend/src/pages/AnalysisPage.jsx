@@ -25,7 +25,8 @@ import {
   AlertTriangle,
   FileDown,
   Eye,
-  AlertCircle
+  AlertCircle,
+  Globe
 } from "lucide-react";
 import { generatePDFReport } from "@/services/pdfReportGenerator";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
