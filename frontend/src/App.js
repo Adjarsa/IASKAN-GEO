@@ -36,6 +36,7 @@ import HistoryChartsPage from "@/pages/HistoryChartsPage";
 import VisibilityPage from "@/pages/VisibilityPage";
 import ContentAuditPage from "@/pages/ContentAuditPage";
 import ContentGeneratorPage from "@/pages/ContentGeneratorPage";
+import VerifyEmailPage from "@/pages/VerifyEmailPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
