@@ -2535,28 +2535,40 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         # Update status with phase info
         await db.analyses.update_one(
             {"analysis_id": analysis_id},
-            {"$set": {"current_phase": "query_generation"}}
+            {"$set": {
+                "current_phase": "query_generation",
+                "plan_config": {
+                    "num_prompts": num_prompts,
+                    "variations_per_prompt": variations_per_prompt,
+                    "runs_per_query": runs_per_query,
+                    "ai_engines": ai_engines,
+                    "total_api_calls": total_api_calls
+                }
+            }}
         )
         
         # ===== PHASE 1: Generate Multi-Dimension Queries =====
-        num_queries = 12 if len(ai_engines) > 1 else 8  # More queries for multi-AI plans
-        queries = generate_queries_multi_dimension(brand_name, keywords, competitors, num_queries)
+        queries = generate_queries_multi_dimension(brand_name, keywords, competitors, num_prompts)
         
         await db.analyses.update_one(
             {"analysis_id": analysis_id},
-            {"$set": {"current_phase": "ai_querying", "total_queries": len(queries)}}
+            {"$set": {"current_phase": "ai_querying", "total_queries": len(queries), "total_api_calls": total_api_calls}}
         )
         
-        # ===== PHASE 2: Multi-Run AI Querying =====
+        # ===== PHASE 2: Multi-Run AI Querying with Variations =====
         all_responses = []
         ai_scores = {ai: [] for ai in ai_engines}
         query_results = []
-        runs_per_query = 3  # IAskan Protocol mandates 3 runs per query
         
         for query_idx, query in enumerate(queries):
             query_text = query["text"]
             query_type = query["type"]
-            query_variations = [query_text] + query.get("variations", [])[:2]  # Base + 2 variations
+            # Get variations: base query + generated variations
+            query_variations = [query_text] + query.get("variations", [])[:variations_per_prompt - 1]
+            
+            # Ensure we have enough variations
+            while len(query_variations) < variations_per_prompt:
+                query_variations.append(query_text)  # Fallback to base query
             
             query_all_responses = []
             
@@ -2564,24 +2576,21 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
                 ai_run_responses = []
                 
                 # Execute multi-runs with variations
-                for run_id, variant_text in enumerate(query_variations[:runs_per_query], 1):
-                    response = await query_ai_engine_v2(
-                        variant_text,
-                        brand_name,
-                        competitors,
-                        ai,
-                        run_id
-                    )
-                    ai_run_responses.append(response)
-                    all_responses.append(response)
-                    
-                    if response.get("role") != "error":
-                        score = response.get("role_score", 0) * 100
-                        ai_scores[ai].append(score)
-                
-                # Calculate average for this AI on this query
-                avg_role_score = sum(r.get("role_score", 0) for r in ai_run_responses) / len(ai_run_responses) if ai_run_responses else 0
-                mentioned_count = sum(1 for r in ai_run_responses if r.get("brand_mentioned", False))
+                for variation_idx, variant_text in enumerate(query_variations[:variations_per_prompt]):
+                    for run_id in range(1, runs_per_query + 1):
+                        response = await query_ai_engine_v2(
+                            variant_text,
+                            brand_name,
+                            competitors,
+                            ai,
+                            run_id
+                        )
+                        ai_run_responses.append(response)
+                        all_responses.append(response)
+                        
+                        if response.get("role") != "error":
+                            score = response.get("role_score", 0) * 100
+                            ai_scores[ai].append(score)
                 
                 query_all_responses.extend(ai_run_responses)
             
