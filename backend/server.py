@@ -152,6 +152,20 @@ class EmailVerificationToken(BaseModel):
     used: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ================== NOTIFICATION SYSTEM ==================
+
+class Notification(BaseModel):
+    """User notifications for completed scans, etc."""
+    model_config = ConfigDict(extra="ignore")
+    notification_id: str = Field(default_factory=lambda: f"notif_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    type: str  # scan_complete, scan_failed, subscription_expiring, etc.
+    title: str
+    message: str
+    data: Dict[str, Any] = {}  # Additional data (analysis_id, project_id, etc.)
+    read: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # ================== ANTI-ABUSE SYSTEM ==================
 
 class FreeTrialUsage(BaseModel):
