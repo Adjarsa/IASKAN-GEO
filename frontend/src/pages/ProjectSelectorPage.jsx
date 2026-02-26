@@ -239,8 +239,8 @@ const ProjectSelectorPage = () => {
                 <div className="mt-auto space-y-2 text-sm">
                   {project.website_url && (
                     <div className="flex items-center gap-2 text-slate-600">
-                      <Globe className="w-4 h-4" />
-                      <span className="truncate">{project.website_url.replace(/https?:\/\//, '')}</span>
+                      <Globe className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{project.website_url.replace(/https?:\/\/(www\.)?/, '').split('/')[0]}</span>
                     </div>
                   )}
                   {project.keywords?.length > 0 && (
