@@ -89,7 +89,9 @@ class Project(BaseModel):
     name: str
     website_url: str
     brand_name: str
-    competitors: List[str] = []
+    logo_url: Optional[str] = None  # Brand logo URL (auto-fetched from favicon or user-provided)
+    competitors: List[str] = []  # User-defined competitors
+    discovered_competitors: List[Dict[str, Any]] = []  # Competitors discovered from AI analysis
     keywords: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
