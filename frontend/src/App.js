@@ -37,6 +37,10 @@ import VisibilityPage from "@/pages/VisibilityPage";
 import ContentAuditPage from "@/pages/ContentAuditPage";
 import ContentGeneratorPage from "@/pages/ContentGeneratorPage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
+import LegalPage from "@/pages/LegalPage";
+import PrivacyPage from "@/pages/PrivacyPage";
+import TermsPage from "@/pages/TermsPage";
+import ContactPage from "@/pages/ContactPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
