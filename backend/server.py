@@ -254,7 +254,7 @@ SUBSCRIPTION_PLANS = {
         "num_prompts": 100,
         "runs_per_query": 4,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["50 scans/mois", "100 prompts/scan", "4 runs/requête", "1 600 requêtes/scan", "80 000 requêtes/mois", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Benchmark concurrents", "Analyse de stabilité", "5 projets", "Support prioritaire"]
+        "features": ["50 scans/mois", "100 prompts/scan", "4 runs/requête", "1 600 requêtes/scan", "80 000 requêtes/mois", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Benchmark concurrents", "Analyse de stabilité", "Scans programmés + rapport par email", "5 projets", "Support prioritaire"]
     },
     "business": {
         "name": "Business",
@@ -265,7 +265,7 @@ SUBSCRIPTION_PLANS = {
         "num_prompts": 200,
         "runs_per_query": 5,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["150 scans/mois", "200 prompts/scan", "5 runs/requête", "4 000 requêtes/scan", "600 000 requêtes/mois", "4 IA", "Génération d'articles GEO", "Intelligence stratégique", "Projets illimités", "Support dédié"]
+        "features": ["150 scans/mois", "200 prompts/scan", "5 runs/requête", "4 000 requêtes/scan", "600 000 requêtes/mois", "4 IA", "Génération d'articles GEO", "Intelligence stratégique", "Scans programmés + rapport par email", "Projets illimités", "Support dédié"]
     }
 }
 
