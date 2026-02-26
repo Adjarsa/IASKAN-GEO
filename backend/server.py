@@ -3606,13 +3606,36 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         # Send email notification
         user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
         if user:
-            await send_scan_complete_email(
-                user_email=user.get("email", ""),
-                user_name=user.get("name", ""),
-                project_name=project_name,
-                analysis_id=analysis_id,
-                global_score=global_score
-            )
+            # Get analysis to check if it's a scheduled scan
+            analysis_data = await db.analyses.find_one({"analysis_id": analysis_id}, {"_id": 0})
+            is_scheduled = analysis_data.get("scheduled", False) if analysis_data else False
+            
+            if is_scheduled:
+                # For scheduled scans, use the special report email
+                schedule = await db.scan_schedules.find_one(
+                    {"schedule_id": analysis_data.get("schedule_id")},
+                    {"_id": 0}
+                )
+                recipients = schedule.get("report_recipients", []) if schedule else []
+                
+                await send_scheduled_report_email(
+                    user_email=user.get("email", ""),
+                    user_name=user.get("name", ""),
+                    project_name=project_name,
+                    analysis_id=analysis_id,
+                    global_score=global_score,
+                    grade=rate_score.get("grade", "N/A"),
+                    recipients=recipients
+                )
+            else:
+                # For manual scans, use the standard notification email
+                await send_scan_complete_email(
+                    user_email=user.get("email", ""),
+                    user_name=user.get("name", ""),
+                    project_name=project_name,
+                    analysis_id=analysis_id,
+                    global_score=global_score
+                )
         
     except Exception as e:
         logger.error(f"Analysis error: {e}")
