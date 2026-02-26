@@ -35,6 +35,7 @@ const AnalysisPage = () => {
   const { analysisId } = useParams();
   const { user, currentProject } = useAuth();
   const navigate = useNavigate();
+  const { fingerprint } = useFingerprint();
   
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +43,7 @@ const AnalysisPage = () => {
   const [polling, setPolling] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(null);
+  const [eligibilityError, setEligibilityError] = useState(null);
 
   useEffect(() => {
     if (analysisId) {
