@@ -110,10 +110,15 @@ const AnalysisPage = () => {
     }
 
     setStarting(true);
+    setEligibilityError(null);
+    
     try {
       const response = await axios.post(
         `${API}/analysis/start`,
-        { project_id: currentProject.project_id },
+        { 
+          project_id: currentProject.project_id,
+          fingerprint: fingerprint || "unknown"
+        },
         { withCredentials: true }
       );
       
@@ -121,11 +126,24 @@ const AnalysisPage = () => {
       navigate(`/analysis/${response.data.analysis_id}`);
     } catch (error) {
       console.error("Start analysis error:", error);
+      
       if (error.response?.status === 401) {
         toast.error("Session expirée. Veuillez vous reconnecter.");
         return;
       }
-      toast.error(error.response?.data?.detail || "Erreur lors du lancement de l'analyse");
+      
+      // Handle anti-abuse blocking
+      const detail = error.response?.data?.detail;
+      if (detail?.error === "free_trial_blocked") {
+        setEligibilityError({
+          reason: detail.reason,
+          blocked_by: detail.blocked_by
+        });
+        toast.error(detail.reason);
+        return;
+      }
+      
+      toast.error(detail?.message || detail || "Erreur lors du lancement de l'analyse");
     } finally {
       setStarting(false);
     }
