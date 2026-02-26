@@ -1141,12 +1141,21 @@ async def create_project(request: Request, user: dict = Depends(get_current_user
     """Create a new project"""
     body = await request.json()
     
+    website_url = body.get("website_url", "")
+    
+    # Auto-fetch favicon/logo
+    logo_url = body.get("logo_url")
+    if not logo_url and website_url:
+        logo_url = await get_favicon_url(website_url)
+    
     project = Project(
         user_id=user["user_id"],
         name=body.get("name", "Mon projet"),
-        website_url=body.get("website_url", ""),
+        website_url=website_url,
         brand_name=body.get("brand_name", ""),
+        logo_url=logo_url,
         competitors=body.get("competitors", []),
+        discovered_competitors=[],
         keywords=body.get("keywords", [])
     )
     
