@@ -194,7 +194,11 @@ const DashboardPage = () => {
                   className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700 transition-colors"
                 >
                   <ExternalLink className="w-3 h-3" />
-                  {currentProject.website_url.replace(/^https?:\/\/(www\.)?/, '')}
+                  {(() => {
+                    const url = currentProject.website_url.replace(/^https?:\/\/(www\.)?/, '').split('?')[0];
+                    const parts = url.split('/').filter(Boolean);
+                    return parts.length > 2 ? `${parts[0]}/${parts[1]}/...` : url.replace(/\/$/, '');
+                  })()}
                 </a>
               )}
               {!currentProject?.website_url && (
