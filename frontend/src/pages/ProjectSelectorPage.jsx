@@ -185,7 +185,7 @@ const ProjectSelectorPage = () => {
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900 mb-3">
             Vos Projets
           </h1>
@@ -194,29 +194,61 @@ const ProjectSelectorPage = () => {
           </p>
         </div>
 
+        {/* Search Bar */}
+        {projects.length > 3 && (
+          <div className="max-w-md mx-auto mb-8">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Rechercher un projet..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition-all bg-white"
+                data-testid="project-search"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className="text-sm text-slate-500 mt-2 text-center">
+                {filteredProjects.length} projet{filteredProjects.length > 1 ? 's' : ''} trouvé{filteredProjects.length > 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Projects Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {/* Create New Project Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card 
-              className="p-6 h-full border-2 border-dashed border-slate-200 hover:border-violet-300 bg-slate-50/50 cursor-pointer transition-all hover:bg-violet-50/50 flex flex-col items-center justify-center min-h-[220px]"
-              onClick={() => setDialogOpen(true)}
-              data-testid="create-project-card"
+          {!searchQuery && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
             >
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-100 to-cyan-100 flex items-center justify-center mb-4">
-                <Plus className="w-8 h-8 text-violet-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-1">Nouveau Projet</h3>
-              <p className="text-sm text-slate-600 text-center">Créez un projet pour analyser une marque</p>
-            </Card>
-          </motion.div>
+              <Card 
+                className="p-6 h-full border-2 border-dashed border-slate-200 hover:border-violet-300 bg-slate-50/50 cursor-pointer transition-all hover:bg-violet-50/50 flex flex-col items-center justify-center min-h-[220px]"
+                onClick={() => setDialogOpen(true)}
+                data-testid="create-project-card"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-100 to-cyan-100 flex items-center justify-center mb-4">
+                  <Plus className="w-8 h-8 text-violet-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-1">Nouveau Projet</h3>
+                <p className="text-sm text-slate-600 text-center">Créez un projet pour analyser une marque</p>
+              </Card>
+            </motion.div>
+          )}
 
           {/* Existing Projects */}
-          {projects.map((project, index) => (
+          {filteredProjects.map((project, index) => (
             <motion.div
               key={project.project_id}
               initial={{ opacity: 0, y: 20 }}
