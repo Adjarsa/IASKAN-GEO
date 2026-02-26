@@ -351,17 +351,42 @@ const AnalysisPage = () => {
                 Retour
               </Button>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold text-slate-900">Résultats de l'analyse</h1>
+                <div className="flex items-center gap-3">
+                  {/* Project Logo */}
+                  {currentProject?.logo_url ? (
+                    <img 
+                      src={currentProject.logo_url} 
+                      alt={currentProject.name}
+                      className="w-10 h-10 rounded-lg object-contain bg-white border border-slate-200 p-1"
+                      onError={(e) => e.target.style.display = 'none'}
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-100 to-cyan-100 flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-violet-600" />
+                    </div>
+                  )}
+                  <div>
+                    <h1 className="text-2xl font-bold text-slate-900">{currentProject?.name || "Résultats de l'analyse"}</h1>
+                    {currentProject?.website_url && (
+                      <a 
+                        href={currentProject.website_url.startsWith("http") ? currentProject.website_url : `https://${currentProject.website_url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-violet-600 hover:underline"
+                      >
+                        {currentProject.website_url}
+                      </a>
+                    )}
+                  </div>
                   {analysis.status === "completed" && (
-                    <Badge className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white border-0 text-xs">
+                    <Badge className="bg-gradient-to-r from-violet-600 to-cyan-600 text-white border-0 text-xs ml-2">
                       <Shield className="w-3 h-3 mr-1" />
                       IAskan Verified™
                     </Badge>
                   )}
                 </div>
-                <p className="text-slate-700 text-sm">
-                  {new Date(analysis.created_at).toLocaleDateString("fr-FR", {
+                <p className="text-slate-500 text-sm mt-1 ml-13">
+                  Analyse du {new Date(analysis.created_at).toLocaleDateString("fr-FR", {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
