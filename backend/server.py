@@ -212,11 +212,10 @@ SUBSCRIPTION_PLANS = {
     "free": {
         "name": "Essai Gratuit",
         "price": 0,
-        "queries_limit": 90,  # 10 prompts × 3 variations × 3 runs × 1 IA = 90
+        "queries_limit": 90,  # 10 prompts × 3 runs × 1 IA = 90 (variations intégrées dans prompts)
         "scans_limit": 1,
         "projects_limit": 1,
         "num_prompts": 10,
-        "variations_per_prompt": 3,
         "runs_per_query": 3,
         "ai_engines": ["chatgpt"],
         "features": ["1 scan offert", "10 prompts analysés", "90 requêtes IA", "ChatGPT uniquement", "Rapport PDF complet", "1 projet"]
@@ -224,14 +223,13 @@ SUBSCRIPTION_PLANS = {
     "starter": {
         "name": "Starter",
         "price": 79.00,
-        "queries_limit": 300,
+        "queries_limit": 1500,  # 50 prompts × 3 runs × 1 IA × 10 scans = 1500
         "scans_limit": 10,
         "projects_limit": 1,
-        "num_prompts": 15,
-        "variations_per_prompt": 2,
+        "num_prompts": 50,
         "runs_per_query": 3,
         "ai_engines": ["chatgpt"],
-        "features": ["10 scans/mois", "15 prompts/scan", "ChatGPT uniquement", "Rapport PDF", "1 projet", "Support email"]
+        "features": ["10 scans/mois", "50 prompts/scan", "150 requêtes/scan", "1 500 requêtes/mois", "ChatGPT uniquement", "Rapport PDF", "1 projet", "Support email"]
     },
     "pro": {
         "name": "Pro",
@@ -240,7 +238,6 @@ SUBSCRIPTION_PLANS = {
         "scans_limit": 30,
         "projects_limit": 5,
         "num_prompts": 20,
-        "variations_per_prompt": 3,
         "runs_per_query": 3,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
         "features": ["30 scans/mois", "20 prompts/scan", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Benchmark concurrents", "Analyse de stabilité", "5 projets", "Support prioritaire"]
@@ -252,7 +249,6 @@ SUBSCRIPTION_PLANS = {
         "scans_limit": -1,  # illimité
         "projects_limit": -1,
         "num_prompts": 30,
-        "variations_per_prompt": 3,
         "runs_per_query": 3,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
         "features": ["Scans illimités", "30 prompts/scan", "Toutes les IA", "Génération d'articles GEO", "Intelligence stratégique", "Projets illimités", "API access", "Support dédié"]
