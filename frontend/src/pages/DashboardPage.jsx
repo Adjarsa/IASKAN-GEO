@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import { generatePDFReport } from "@/services/pdfReportGenerator";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
-import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 
 const DashboardPage = () => {
   const { user, subscription, refreshSubscription, currentProject } = useAuth();
