@@ -694,12 +694,13 @@ async def create_session(request: Request, response: Response):
         user_id = existing_user["user_id"]
     else:
         is_new_user = True
-        # Create new user
+        # Create new user with email_verified = False
         user_doc = {
             "user_id": user_id,
             "email": email,
             "name": name,
             "picture": picture,
+            "email_verified": False,
             "registration_ip": client_ip,
             "registration_fingerprint": fingerprint,
             "created_at": datetime.now(timezone.utc).isoformat()
@@ -721,7 +722,11 @@ async def create_session(request: Request, response: Response):
         }
         await db.subscriptions.insert_one(free_sub)
         
-        logger.info(f"New user registered: email={email}, ip={client_ip}")
+        # Send verification email
+        verification_token = await create_verification_token(user_id, email)
+        await send_verification_email(email, name, verification_token)
+        
+        logger.info(f"New user registered: email={email}, ip={client_ip}, verification email sent")
     
     # Create session
     expires_at = datetime.now(timezone.utc) + timedelta(days=30)
