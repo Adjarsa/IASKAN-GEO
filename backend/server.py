@@ -2941,17 +2941,6 @@ async def start_analysis(request: Request, user: dict = Depends(get_current_user
     is_free_trial = plan == "free" and subscription.get("queries_used", 0) == 0
     
     if is_free_trial:
-        # Check email verification first
-        if not user.get("email_verified", False):
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "error": "email_not_verified",
-                    "reason": "Veuillez vérifier votre adresse email pour accéder à l'essai gratuit.",
-                    "requires_verification": True
-                }
-            )
-        
         client_ip = get_client_ip(request)
         domain_to_analyze = project.get("website_url", "")
         user_email = user.get("email", "")
