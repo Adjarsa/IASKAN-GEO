@@ -139,6 +139,19 @@ class Subscription(BaseModel):
     trial_ends_at: Optional[datetime] = None
     current_period_start: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ================== EMAIL VERIFICATION SYSTEM ==================
+
+class EmailVerificationToken(BaseModel):
+    """Token for email verification"""
+    model_config = ConfigDict(extra="ignore")
+    token_id: str = Field(default_factory=lambda: f"evt_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    email: str
+    token: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
+    expires_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc) + timedelta(hours=24))
+    used: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # ================== ANTI-ABUSE SYSTEM ==================
 
 class FreeTrialUsage(BaseModel):
