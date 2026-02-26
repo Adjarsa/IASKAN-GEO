@@ -316,14 +316,15 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 ## Key Files
 - `/app/backend/server.py` - Main API server with GEO Protocol™ engine
 - `/app/frontend/src/services/pdfReportGenerator.js` - **PDF Report Generator (10 sections)**
-- `/app/frontend/src/components/ReportPreviewModal.jsx` - **NEW: Preview Modal with navigation**
+- `/app/frontend/src/components/ReportPreviewModal.jsx` - **Preview Modal with navigation**
+- `/app/frontend/src/components/NotificationBell.jsx` - **NEW: Notification bell component**
 - `/app/frontend/src/components/PDFExportButton.jsx` - PDF Export Components
 - `/app/frontend/src/pages/ContentGeneratorPage.jsx` - Content generation page
 - `/app/frontend/src/pages/VisibilityPage.jsx` - Visibility tracking page
 - `/app/frontend/src/pages/ContentAuditPage.jsx` - Content audit page
 - `/app/frontend/src/pages/AnalysisPage.jsx` - Analysis V2 with indices + PDF export + preview
 - `/app/frontend/src/pages/DashboardPage.jsx` - Main dashboard + PDF export + preview
-- `/app/frontend/src/components/layout/DashboardLayout.jsx` - Sidebar navigation
+- `/app/frontend/src/components/layout/DashboardLayout.jsx` - Sidebar navigation + NotificationBell
 
 ## Test Reports
-- `/app/test_reports/iteration_6.json` - Latest test report (100% pass rate for new features)
+- `/app/test_reports/iteration_8.json` - Latest test report (100% pass rate - Notification System)
