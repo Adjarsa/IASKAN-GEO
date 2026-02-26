@@ -216,9 +216,20 @@ const ProjectSelectorPage = () => {
                 data-testid={`project-card-${project.project_id}`}
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-cyan-100 flex items-center justify-center">
-                    <FolderKanban className="w-6 h-6 text-violet-600" />
-                  </div>
+                  {project.logo_url ? (
+                    <img 
+                      src={project.logo_url} 
+                      alt={project.name}
+                      className="w-12 h-12 rounded-xl object-contain bg-white border border-slate-200 p-1"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-cyan-100 flex items-center justify-center">
+                      <FolderKanban className="w-6 h-6 text-violet-600" />
+                    </div>
+                  )}
                   <ArrowRight className="w-5 h-5 text-slate-300" />
                 </div>
 
