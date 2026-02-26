@@ -209,32 +209,53 @@ class PaymentTransaction(BaseModel):
 # ================== SUBSCRIPTION PLANS ==================
 
 SUBSCRIPTION_PLANS = {
+    "free": {
+        "name": "Essai Gratuit",
+        "price": 0,
+        "queries_limit": 90,  # 10 prompts × 3 variations × 3 runs × 1 IA = 90
+        "scans_limit": 1,
+        "projects_limit": 1,
+        "num_prompts": 10,
+        "variations_per_prompt": 3,
+        "runs_per_query": 3,
+        "ai_engines": ["chatgpt"],
+        "features": ["1 scan offert", "10 prompts analysés", "90 requêtes IA", "ChatGPT uniquement", "Rapport PDF complet", "1 projet"]
+    },
     "starter": {
         "name": "Starter",
         "price": 79.00,
         "queries_limit": 300,
-        "free_scans": 1,
+        "scans_limit": 10,
         "projects_limit": 1,
+        "num_prompts": 15,
+        "variations_per_prompt": 2,
+        "runs_per_query": 3,
         "ai_engines": ["chatgpt"],
-        "features": ["1 scan gratuit", "Score GEO basique", "ChatGPT uniquement", "Rapport standard", "1 projet", "Support email"]
+        "features": ["10 scans/mois", "15 prompts/scan", "ChatGPT uniquement", "Rapport PDF", "1 projet", "Support email"]
     },
     "pro": {
         "name": "Pro",
         "price": 149.00,
         "queries_limit": 600,
-        "free_scans": 0,
+        "scans_limit": 30,
         "projects_limit": 5,
+        "num_prompts": 20,
+        "variations_per_prompt": 3,
+        "runs_per_query": 3,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["Score GEO avancé", "Multi-IA (4 moteurs)", "Benchmark concurrents", "Analyse de stabilité", "5 projets", "Support prioritaire"]
+        "features": ["30 scans/mois", "20 prompts/scan", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Benchmark concurrents", "Analyse de stabilité", "5 projets", "Support prioritaire"]
     },
     "business": {
         "name": "Business",
         "price": 349.00,
         "queries_limit": 1500,
-        "free_scans": 0,
+        "scans_limit": -1,  # illimité
         "projects_limit": -1,
+        "num_prompts": 30,
+        "variations_per_prompt": 3,
+        "runs_per_query": 3,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["Score GEO complet", "Toutes les IA", "Génération d'articles GEO", "Intelligence stratégique", "Projets illimités", "API access", "Support dédié"]
+        "features": ["Scans illimités", "30 prompts/scan", "Toutes les IA", "Génération d'articles GEO", "Intelligence stratégique", "Projets illimités", "API access", "Support dédié"]
     }
 }
 
