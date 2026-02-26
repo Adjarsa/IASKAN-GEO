@@ -2109,6 +2109,7 @@ async def start_analysis(request: Request, user: dict = Depends(get_current_user
     """Start a new IAskan Verified GEO Protocol™ analysis"""
     body = await request.json()
     project_id = body.get("project_id")
+    fingerprint = body.get("fingerprint", "unknown")  # Browser fingerprint from frontend
     
     # Check project exists
     project = await db.projects.find_one({"project_id": project_id, "user_id": user["user_id"]}, {"_id": 0})
@@ -2120,8 +2121,44 @@ async def start_analysis(request: Request, user: dict = Depends(get_current_user
     if not subscription:
         raise HTTPException(status_code=403, detail="Abonnement requis")
     
-    plan = subscription.get("plan", "starter")
+    plan = subscription.get("plan", "free")
     plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["starter"])
+    
+    # ===== ANTI-ABUSE CHECK FOR FREE TRIAL =====
+    is_free_trial = plan == "free" and subscription.get("queries_used", 0) == 0
+    
+    if is_free_trial:
+        client_ip = get_client_ip(request)
+        domain_to_analyze = project.get("website_url", "")
+        user_email = user.get("email", "")
+        
+        # Check eligibility
+        eligibility = await check_free_trial_eligibility(
+            email=user_email,
+            ip_address=client_ip,
+            fingerprint=fingerprint,
+            domain_to_analyze=domain_to_analyze
+        )
+        
+        if not eligibility["eligible"]:
+            logger.warning(f"Free trial blocked: user={user_email}, reason={eligibility['blocked_by']}, ip={client_ip}")
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "free_trial_blocked",
+                    "reason": eligibility["reason"],
+                    "blocked_by": eligibility["blocked_by"]
+                }
+            )
+        
+        # Record free trial usage BEFORE starting analysis
+        await record_free_trial_usage(
+            email=user_email,
+            ip_address=client_ip,
+            fingerprint=fingerprint,
+            domain_analyzed=domain_to_analyze,
+            user_id=user["user_id"]
+        )
     
     # Create analysis
     analysis = Analysis(
@@ -2133,6 +2170,7 @@ async def start_analysis(request: Request, user: dict = Depends(get_current_user
     doc = analysis.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
     doc["protocol_version"] = "IAskan Verified GEO Protocol™ v2.0"
+    doc["is_free_trial"] = is_free_trial
     await db.analyses.insert_one(doc)
     
     # Start analysis in background
