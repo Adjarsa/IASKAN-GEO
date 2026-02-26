@@ -1110,22 +1110,32 @@ const AnalysisPage = () => {
 
               {/* Eligibility Error Message */}
               {eligibilityError && (
-                <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+                <div className={`p-4 rounded-lg ${eligibilityError.requires_verification ? 'bg-amber-50 border border-amber-200' : 'bg-red-50 border border-red-200'}`}>
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${eligibilityError.requires_verification ? 'text-amber-600' : 'text-red-600'}`} />
                     <div>
-                      <h4 className="font-medium text-red-800">Essai gratuit non disponible</h4>
-                      <p className="text-sm text-red-600 mt-1">{eligibilityError.reason}</p>
-                      <p className="text-xs text-red-500 mt-2">
-                        Pour continuer, veuillez souscrire à un abonnement.
+                      <h4 className={`font-medium ${eligibilityError.requires_verification ? 'text-amber-800' : 'text-red-800'}`}>
+                        {eligibilityError.requires_verification ? 'Vérification email requise' : 'Essai gratuit non disponible'}
+                      </h4>
+                      <p className={`text-sm mt-1 ${eligibilityError.requires_verification ? 'text-amber-600' : 'text-red-600'}`}>
+                        {eligibilityError.reason}
                       </p>
+                      {eligibilityError.requires_verification ? (
+                        <p className="text-xs text-amber-500 mt-2">
+                          Vérifiez votre boîte de réception (et les spams) pour le lien de vérification.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-red-500 mt-2">
+                          Pour continuer, veuillez souscrire à un abonnement.
+                        </p>
+                      )}
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="mt-3 border-red-200 text-red-700 hover:bg-red-50"
-                        onClick={() => navigate('/pricing')}
+                        className={`mt-3 ${eligibilityError.requires_verification ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-red-200 text-red-700 hover:bg-red-50'}`}
+                        onClick={() => navigate(eligibilityError.requires_verification ? '/dashboard' : '/pricing')}
                       >
-                        Voir les abonnements
+                        {eligibilityError.requires_verification ? 'Renvoyer l\'email' : 'Voir les abonnements'}
                       </Button>
                     </div>
                   </div>
