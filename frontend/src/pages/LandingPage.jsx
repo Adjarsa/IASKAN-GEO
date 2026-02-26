@@ -80,6 +80,7 @@ const LandingPage = () => {
         "4 IA (ChatGPT, Claude, Gemini, Perplexity)",
         "Benchmark concurrents",
         "Analyse de stabilité",
+        "Scans programmés + rapport par email",
         "5 projets",
         "Support prioritaire"
       ],
@@ -96,6 +97,7 @@ const LandingPage = () => {
         "4 IA",
         "Génération d'articles GEO",
         "Intelligence stratégique",
+        "Scans programmés + rapport par email",
         "Projets illimités",
         "Support dédié"
       ],
