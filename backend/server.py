@@ -294,26 +294,33 @@ SUBSCRIPTION_PLANS = {
 # ================== AUTH HELPERS ==================
 
 async def get_favicon_url(website_url: str) -> Optional[str]:
-    """Extract favicon/logo URL from a website"""
+    """Extract favicon/logo URL from a website using multiple methods"""
     try:
+        if not website_url:
+            return None
+            
         # Clean the URL
         if not website_url.startswith(('http://', 'https://')):
             website_url = f"https://{website_url}"
         
         from urllib.parse import urlparse
         parsed = urlparse(website_url)
-        base_url = f"{parsed.scheme}://{parsed.netloc}"
+        domain = parsed.netloc.replace("www.", "")
         
-        # Try common favicon locations
-        favicon_options = [
-            f"https://www.google.com/s2/favicons?domain={parsed.netloc}&sz=128",
-            f"https://icon.horse/icon/{parsed.netloc}",
-            f"{base_url}/favicon.ico",
-            f"{base_url}/apple-touch-icon.png",
-        ]
+        # Try Clearbit for higher quality logos first
+        clearbit_logo = f"https://logo.clearbit.com/{domain}"
         
-        # Use Google's favicon service as it's most reliable
-        return favicon_options[0]
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.head(clearbit_logo)
+                if response.status_code == 200:
+                    return clearbit_logo
+        except:
+            pass
+        
+        # Fallback to Google's favicon service (most reliable)
+        return f"https://www.google.com/s2/favicons?domain={domain}&sz=128"
+        
     except Exception as e:
         logger.error(f"Error fetching favicon: {e}")
         return None
