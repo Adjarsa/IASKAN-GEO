@@ -5465,6 +5465,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup_event():
+    """Start background tasks on application startup"""
+    # Start scheduled scans checker
+    asyncio.create_task(check_scheduled_scans())
+    logger.info("Scheduled scans background task started")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
