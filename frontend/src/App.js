@@ -402,6 +402,11 @@ const AppRouter = () => {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/auth/magic" element={<MagicLinkPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      {/* Legal Pages */}
+      <Route path="/legal" element={<LegalPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/contact" element={<ContactPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
