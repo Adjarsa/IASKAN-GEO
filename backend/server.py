@@ -212,10 +212,10 @@ SUBSCRIPTION_PLANS = {
     "free": {
         "name": "Essai Gratuit",
         "price": 0,
-        "queries_limit": 90,  # 10 prompts × 3 runs × 1 IA = 90 (variations intégrées dans prompts)
+        "queries_limit": 90,  # 10 prompts × 3 variations × 3 runs × 1 IA = 90
         "scans_limit": 1,
         "projects_limit": 1,
-        "num_prompts": 10,
+        "num_prompts": 30,  # 10 base prompts × 3 variations = 30 prompts effectifs
         "runs_per_query": 3,
         "ai_engines": ["chatgpt"],
         "features": ["1 scan offert", "10 prompts analysés", "90 requêtes IA", "ChatGPT uniquement", "Rapport PDF complet", "1 projet"]
