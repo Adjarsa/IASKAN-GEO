@@ -200,6 +200,30 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
   - Collection `email_verification_tokens` pour les tokens
   - Champ `email_verified` dans users
 
+### Feb 26, 2026 - Background Analysis Notification System
+- **Système de notifications pour analyses en arrière-plan** :
+  - Notification in-app créée automatiquement quand une analyse se termine (succès ou échec)
+  - Email envoyé à l'utilisateur quand un scan est terminé (via Resend)
+  - Badge visuel avec compteur de notifications non lues
+  - Polling automatique toutes les 30 secondes
+- **Endpoints API Notifications** :
+  - `GET /api/notifications` - Liste des notifications (supports limit, unread_only params)
+  - `POST /api/notifications/{id}/read` - Marquer une notification comme lue
+  - `POST /api/notifications/read-all` - Marquer toutes comme lues
+  - `DELETE /api/notifications/{id}` - Supprimer une notification
+- **Frontend NotificationBell Component** :
+  - Icône cloche dans le header du dashboard
+  - Badge rouge avec compteur pour les non lues
+  - Menu dropdown avec liste des notifications
+  - Navigation vers l'analyse au clic
+  - Actions : marquer lu, tout marquer lu, supprimer
+- **Types de notifications** : `scan_complete`, `scan_failed`
+- **Fichiers créés/modifiés** :
+  - `backend/server.py` : Ajout appels `create_notification()` et `send_scan_complete_email()` dans `run_analysis_v2()`
+  - `frontend/src/components/NotificationBell.jsx` : Nouveau composant
+  - `frontend/src/components/layout/DashboardLayout.jsx` : Intégration NotificationBell
+- **Tests** : 18/18 backend, 9/9 frontend E2E (100% pass rate)
+
 ### Feb 26, 2026 - Anti-Abuse System for Free Trial
 - **1 essai gratuit sécurisé** avec protection multi-niveaux :
   - Blocage par **email** (email déjà utilisé)
