@@ -58,9 +58,11 @@ const LandingPage = () => {
     {
       name: "Starter",
       price: "79",
-      queries: "300",
+      queries: "1 500",
       features: [
-        "Score GEO basique",
+        "10 scans/mois",
+        "50 prompts/scan",
+        "150 requêtes/scan",
         "ChatGPT uniquement",
         "Rapport standard",
         "Support email"
@@ -70,12 +72,15 @@ const LandingPage = () => {
     {
       name: "Pro",
       price: "149",
-      queries: "600",
+      queries: "80 000",
       features: [
-        "Score GEO avancé",
-        "Multi-IA (4 moteurs)",
+        "50 scans/mois",
+        "100 prompts/scan",
+        "1 600 requêtes/scan",
+        "4 IA (ChatGPT, Claude, Gemini, Perplexity)",
         "Benchmark concurrents",
         "Analyse de stabilité",
+        "5 projets",
         "Support prioritaire"
       ],
       popular: true
@@ -83,12 +88,15 @@ const LandingPage = () => {
     {
       name: "Business",
       price: "349",
-      queries: "1500",
+      queries: "600 000",
       features: [
-        "Score GEO complet",
-        "Toutes les IA",
+        "150 scans/mois",
+        "200 prompts/scan",
+        "4 000 requêtes/scan",
+        "4 IA",
         "Génération d'articles GEO",
         "Intelligence stratégique",
+        "Projets illimités",
         "API access",
         "Support dédié"
       ],
