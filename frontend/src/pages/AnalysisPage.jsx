@@ -24,10 +24,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   FileDown,
-  Eye
+  Eye,
+  AlertCircle
 } from "lucide-react";
 import { generatePDFReport } from "@/services/pdfReportGenerator";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
+import { useFingerprint } from "@/hooks/useFingerprint";
 
 const AnalysisPage = () => {
   const { analysisId } = useParams();
