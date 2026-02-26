@@ -195,49 +195,53 @@ const DashboardLayout = ({ children }) => {
               )}
             </div>
 
-            {/* User Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-3" data-testid="user-menu">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={user?.picture} alt={user?.name} />
-                    <AvatarFallback className="bg-gradient-to-br from-violet-500 to-cyan-500 text-white">
-                      {user?.name?.charAt(0) || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden md:block text-slate-700">{user?.name}</span>
-                  <ChevronDown className="w-4 h-4 text-slate-600" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-3 py-2">
-                  <p className="text-sm font-medium text-slate-900">{user?.name}</p>
-                  <p className="text-xs text-slate-600">{user?.email}</p>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSwitchProject}>
-                  <FolderKanban className="w-4 h-4 mr-2" />
-                  Changer de projet
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" data-testid="menu-settings">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Paramètres
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/pricing" data-testid="menu-subscription">
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Abonnement
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600" data-testid="menu-logout">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Déconnexion
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Notification Bell & User Menu */}
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-3" data-testid="user-menu">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={user?.picture} alt={user?.name} />
+                      <AvatarFallback className="bg-gradient-to-br from-violet-500 to-cyan-500 text-white">
+                        {user?.name?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden md:block text-slate-700">{user?.name}</span>
+                    <ChevronDown className="w-4 h-4 text-slate-600" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-3 py-2">
+                    <p className="text-sm font-medium text-slate-900">{user?.name}</p>
+                    <p className="text-xs text-slate-600">{user?.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSwitchProject}>
+                    <FolderKanban className="w-4 h-4 mr-2" />
+                    Changer de projet
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" data-testid="menu-settings">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Paramètres
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/pricing" data-testid="menu-subscription">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Abonnement
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600" data-testid="menu-logout">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Déconnexion
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </header>
 
