@@ -656,6 +656,21 @@ const AnalysisPage = () => {
                 </Card>
               )}
 
+              {/* NEW: Scan Diff - Evolution depuis le dernier scan */}
+              {analysis.scan_diff && (
+                <ScanDiffCard scanDiff={analysis.scan_diff} />
+              )}
+
+              {/* NEW: Site Enrichment - Analyse de citabilité */}
+              {analysis.site_enrichment && (
+                <SiteEnrichmentCard siteEnrichment={analysis.site_enrichment} />
+              )}
+
+              {/* NEW: Brand Analysis - Détection avancée de marque */}
+              {analysis.brand_analysis && (
+                <BrandAnalysisCard brandAnalysis={analysis.brand_analysis} />
+              )}
+
               {/* AI Scores */}
               {analysis.ai_scores && Object.keys(analysis.ai_scores).length > 0 && (
                 <Card className="p-6 bg-white border-slate-100">
