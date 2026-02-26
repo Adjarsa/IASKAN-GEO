@@ -2496,25 +2496,35 @@ async def start_analysis(request: Request, user: dict = Depends(get_current_user
     doc["is_free_trial"] = is_free_trial
     await db.analyses.insert_one(doc)
     
-    # Start analysis in background
-    asyncio.create_task(run_analysis_v2(doc["analysis_id"], project, plan_config["ai_engines"]))
+    # Start analysis in background with full plan config
+    asyncio.create_task(run_analysis_v2(doc["analysis_id"], project, plan_config))
     
     return {"analysis_id": doc["analysis_id"], "status": "running", "protocol": "IAskan Verified GEO Protocol™"}
 
 
-async def run_analysis_v2(analysis_id: str, project: dict, ai_engines: List[str]):
+async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
     """
     IAskan Verified GEO Protocol™ - Main Analysis Engine
     
     Features:
-    - Multi-runs (3x per query) for stability measurement
+    - Multi-runs per query for stability measurement
     - Multi-dimension query generation (30% transactional, 25% comparative, etc.)
+    - Variations per prompt for deeper analysis
     - 4-layer semantic analysis (Presence, Role, Credibility, Conversion)
     - Advanced indices: Stability Index™, Dominance Index™, Trust Gap™, Opportunity Score™
     - R.A.T.E.™ score with adjusted weights
     - Anti-hallucination checks
     """
     try:
+        # Extract plan parameters
+        ai_engines = plan_config.get("ai_engines", ["chatgpt"])
+        num_prompts = plan_config.get("num_prompts", 10)
+        variations_per_prompt = plan_config.get("variations_per_prompt", 3)
+        runs_per_query = plan_config.get("runs_per_query", 3)
+        
+        # Calculate total queries for display
+        total_api_calls = num_prompts * variations_per_prompt * runs_per_query * len(ai_engines)
+        
         brand_name = project.get("brand_name", "")
         keywords = project.get("keywords", [])
         competitors = project.get("competitors", [])
