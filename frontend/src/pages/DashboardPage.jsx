@@ -163,13 +163,46 @@ const DashboardPage = () => {
       <div className="space-y-8" data-testid="dashboard-page">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              {currentProject?.brand_name || "Dashboard"}
-            </h1>
-            <p className="text-slate-600">
-              Analyse de visibilité GEO pour votre marque
-            </p>
+          <div className="flex items-center gap-4">
+            {/* Brand Logo */}
+            {currentProject?.logo_url && (
+              <div className="w-14 h-14 rounded-xl bg-white shadow-md border border-slate-100 flex items-center justify-center overflow-hidden">
+                <img 
+                  src={currentProject.logo_url} 
+                  alt={currentProject.brand_name}
+                  className="w-10 h-10 object-contain"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            {!currentProject?.logo_url && (
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-100 to-cyan-100 flex items-center justify-center">
+                <Globe className="w-7 h-7 text-violet-600" />
+              </div>
+            )}
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">
+                {currentProject?.brand_name || "Dashboard"}
+              </h1>
+              {currentProject?.website_url && (
+                <a 
+                  href={currentProject.website_url.startsWith('http') ? currentProject.website_url : `https://${currentProject.website_url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700 transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  {currentProject.website_url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                </a>
+              )}
+              {!currentProject?.website_url && (
+                <p className="text-slate-600">
+                  Analyse de visibilité GEO pour votre marque
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={fetchDashboardStats} className="border-slate-200" data-testid="refresh-stats">
