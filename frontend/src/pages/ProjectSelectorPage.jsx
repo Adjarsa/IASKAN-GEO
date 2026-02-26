@@ -34,7 +34,8 @@ import {
   Settings,
   LogOut,
   CreditCard,
-  Sparkles
+  Sparkles,
+  Search
 } from "lucide-react";
 
 const ProjectSelectorPage = () => {
@@ -44,6 +45,7 @@ const ProjectSelectorPage = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [formData, setFormData] = useState({
     name: "",
@@ -51,6 +53,17 @@ const ProjectSelectorPage = () => {
     brand_name: "",
     competitors: "",
     keywords: ""
+  });
+
+  // Filter projects based on search query
+  const filteredProjects = projects.filter(project => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      project.name?.toLowerCase().includes(query) ||
+      project.brand_name?.toLowerCase().includes(query) ||
+      project.website_url?.toLowerCase().includes(query)
+    );
   });
 
   useEffect(() => {
