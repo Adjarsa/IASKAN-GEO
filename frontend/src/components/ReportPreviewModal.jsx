@@ -494,14 +494,22 @@ const ReportPreviewModal = ({ analysisData, projectData, children }) => {
                   <SectionHeader 
                     icon={Users} 
                     title="Analyse Concurrentielle" 
-                    description="Comparaison avec vos principaux concurrents"
+                    description="Concurrents identifiés par l'analyse IA et définis par l'utilisateur"
                   />
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {/* Your brand */}
                     <div className="p-4 rounded-lg bg-gradient-to-r from-violet-50 to-cyan-50 border border-violet-200">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          {projectData?.logo_url && (
+                            <img 
+                              src={projectData.logo_url} 
+                              alt={projectData.brand_name}
+                              className="w-8 h-8 object-contain"
+                              onError={(e) => e.target.style.display = 'none'}
+                            />
+                          )}
                           <Award className="w-5 h-5 text-violet-600" />
                           <span className="font-medium text-slate-900">{projectData?.brand_name || 'Votre Marque'} (Vous)</span>
                         </div>
@@ -511,25 +519,75 @@ const ReportPreviewModal = ({ analysisData, projectData, children }) => {
                       </div>
                     </div>
                     
-                    {/* Competitors */}
-                    {(Array.isArray(competitors) ? competitors : []).slice(0, 5).map((comp, i) => {
-                      const compScore = typeof comp === 'object' ? comp.visibility_rate : 30 + Math.random() * 40;
-                      const compName = typeof comp === 'object' ? comp.competitor : comp;
-                      return (
-                        <div key={i} className="p-4 rounded-lg bg-slate-50 border">
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-700">{compName}</span>
-                            <span className={`font-bold ${getScoreColor(compScore).split(' ')[0]}`}>
-                              {Math.round(compScore)}%
-                            </span>
-                          </div>
+                    {/* Discovered Competitors Section */}
+                    {analysisData?.competitor_comparison?.filter(c => c.discovered)?.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium text-emerald-700 mb-2 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          Concurrents Découverts par l'IA
+                        </h4>
+                        <div className="space-y-2">
+                          {analysisData.competitor_comparison
+                            .filter(c => c.discovered)
+                            .slice(0, 8)
+                            .map((comp, i) => (
+                              <div key={i} className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="font-medium text-slate-800">{comp.competitor || comp.name}</span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-xs text-slate-500">
+                                        {comp.mentions || 0} mentions
+                                      </span>
+                                      {comp.ai_sources?.length > 0 && (
+                                        <span className="text-xs text-emerald-600">
+                                          via {comp.ai_sources.join(', ')}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <span className={`text-lg font-bold ${getScoreColor(comp.visibility_rate || 0).split(' ')[0]}`}>
+                                    {Math.round(comp.visibility_rate || 0)}%
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
                         </div>
-                      );
-                    })}
+                      </div>
+                    )}
                     
-                    {(!competitors || competitors.length === 0) && (
+                    {/* User-defined Competitors Section */}
+                    {(projectData?.competitors?.length > 0 || analysisData?.competitor_comparison?.filter(c => c.user_defined)?.length > 0) && (
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-600 mb-2 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                          Concurrents Définis
+                        </h4>
+                        <div className="space-y-2">
+                          {(projectData?.competitors || []).slice(0, 5).map((comp, i) => {
+                            const compData = analysisData?.competitor_comparison?.find(
+                              c => c.competitor === comp || c.name === comp
+                            );
+                            return (
+                              <div key={i} className="p-3 rounded-lg bg-slate-50 border">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-700">{comp}</span>
+                                  <span className={`font-bold ${getScoreColor(compData?.visibility_rate || 0).split(' ')[0]}`}>
+                                    {Math.round(compData?.visibility_rate || 0)}%
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* No competitors message */}
+                    {(!analysisData?.competitor_comparison || analysisData.competitor_comparison.length === 0) && 
+                     (!projectData?.competitors || projectData.competitors.length === 0) && (
                       <p className="text-sm text-slate-500 text-center py-4">
-                        Aucun concurrent défini pour ce projet.
+                        Lancez une analyse pour découvrir automatiquement vos concurrents.
                       </p>
                     )}
                   </div>
