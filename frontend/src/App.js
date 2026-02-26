@@ -175,9 +175,15 @@ const AuthCallback = () => {
         const sessionId = sessionIdMatch[1];
         
         try {
+          // Get browser fingerprint for anti-abuse tracking
+          const fingerprint = await getFingerprintAsync();
+          
           const response = await axios.post(
             `${API}/auth/session`,
-            { session_id: sessionId },
+            { 
+              session_id: sessionId,
+              fingerprint: fingerprint || "unknown"
+            },
             { withCredentials: true }
           );
           
@@ -186,7 +192,14 @@ const AuthCallback = () => {
           navigate("/projects", { replace: true });
         } catch (error) {
           console.error("Auth error:", error);
-          toast.error("Erreur d'authentification");
+          
+          // Handle temporary email block
+          const detail = error.response?.data?.detail;
+          if (detail?.error === "temporary_email_blocked") {
+            toast.error(detail.message || "Les adresses email temporaires ne sont pas autorisées.");
+          } else {
+            toast.error("Erreur d'authentification");
+          }
           navigate("/login", { replace: true });
         }
       } else {
