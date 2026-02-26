@@ -219,15 +219,6 @@ def extract_competitors_from_response(response_text: str, brand_name: str) -> Li
     competitors_found = []
     brand_lower = brand_name.lower()
     
-    # Common patterns that indicate competitor mentions
-    competitor_indicators = [
-        r'(?:comme|tel que|notamment|par exemple|également|aussi)\s+([A-Z][a-zA-Z0-9\-\.]+)',
-        r'(?:alternatives?|concurrents?|similaires?)\s*(?:comme|:)?\s*([A-Z][a-zA-Z0-9\-\.]+)',
-        r'([A-Z][a-zA-Z0-9]+(?:\.[a-z]{2,4})?)\s+(?:propose|offre|permet|est)',
-        r'(?:vs\.?|versus|contre|ou)\s+([A-Z][a-zA-Z0-9\-\.]+)',
-        r'(?:meilleur que|mieux que|supérieur à|comparable à)\s+([A-Z][a-zA-Z0-9\-\.]+)',
-    ]
-    
     import re
     
     # Find all potential brand names (capitalized words, possibly with .com/.fr etc)
