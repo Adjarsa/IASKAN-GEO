@@ -2108,12 +2108,26 @@ async def run_analysis_v2(analysis_id: str, project: dict, ai_engines: List[str]
                     "mention_rate": round(sum(q.get("mention_rate", 0) for q in qt_queries) / len(qt_queries), 1)
                 }
         
-        # ===== PHASE 9: Finalize Analysis =====
+        # ===== PHASE 9: Identify Discovered Competitors =====
+        discovered_competitors = await identify_competitors_from_analysis(all_responses, brand_name)
+        
+        # Update project with discovered competitors
+        await db.projects.update_one(
+            {"project_id": project.get("project_id")},
+            {"$set": {"discovered_competitors": discovered_competitors}}
+        )
+        
+        # Merge user-defined and discovered competitors for analysis summary
+        all_competitors_analyzed = list(set(competitors[:5] + [c["name"] for c in discovered_competitors[:10]]))
+        
+        # ===== PHASE 10: Finalize Analysis =====
         analysis_summary = {
             "total_queries": len(queries),
             "total_runs": len(all_responses),
             "ai_engines_used": ai_engines,
-            "competitors_analyzed": competitors[:5],
+            "competitors_analyzed": all_competitors_analyzed[:10],
+            "discovered_competitors": discovered_competitors[:10],
+            "user_defined_competitors": competitors[:5],
             "protocol_version": "IAskan Verified GEO Protocol™ v2.0",
             "methodology": {
                 "multi_runs": True,
@@ -2124,6 +2138,28 @@ async def run_analysis_v2(analysis_id: str, project: dict, ai_engines: List[str]
                 "anti_hallucination": True
             }
         }
+        
+        # Build comprehensive competitor comparison
+        competitor_comparison = []
+        for comp in discovered_competitors[:10]:
+            competitor_comparison.append({
+                "competitor": comp["name"],
+                "mentions": comp.get("mentions", 0),
+                "visibility_rate": comp.get("visibility_score", 0),
+                "ai_sources": comp.get("ai_sources", []),
+                "discovered": True
+            })
+        # Add user-defined competitors that weren't discovered
+        for comp in competitors[:5]:
+            if comp not in [c["competitor"] for c in competitor_comparison]:
+                competitor_comparison.append({
+                    "competitor": comp,
+                    "mentions": 0,
+                    "visibility_rate": 0,
+                    "ai_sources": [],
+                    "discovered": False,
+                    "user_defined": True
+                })
         
         # Update analysis with complete results
         await db.analyses.update_one(
