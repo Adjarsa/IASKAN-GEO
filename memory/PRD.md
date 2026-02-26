@@ -169,6 +169,21 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 
 ## Recent Updates
 
+### Feb 26, 2026 - Free Trial Configuration Update
+- **Nouvelle configuration FREE** :
+  - 10 prompts × 3 variations × 3 runs × 1 IA = **90 requêtes analysées**
+  - 1 scan offert par essai gratuit
+  - ChatGPT uniquement
+  - Quota mensuel = 90 requêtes
+- **Structure des plans mise à jour** :
+  - FREE: 10 prompts, 3 variations, 3 runs, 1 IA (90 requêtes)
+  - Starter (79€): 15 prompts, 2 variations, 3 runs, 1 IA (10 scans/mois)
+  - Pro (149€): 20 prompts, 3 variations, 3 runs, 4 IA (30 scans/mois)
+  - Business (349€): 30 prompts, 3 variations, 3 runs, 4 IA (illimité)
+- **Affichage dans l'UI** :
+  - Page d'analyse : détail du calcul (10 × 3 × 3 = 90 requêtes)
+  - Page pricing mise à jour avec nouvelles features
+
 ### Feb 26, 2026 - Email Verification System
 - **Vérification email obligatoire** à la création de compte :
   - Email de vérification automatique via Resend avec design IAskan
