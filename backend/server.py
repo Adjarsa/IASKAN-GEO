@@ -212,7 +212,7 @@ SUBSCRIPTION_PLANS = {
     "free": {
         "name": "Essai Gratuit",
         "price": 0,
-        "queries_limit": 90,  # 10 prompts × 3 variations × 3 runs × 1 IA = 90
+        "queries_limit": 90,  # 30 prompts × 3 runs × 1 IA = 90
         "scans_limit": 1,
         "projects_limit": 1,
         "num_prompts": 30,  # 10 base prompts × 3 variations = 30 prompts effectifs
@@ -234,13 +234,13 @@ SUBSCRIPTION_PLANS = {
     "pro": {
         "name": "Pro",
         "price": 149.00,
-        "queries_limit": 600,
-        "scans_limit": 30,
+        "queries_limit": 7500,  # ~13 prompts × 3 runs × 4 IA × 50 scans ≈ 7500
+        "scans_limit": 50,
         "projects_limit": 5,
-        "num_prompts": 20,
+        "num_prompts": 13,  # 625 prompts/mois ÷ 50 scans ≈ 13
         "runs_per_query": 3,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["30 scans/mois", "20 prompts/scan", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Benchmark concurrents", "Analyse de stabilité", "5 projets", "Support prioritaire"]
+        "features": ["50 scans/mois", "13 prompts/scan", "156 requêtes/scan", "7 500 requêtes/mois", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Benchmark concurrents", "Analyse de stabilité", "5 projets", "Support prioritaire"]
     },
     "business": {
         "name": "Business",
