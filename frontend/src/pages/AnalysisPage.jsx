@@ -34,6 +34,20 @@ import { useFingerprint } from "@/hooks/useFingerprint";
 import { ScanDiffCard, SiteEnrichmentCard, BrandAnalysisCard } from "@/components/AdvancedScanCards";
 import CompetitorAnalysisCard from "@/components/CompetitorAnalysisCard";
 
+// Utility function to format and shorten URLs
+const formatUrl = (url, maxLength = 35) => {
+  if (!url) return "";
+  // Remove protocol
+  let formatted = url.replace(/^https?:\/\//, "");
+  // Remove trailing slash
+  formatted = formatted.replace(/\/$/, "");
+  // Truncate if too long
+  if (formatted.length > maxLength) {
+    return formatted.substring(0, maxLength) + "...";
+  }
+  return formatted;
+};
+
 const AnalysisPage = () => {
   const { analysisId } = useParams();
   const { user, currentProject } = useAuth();
