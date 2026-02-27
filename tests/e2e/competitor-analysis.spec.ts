@@ -126,10 +126,10 @@ test.describe('Competitor Analysis Feature', () => {
     test('should have competitors/benchmark link in navigation', async ({ page }) => {
       // Check sidebar has competitors or benchmark link
       // Looking at the navigation - "Benchmark" is the competitor analysis feature
-      const benchmarkLink = page.locator('text=Benchmark').first();
+      // Use getByRole for more reliable selection
+      const benchmarkLink = page.getByRole('link', { name: /Benchmark/i });
       
-      const linkExists = await benchmarkLink.isVisible().catch(() => false);
-      expect(linkExists).toBeTruthy();
+      await expect(benchmarkLink).toBeVisible();
       
       // Take screenshot of navigation
       await page.screenshot({ path: 'navigation-check.jpeg', quality: 20 });
