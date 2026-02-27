@@ -450,18 +450,32 @@ async def identify_competitors_from_analysis(all_responses: List[Dict[str, Any]]
         """
         potential = []
         
-        # Pattern 1: Capitalized words (2+ chars, not common words)
+        # Extended list of common words to exclude (FR/EN)
         common_words = {
+            # French common words
             'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'mais', 'donc',
-            'the', 'a', 'an', 'and', 'or', 'but', 'for', 'with', 'from', 'to', 'in', 'on',
             'il', 'elle', 'ils', 'elles', 'nous', 'vous', 'je', 'tu', 'ce', 'cette', 'ces',
             'qui', 'que', 'quoi', 'dont', 'où', 'est', 'sont', 'être', 'avoir', 'fait',
             'plus', 'moins', 'très', 'bien', 'peut', 'peuvent', 'doit', 'doivent',
             'meilleur', 'meilleure', 'meilleurs', 'meilleures', 'premier', 'première',
+            'voici', 'voilà', 'car', 'comme', 'alors', 'ainsi', 'cependant', 'toutefois',
+            'pour', 'dans', 'par', 'sur', 'sous', 'avec', 'sans', 'chez', 'entre', 'vers',
+            'après', 'avant', 'depuis', 'pendant', 'selon', 'contre', 'malgré',
+            'tout', 'tous', 'toute', 'toutes', 'autre', 'autres', 'même', 'mêmes',
+            'quel', 'quelle', 'quels', 'quelles', 'chaque', 'plusieurs', 'certain', 'certains',
+            # English common words
+            'the', 'a', 'an', 'and', 'or', 'but', 'for', 'with', 'from', 'to', 'in', 'on',
             'also', 'just', 'like', 'such', 'some', 'many', 'most', 'other', 'another',
             'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can',
             'however', 'therefore', 'thus', 'hence', 'although', 'though', 'while',
-            'voici', 'voilà', 'car', 'comme', 'alors', 'ainsi', 'cependant', 'toutefois'
+            'this', 'that', 'these', 'those', 'here', 'there', 'where', 'when', 'what',
+            'which', 'who', 'whom', 'whose', 'how', 'why', 'not', 'yes', 'all',
+            'each', 'every', 'both', 'few', 'more', 'any', 'none', 'only', 'own',
+            # Generic terms
+            'best', 'top', 'new', 'old', 'first', 'last', 'next', 'good', 'great',
+            'free', 'online', 'digital', 'tool', 'tools', 'service', 'services',
+            'solution', 'solutions', 'platform', 'software', 'app', 'application',
+            'website', 'site', 'page', 'data', 'system', 'feature', 'features'
         }
         
         # Find capitalized words that might be brands
