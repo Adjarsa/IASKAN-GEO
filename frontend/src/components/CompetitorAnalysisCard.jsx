@@ -215,6 +215,11 @@ const CompetitorAnalysisCard = ({ analysis, brandName }) => {
                     <div className={`text-xs px-2 py-0.5 rounded-full ${getVisibilityColor(competitor.visibility_rate || 0)}`}>
                       {Math.round(competitor.visibility_rate || 0)}% visibilité
                     </div>
+                    {competitor.presence_rate > 0 && (
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        Présent dans {Math.round(competitor.presence_rate)}% des réponses
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
