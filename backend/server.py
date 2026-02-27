@@ -3702,24 +3702,34 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         
         # Build comprehensive competitor comparison
         competitor_comparison = []
+        already_added = set()
+        
         for comp in discovered_competitors[:10]:
+            comp_name = comp["name"]
+            already_added.add(comp_name.lower())
             competitor_comparison.append({
-                "competitor": comp["name"],
+                "competitor": comp_name,
                 "mentions": comp.get("mentions", 0),
                 "visibility_rate": comp.get("visibility_score", 0),
+                "presence_rate": comp.get("presence_rate", 0),
                 "ai_sources": comp.get("ai_sources", []),
-                "discovered": True
+                "discovered": comp.get("discovered", True),
+                "user_defined": comp.get("user_defined", False),
+                "responses_containing": comp.get("responses_containing", 0)
             })
+        
         # Add user-defined competitors that weren't discovered
         for comp in competitors[:5]:
-            if comp not in [c["competitor"] for c in competitor_comparison]:
+            if comp.lower() not in already_added:
                 competitor_comparison.append({
                     "competitor": comp,
                     "mentions": 0,
                     "visibility_rate": 0,
+                    "presence_rate": 0,
                     "ai_sources": [],
                     "discovered": False,
-                    "user_defined": True
+                    "user_defined": True,
+                    "responses_containing": 0
                 })
         
         # ===== PHASE 11: Calculate Historical Diff =====
