@@ -698,6 +698,14 @@ const AnalysisPage = () => {
                 <BrandAnalysisCard brandAnalysis={analysis.brand_analysis} />
               )}
 
+              {/* NEW: Competitor Analysis - Analyse concurrentielle détaillée */}
+              {analysis.competitor_comparison && analysis.competitor_comparison.length > 0 && (
+                <CompetitorAnalysisCard 
+                  analysis={analysis} 
+                  brandName={currentProject?.brand_name || analysis.analysis_summary?.brand_name}
+                />
+              )}
+
               {/* AI Scores */}
               {analysis.ai_scores && Object.keys(analysis.ai_scores).length > 0 && (
                 <Card className="p-6 bg-white border-slate-100">
