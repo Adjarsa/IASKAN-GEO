@@ -277,10 +277,11 @@ class TestIdentifyCompetitorsFunction:
         from server import identify_competitors_from_analysis
         import asyncio
         
+        # Responses must be > 50 chars to be processed
         responses = [
-            {"response_excerpt": "Semrush is excellent.", "ai_type": "chatgpt"},
-            {"response_excerpt": "Semrush offers great features.", "ai_type": "claude"},
-            {"response_excerpt": "Semrush is recommended.", "ai_type": "gemini"}
+            {"response_excerpt": "Semrush is an excellent SEO tool for keyword research and competitor analysis. Professionals rely on it.", "ai_type": "chatgpt"},
+            {"response_excerpt": "Semrush offers great features for backlink analysis and site audits. Many digital marketers use it daily.", "ai_type": "claude"},
+            {"response_excerpt": "Semrush is recommended for comprehensive SEO analysis and reporting. It integrates with many platforms.", "ai_type": "gemini"}
         ]
         
         result = asyncio.get_event_loop().run_until_complete(
@@ -288,7 +289,7 @@ class TestIdentifyCompetitorsFunction:
         )
         
         semrush_entry = next((c for c in result if c["name"].lower() == "semrush"), None)
-        assert semrush_entry is not None, "Semrush should be detected"
+        assert semrush_entry is not None, f"Semrush should be detected. Found: {[c['name'] for c in result]}"
         
         assert "ai_sources" in semrush_entry, "ai_sources should be present"
         assert len(semrush_entry["ai_sources"]) == 3, f"Should have 3 AI sources, got {len(semrush_entry['ai_sources'])}"
