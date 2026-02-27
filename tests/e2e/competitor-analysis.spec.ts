@@ -123,18 +123,13 @@ test.describe('Competitor Analysis Feature', () => {
       await page.waitForURL(/\/dashboard/);
     });
 
-    test('should have competitors link in navigation', async ({ page }) => {
-      // Check sidebar has competitors link
-      const competitorsLink = page.locator('a[href*="competitors"]').first();
+    test('should have competitors/benchmark link in navigation', async ({ page }) => {
+      // Check sidebar has competitors or benchmark link
+      // Looking at the navigation - "Benchmark" is the competitor analysis feature
+      const benchmarkLink = page.locator('text=Benchmark').first();
       
-      // Either the link exists or we have a competitors section
-      const linkExists = await competitorsLink.isVisible().catch(() => false);
-      
-      // If direct link doesn't exist, check for menu item
-      if (!linkExists) {
-        const sidebarText = await page.locator('nav, aside').textContent();
-        // The sidebar might have "Concurrents" text
-      }
+      const linkExists = await benchmarkLink.isVisible().catch(() => false);
+      expect(linkExists).toBeTruthy();
       
       // Take screenshot of navigation
       await page.screenshot({ path: 'navigation-check.jpeg', quality: 20 });
