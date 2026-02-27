@@ -361,65 +361,249 @@ def extract_competitors_from_response(response_text: str, brand_name: str) -> Li
     
     return competitors_found[:10]  # Return top 10
 
-async def identify_competitors_from_analysis(all_responses: List[Dict[str, Any]], brand_name: str) -> List[Dict[str, Any]]:
-    """Analyze all AI responses to identify competitors mentioned"""
+async def identify_competitors_from_analysis(all_responses: List[Dict[str, Any]], brand_name: str, user_competitors: List[str] = None) -> List[Dict[str, Any]]:
+    """
+    Analyze all AI responses to identify competitors mentioned.
+    Uses multiple strategies:
+    1. Known brands database
+    2. User-defined competitors tracking
+    3. NLP-based entity extraction (proper nouns pattern)
+    """
+    import re
+    
     all_competitors = {}
     brand_lower = brand_name.lower()
+    brand_words = set(brand_lower.split())
+    user_competitors = user_competitors or []
+    user_competitors_lower = [c.lower() for c in user_competitors]
     
-    # Common tech/consumer brands to detect
+    # Extended list of known brands across industries
     known_brands = [
-        "Apple", "Google", "Microsoft", "Amazon", "Samsung", "Sony", "LG", "Huawei", "Xiaomi",
-        "OnePlus", "Oppo", "Vivo", "Realme", "Nokia", "Motorola", "Asus", "Acer", "Dell", "HP",
-        "Lenovo", "Nike", "Adidas", "Puma", "Zara", "H&M", "Netflix", "Disney", "Spotify",
-        "Uber", "Airbnb", "Booking", "Tesla", "BMW", "Mercedes", "Audi", "Toyota", "Honda",
-        "Coca-Cola", "Pepsi", "McDonald's", "Starbucks", "L'Oréal", "Sephora", "Dyson",
-        "Philips", "Bosch", "Siemens", "IKEA", "Decathlon", "Orange", "SFR", "Bouygues", "Free",
-        "iPhone", "iPad", "MacBook", "Galaxy", "Pixel", "PlayStation", "Xbox", "Nintendo"
+        # Tech Giants
+        "Apple", "Google", "Microsoft", "Amazon", "Meta", "Facebook", "IBM", "Oracle", "Salesforce",
+        "Adobe", "SAP", "Cisco", "Intel", "AMD", "Nvidia", "Qualcomm",
+        # Consumer Electronics
+        "Samsung", "Sony", "LG", "Huawei", "Xiaomi", "OnePlus", "Oppo", "Vivo", "Realme",
+        "Nokia", "Motorola", "Asus", "Acer", "Dell", "HP", "Lenovo", "MSI",
+        # E-commerce & Marketplaces
+        "Alibaba", "eBay", "Shopify", "Etsy", "Rakuten", "Cdiscount", "Fnac", "Darty",
+        # Fashion & Retail
+        "Nike", "Adidas", "Puma", "Zara", "H&M", "Uniqlo", "Gap", "Levis", "Primark",
+        # Entertainment & Media
+        "Netflix", "Disney", "HBO", "Spotify", "Apple Music", "YouTube", "TikTok", "Twitch",
+        # Travel & Hospitality
+        "Uber", "Airbnb", "Booking", "Expedia", "Tripadvisor", "Kayak", "Hotels.com",
+        # Automotive
+        "Tesla", "BMW", "Mercedes", "Audi", "Toyota", "Honda", "Ford", "Volkswagen", "Porsche", "Renault", "Peugeot", "Citroën",
+        # Food & Beverage
+        "Coca-Cola", "Pepsi", "McDonald's", "Starbucks", "KFC", "Burger King", "Subway",
+        # Beauty & Personal Care
+        "L'Oréal", "Sephora", "Estée Lauder", "Nivea", "Dove", "Garnier",
+        # Home & Appliances
+        "Dyson", "Philips", "Bosch", "Siemens", "IKEA", "Electrolux", "Whirlpool",
+        # Sports & Outdoor
+        "Decathlon", "Intersport", "Go Sport",
+        # Telecom (French)
+        "Orange", "SFR", "Bouygues", "Free", "Sosh", "RED", "B&You",
+        # Finance & Insurance
+        "PayPal", "Stripe", "Square", "Revolut", "N26", "Boursorama", "Fortuneo",
+        # Software & SaaS
+        "Slack", "Zoom", "Trello", "Asana", "Monday", "Notion", "Airtable", "HubSpot", "Mailchimp",
+        "Zendesk", "Intercom", "Freshdesk", "Semrush", "Ahrefs", "Moz", "Majestic",
+        # Cloud & Hosting
+        "AWS", "Azure", "GCP", "OVH", "DigitalOcean", "Heroku", "Vercel", "Netlify",
+        # Product Names
+        "iPhone", "iPad", "MacBook", "iMac", "Galaxy", "Pixel", "Surface", "ThinkPad",
+        "PlayStation", "Xbox", "Nintendo", "Switch", "Steam",
+        # Marketing & Analytics
+        "Google Analytics", "Hotjar", "Mixpanel", "Amplitude", "Segment",
+        # AI & LLM Tools
+        "ChatGPT", "OpenAI", "Claude", "Anthropic", "Gemini", "Perplexity", "Jasper", "Copy.ai"
     ]
+    
+    def normalize_brand(name: str) -> str:
+        """Normalize brand name for consistent tracking"""
+        return name.strip().title()
+    
+    def is_own_brand(candidate: str) -> bool:
+        """Check if the candidate is the user's own brand"""
+        candidate_lower = candidate.lower()
+        candidate_words = set(candidate_lower.split())
+        
+        # Direct match
+        if candidate_lower == brand_lower:
+            return True
+        # Substring match
+        if candidate_lower in brand_lower or brand_lower in candidate_lower:
+            return True
+        # Word overlap (more than 50% overlap)
+        if brand_words and candidate_words:
+            overlap = len(brand_words & candidate_words) / max(len(brand_words), len(candidate_words))
+            if overlap > 0.5:
+                return True
+        return False
+    
+    def extract_potential_brands(text: str) -> List[str]:
+        """
+        Extract potential brand names using pattern matching.
+        Looks for capitalized words/phrases that could be brand names.
+        """
+        potential = []
+        
+        # Pattern 1: Capitalized words (2+ chars, not common words)
+        common_words = {
+            'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'mais', 'donc',
+            'the', 'a', 'an', 'and', 'or', 'but', 'for', 'with', 'from', 'to', 'in', 'on',
+            'il', 'elle', 'ils', 'elles', 'nous', 'vous', 'je', 'tu', 'ce', 'cette', 'ces',
+            'qui', 'que', 'quoi', 'dont', 'où', 'est', 'sont', 'être', 'avoir', 'fait',
+            'plus', 'moins', 'très', 'bien', 'peut', 'peuvent', 'doit', 'doivent',
+            'meilleur', 'meilleure', 'meilleurs', 'meilleures', 'premier', 'première',
+            'also', 'just', 'like', 'such', 'some', 'many', 'most', 'other', 'another',
+            'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can',
+            'however', 'therefore', 'thus', 'hence', 'although', 'though', 'while',
+            'voici', 'voilà', 'car', 'comme', 'alors', 'ainsi', 'cependant', 'toutefois'
+        }
+        
+        # Find capitalized words that might be brands
+        cap_pattern = r'\b([A-Z][a-zA-Z]{2,}(?:\s+[A-Z][a-zA-Z]+)?)\b'
+        matches = re.findall(cap_pattern, text)
+        
+        for match in matches:
+            match_lower = match.lower()
+            # Skip common words and short matches
+            if match_lower not in common_words and len(match) >= 3:
+                potential.append(match)
+        
+        return potential
+    
+    # Process each AI response
+    total_responses = len(all_responses)
     
     for response in all_responses:
         response_text = response.get("response_excerpt", "") or ""
         ai_type = response.get("ai_type", "unknown")
         
-        # Skip empty responses
+        # Skip empty or very short responses
         if not response_text or len(response_text) < 50:
             continue
         
         response_lower = response_text.lower()
         
-        # Check for known brands
+        # Strategy 1: Check known brands
         for brand in known_brands:
             brand_check = brand.lower()
+            
             # Skip our own brand
-            if brand_check == brand_lower or brand_check in brand_lower or brand_lower in brand_check:
+            if is_own_brand(brand):
                 continue
             
             if brand_check in response_lower:
-                # Count mentions
                 count = response_lower.count(brand_check)
+                normalized = normalize_brand(brand)
                 
-                if brand in all_competitors:
-                    all_competitors[brand]["mentions"] += count
-                    all_competitors[brand]["ai_sources"].add(ai_type)
+                if normalized in all_competitors:
+                    all_competitors[normalized]["mentions"] += count
+                    all_competitors[normalized]["ai_sources"].add(ai_type)
+                    all_competitors[normalized]["responses_containing"] += 1
                 else:
-                    all_competitors[brand] = {
-                        "name": brand,
+                    all_competitors[normalized] = {
+                        "name": normalized,
                         "mentions": count,
                         "ai_sources": {ai_type},
-                        "discovered": True
+                        "discovered": True,
+                        "user_defined": False,
+                        "responses_containing": 1
+                    }
+        
+        # Strategy 2: Check user-defined competitors
+        competitor_analysis = response.get("competitor_analysis", {})
+        for comp_name, comp_data in competitor_analysis.items():
+            if comp_data.get("mentioned", False):
+                normalized = normalize_brand(comp_name)
+                
+                if normalized in all_competitors:
+                    all_competitors[normalized]["mentions"] += 1
+                    all_competitors[normalized]["ai_sources"].add(ai_type)
+                    all_competitors[normalized]["responses_containing"] += 1
+                    all_competitors[normalized]["user_defined"] = True
+                else:
+                    all_competitors[normalized] = {
+                        "name": normalized,
+                        "mentions": 1,
+                        "ai_sources": {ai_type},
+                        "discovered": False,
+                        "user_defined": True,
+                        "responses_containing": 1
+                    }
+        
+        # Strategy 3: Extract potential brands using NLP patterns
+        potential_brands = extract_potential_brands(response_text)
+        for potential in potential_brands:
+            potential_lower = potential.lower()
+            
+            # Skip if it's our brand or already tracked
+            if is_own_brand(potential):
+                continue
+            
+            # Skip if already in known brands (case insensitive)
+            if any(potential_lower == kb.lower() for kb in known_brands):
+                continue
+            
+            # Skip single common words that got through
+            if len(potential.split()) == 1 and len(potential) < 4:
+                continue
+            
+            normalized = normalize_brand(potential)
+            
+            # Only add if mentioned at least twice in this response (to reduce noise)
+            if response_lower.count(potential_lower) >= 2:
+                if normalized in all_competitors:
+                    all_competitors[normalized]["mentions"] += 1
+                    all_competitors[normalized]["ai_sources"].add(ai_type)
+                    all_competitors[normalized]["responses_containing"] += 1
+                else:
+                    all_competitors[normalized] = {
+                        "name": normalized,
+                        "mentions": 1,
+                        "ai_sources": {ai_type},
+                        "discovered": True,
+                        "user_defined": False,
+                        "responses_containing": 1
                     }
     
-    # Convert to list and sort by mentions
+    # Calculate visibility scores and convert to list
     result = []
-    for name, data in sorted(all_competitors.items(), key=lambda x: -x[1]["mentions"]):
-        if data["mentions"] >= 1:  # Only include if mentioned at least once
-            result.append({
-                "name": data["name"],
-                "mentions": data["mentions"],
-                "ai_sources": list(data["ai_sources"]),
-                "discovered": True,
-                "visibility_score": min(100, data["mentions"] * 5)
-            })
+    for name, data in all_competitors.items():
+        mentions = data["mentions"]
+        responses_containing = data.get("responses_containing", 1)
+        ai_sources_count = len(data["ai_sources"])
+        
+        # Visibility score based on:
+        # - Number of mentions (weighted)
+        # - Number of responses containing the competitor
+        # - Number of different AI engines mentioning it
+        visibility_score = min(100, (
+            (mentions * 3) +  # Each mention counts
+            (responses_containing * 5) +  # Presence in multiple responses
+            (ai_sources_count * 10)  # Cross-AI validation bonus
+        ))
+        
+        # Presence rate: % of responses mentioning this competitor
+        presence_rate = round((responses_containing / max(total_responses, 1)) * 100, 1)
+        
+        result.append({
+            "name": data["name"],
+            "mentions": mentions,
+            "ai_sources": list(data["ai_sources"]),
+            "discovered": data["discovered"],
+            "user_defined": data.get("user_defined", False),
+            "visibility_score": visibility_score,
+            "presence_rate": presence_rate,
+            "responses_containing": responses_containing
+        })
+    
+    # Sort by visibility score (descending), then by mentions
+    result.sort(key=lambda x: (-x["visibility_score"], -x["mentions"]))
     
     return result[:15]  # Return top 15 discovered competitors
 
