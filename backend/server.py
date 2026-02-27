@@ -3664,7 +3664,7 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
                 }
         
         # ===== PHASE 9: Identify Discovered Competitors =====
-        discovered_competitors = await identify_competitors_from_analysis(all_responses, brand_name)
+        discovered_competitors = await identify_competitors_from_analysis(all_responses, brand_name, competitors)
         
         # Update project with discovered competitors
         await db.projects.update_one(
