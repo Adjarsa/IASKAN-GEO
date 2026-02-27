@@ -135,19 +135,22 @@ test.describe('Competitor Analysis Feature', () => {
       await page.screenshot({ path: 'navigation-check.jpeg', quality: 20 });
     });
 
-    test('should navigate to competitors page if available', async ({ page }) => {
-      // Look for competitors navigation item
-      const competitorsNav = page.locator('text=Concurrents').first();
-      const navVisible = await competitorsNav.isVisible().catch(() => false);
+    test('should navigate to benchmark page for competitor analysis', async ({ page }) => {
+      // "Benchmark" is the competitor analysis feature
+      const benchmarkNav = page.locator('text=Benchmark').first();
+      const navVisible = await benchmarkNav.isVisible().catch(() => false);
       
       if (navVisible) {
-        await competitorsNav.click();
+        await benchmarkNav.click();
         await page.waitForLoadState('domcontentloaded');
         
-        // Take screenshot of competitors page
+        // Take screenshot of benchmark/competitors page
         await page.screenshot({ path: 'competitors-page.jpeg', quality: 20 });
+        
+        // Verify we navigated to a competitors-related page
+        const url = page.url();
+        expect(url).toMatch(/competitors|benchmark/i);
       } else {
-        // Skip if competitors nav not available
         test.skip();
       }
     });
