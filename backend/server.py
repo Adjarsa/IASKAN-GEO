@@ -375,7 +375,6 @@ async def identify_competitors_from_analysis(all_responses: List[Dict[str, Any]]
     brand_lower = brand_name.lower()
     brand_words = set(brand_lower.split())
     user_competitors = user_competitors or []
-    user_competitors_lower = [c.lower() for c in user_competitors]
     
     # Extended list of known brands across industries
     known_brands = [
