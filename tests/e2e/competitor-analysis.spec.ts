@@ -137,22 +137,17 @@ test.describe('Competitor Analysis Feature', () => {
 
     test('should navigate to benchmark page for competitor analysis', async ({ page }) => {
       // "Benchmark" is the competitor analysis feature
-      const benchmarkNav = page.locator('text=Benchmark').first();
-      const navVisible = await benchmarkNav.isVisible().catch(() => false);
+      const benchmarkNav = page.getByRole('link', { name: /Benchmark/i });
       
-      if (navVisible) {
-        await benchmarkNav.click();
-        await page.waitForLoadState('domcontentloaded');
-        
-        // Take screenshot of benchmark/competitors page
-        await page.screenshot({ path: 'competitors-page.jpeg', quality: 20 });
-        
-        // Verify we navigated to a competitors-related page
-        const url = page.url();
-        expect(url).toMatch(/competitors|benchmark/i);
-      } else {
-        test.skip();
-      }
+      await expect(benchmarkNav).toBeVisible();
+      await benchmarkNav.click();
+      await page.waitForLoadState('domcontentloaded');
+      
+      // Take screenshot of benchmark/competitors page
+      await page.screenshot({ path: 'competitors-page.jpeg', quality: 20 });
+      
+      // Verify we navigated to the competitors page
+      await expect(page).toHaveURL(/competitors/);
     });
   });
 });
