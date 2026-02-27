@@ -361,39 +361,65 @@ def extract_competitors_from_response(response_text: str, brand_name: str) -> Li
     
     return competitors_found[:10]  # Return top 10
 
-async def identify_competitors_from_analysis(analysis_responses: List[Dict[str, Any]], brand_name: str) -> List[Dict[str, Any]]:
+async def identify_competitors_from_analysis(all_responses: List[Dict[str, Any]], brand_name: str) -> List[Dict[str, Any]]:
     """Analyze all AI responses to identify competitors mentioned"""
     all_competitors = {}
+    brand_lower = brand_name.lower()
     
-    for response in analysis_responses:
-        for ai_name, ai_data in response.get("ai_responses", {}).items():
-            response_text = ai_data.get("response_text", "") or ai_data.get("full_response", "")
+    # Common tech/consumer brands to detect
+    known_brands = [
+        "Apple", "Google", "Microsoft", "Amazon", "Samsung", "Sony", "LG", "Huawei", "Xiaomi",
+        "OnePlus", "Oppo", "Vivo", "Realme", "Nokia", "Motorola", "Asus", "Acer", "Dell", "HP",
+        "Lenovo", "Nike", "Adidas", "Puma", "Zara", "H&M", "Netflix", "Disney", "Spotify",
+        "Uber", "Airbnb", "Booking", "Tesla", "BMW", "Mercedes", "Audi", "Toyota", "Honda",
+        "Coca-Cola", "Pepsi", "McDonald's", "Starbucks", "L'Oréal", "Sephora", "Dyson",
+        "Philips", "Bosch", "Siemens", "IKEA", "Decathlon", "Orange", "SFR", "Bouygues", "Free",
+        "iPhone", "iPad", "MacBook", "Galaxy", "Pixel", "PlayStation", "Xbox", "Nintendo"
+    ]
+    
+    for response in all_responses:
+        response_text = response.get("response_excerpt", "") or ""
+        ai_type = response.get("ai_type", "unknown")
+        
+        # Skip empty responses
+        if not response_text or len(response_text) < 50:
+            continue
+        
+        response_lower = response_text.lower()
+        
+        # Check for known brands
+        for brand in known_brands:
+            brand_check = brand.lower()
+            # Skip our own brand
+            if brand_check == brand_lower or brand_check in brand_lower or brand_lower in brand_check:
+                continue
             
-            found = extract_competitors_from_response(response_text, brand_name)
-            
-            for comp in found:
-                name = comp["name"]
-                if name in all_competitors:
-                    all_competitors[name]["mentions"] += comp["mentions"]
-                    all_competitors[name]["ai_sources"].add(ai_name)
+            if brand_check in response_lower:
+                # Count mentions
+                count = response_lower.count(brand_check)
+                
+                if brand in all_competitors:
+                    all_competitors[brand]["mentions"] += count
+                    all_competitors[brand]["ai_sources"].add(ai_type)
                 else:
-                    all_competitors[name] = {
-                        "name": name,
-                        "mentions": comp["mentions"],
-                        "ai_sources": {ai_name},
+                    all_competitors[brand] = {
+                        "name": brand,
+                        "mentions": count,
+                        "ai_sources": {ai_type},
                         "discovered": True
                     }
     
     # Convert to list and sort by mentions
     result = []
     for name, data in sorted(all_competitors.items(), key=lambda x: -x[1]["mentions"]):
-        result.append({
-            "name": data["name"],
-            "mentions": data["mentions"],
-            "ai_sources": list(data["ai_sources"]),
-            "discovered": True,
-            "visibility_score": min(100, data["mentions"] * 10)  # Estimated visibility
-        })
+        if data["mentions"] >= 1:  # Only include if mentioned at least once
+            result.append({
+                "name": data["name"],
+                "mentions": data["mentions"],
+                "ai_sources": list(data["ai_sources"]),
+                "discovered": True,
+                "visibility_score": min(100, data["mentions"] * 5)
+            })
     
     return result[:15]  # Return top 15 discovered competitors
 
