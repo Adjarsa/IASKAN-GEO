@@ -12,66 +12,80 @@ The user wants to build a highly-detailed SaaS platform named **IAskan**. The pl
 -   **Reporting:** Generate a detailed, multi-section PDF audit report based on user-provided samples.
 -   **Authentication & Security:**
     -   Mandatory SSO with Google, Microsoft, and LinkedIn.
-    -   Mandatory email verification for new accounts.
-    -   A comprehensive anti-abuse system for a one-time free trial, blocking by IP, domain, email, and browser fingerprint.
--   **Monetization:** A subscription model (Free, Starter, Pro, Business) with defined request quotas, integrated via Stripe.
+    -   A comprehensive anti-abuse system for a one-time free trial.
+-   **Monetization:** A subscription model (Free, Starter, Pro, Business) integrated via Stripe.
 -   **User Experience:**
-    -   Analyses must run in the background, allowing the user to navigate away.
-    -   The app must notify users (in-app badge and optional email) when an analysis is complete.
+    -   Analyses must run in the background, with in-app and email notifications on completion.
     -   Display project logos and site links on the dashboard.
+    -   Allow scheduling of automated scans for Pro and Business plans.
 -   **UI/UX:** A minimalist, premium, fast, and decision-oriented interface using the IAskan color scheme.
 
 **User's preferred language**: French
 
 **what currently exists?**
 A full-stack application (React/FastAPI/MongoDB).
--   **PDF Reporting:** A complete, client-side PDF report generation system () has been implemented, based on detailed user-provided samples. It includes an in-app preview modal.
--   **Dynamic Data:** The backend now fetches project favicons on creation and dynamically identifies competitors during an analysis. The frontend displays this information.
--   **Anti-Abuse System:** A robust system to secure the one-time free trial is in place. It tracks and blocks usage by IP, domain, email (including temporary email providers), and browser fingerprint ().
--   **Email Verification:** New user sign-ups now require email verification. The system sends a verification link via Resend, and unverified users see a persistent banner. The free trial is blocked until verification is complete.
--   **Subscription Plans:** The Free, Starter, Pro, and Business plans are fully configured in the backend with the specific and complex query/scan quotas requested by the user.
--   **Background Tasks:** The backend is configured to run analyses as non-blocking background tasks using .
+-   **Core Engine:** A sophisticated analysis engine that runs scans across multiple AIs, identifies competitor mentions, analyzes site structure (schema.org, etc.), and compares results against previous scans.
+-   **Notifications:** A complete background task notification system is in place, with backend logic, API endpoints, and a frontend polling component () to alert users when analyses are complete.
+-   **Scheduled Scans:** Pro and Business users can schedule automated scans (daily, weekly, monthly) and have the PDF report sent to them by email. The backend uses  for this.
+-   **Legal & Content Pages:** A full suite of static pages (Legal, Privacy, Terms, Contact, About, FAQ, GDPR) has been created and integrated into the application's routing and footer.
+-   **Subscription Plans:** Plans have been updated multiple times with complex, calculated request quotas based on prompts, runs, and AI engines. The UI and backend reflect these tiers.
+-   **UI/UX Enhancements:** Project logos are now displayed on the project list, project selector, and analysis pages. URLs are truncated for better readability. A search bar has been added to the projects page.
+-   **Email Verification Change:** The requirement for users to verify their email before accessing the free trial has been removed at the user's request.
 
 **Last working item**:
-    - Last item agent was working: Implementing a notification system for background analysis tasks. The user requested that when an analysis is finished, the user should be notified with an in-app badge and an optional email. The agent created the backend  model and helper functions in  to support this.
+    - Last item agent was working: The user reported that the Benchmark (Competitor Analysis) section was not showing the improved data. The agent investigated and found that the  function in  was not being called correctly because it expected a different data structure () than what was actually being saved (). The agent was in the process of adapting the function to parse the correct data format and extract competitor mentions from the text.
     - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? both. First, the backend should be tested via  to confirm that completing an analysis correctly creates a  entry in the database and triggers the email. Second, the frontend testing agent should be used to verify that the UI polls for new notifications and displays a badge or indicator correctly.
+    - Which testing method agent to use? backend testing agent. The agent should verify that after the fix, running a new analysis correctly populates the  and other related fields in the analysis results. A  command to trigger an analysis and then another to fetch the results would be sufficient.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Backend Performance Degradation / Frontend Timeouts (Priority: P0 - BLOCKER)
-  - Issue 2: jsPDF Download Error (Priority: P1)
-  - Issue 3: Microsoft/LinkedIn SSO Failure (Priority: P1)
+  - Issue 1: Competitive Analysis is Broken (Priority: P0 - BLOCKER)
+  - Issue 2: Backend Performance Degradation / Frontend Timeouts (Priority: P1)
+  - Issue 3: jsPDF Download Error (Priority: P2)
+  - Issue 4: Microsoft/LinkedIn SSO Failure (Priority: P2)
   
   Issues Detail:
   - Issue 1: 
+     - Description: The enhanced competitive analysis feature is not working. The frontend component () was built, but the backend does not provide the necessary data because the  function fails to parse the analysis results. Discovered competitors are always empty.
+     - Attempted fixes: The agent correctly identified that the function was trying to read from a non-existent  key instead of parsing the  field in the analysis data. The fix was planned but not implemented.
+     - Next debug checklist: 
+        1. Modify the  function in .
+        2. Instead of looking for , it should iterate through the  list.
+        3. For each item, it should analyze the  text to extract mentions of competitors.
+        4. Use NLP or regex techniques to identify company names that are not the user's brand or its variants.
+        5. Populate the  field in the analysis document.
+     - Why fix this issue and what will be achieved with the fix? This is a core feature enhancement requested by the user. Fixing it will make the competitive analysis section functional and provide valuable insights.
+     - Status:  IN PROGRESS
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Backend
+     - Blocked on other issue: None
+  - Issue 2: 
      - Description: The application's core analysis feature may hang, leading to a frontend  error. A fix using  was implemented in a previous session but remains unverified by the user.
      - Attempted fixes: The backend was modified to run blocking LLM calls in a thread pool executor.
      - Next debug checklist: 
-        1. Ask the user to run a new analysis.
+        1. After fixing Issue #1, ask the user to run a new, complete analysis.
         2. Confirm with them if the results page loads without a timeout.
-        3. If the timeout persists, the background task implementation may need further review.
      - Why fix this issue and what will be achieved with the fix? This is the application's primary function. The app is not viable until this is confirmed as stable.
      - Status:  USER VERIFICATION PENDING
      - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? Both
      - Blocked on other issue: None
-  - Issue 2: 
-     - Description: During the session, the user experienced a  error when trying to download the generated PDF report.
+  - Issue 3: 
+     - Description: The user previously experienced a  error when trying to download the generated PDF report.
      - Attempted fixes: The agent replaced all instances of  with  in .
      - Next debug checklist: 
-        1.  Guide the user to the dashboard or an analysis page.
-        2.  Ask them to click the Télécharger le PDF button.
-        3.  Confirm that the PDF downloads successfully without any console errors.
+        1. Guide the user to an analysis page.
+        2. Ask them to click the Télécharger le PDF button.
+        3. Confirm that the PDF downloads successfully.
      - Why fix this issue and what will be achieved with the fix? It will make the core reporting feature functional for the user.
      - Status:  USER VERIFICATION PENDING
      - Is recurring issue? N
      - Should Test frontend/backend/both after fix? Frontend
      - Blocked on other issue: None
-  - Issue 3: 
+  - Issue 4: 
      - Description: User cannot log in with Microsoft or LinkedIn SSO, receiving a  error.
-     - Attempted fixes: The agent identified that the required environment variables (, etc.) are missing. The user was informed.
+     - Attempted fixes: The agent identified that the required environment variables are missing.
      - Next debug checklist: Wait for the user to provide the necessary SSO credentials.
      - Why fix this issue and what will be achieved with the fix? Fulfills the original product requirement for multi-provider SSO.
      - Status:  BLOCKED
@@ -80,49 +94,34 @@ A full-stack application (React/FastAPI/MongoDB).
      - Blocked on other issue: Blocked on user providing credentials.
 
 **In progress Task List**:
-  - Task 1:  Complete Background Analysis Notification System (Priority: P0)
-
- Task Detail:
-  - Task 1: 
-     - Where to resume: 
-        1. **Backend:** In , locate the  function. At the end of the analysis process (inside the  block after ), add calls to the  and  functions.
-        2. **Frontend:** In a high-level component like  or a global context, implement a polling mechanism (e.g., ) to fetch unread notifications from a new backend endpoint (). Display a badge or indicator on a navigation item (e.g., a bell icon) when new notifications are present.
-     - What will be achieved with this? This will complete the user's request for asynchronous analysis and user feedback, significantly improving the user experience.
-     - Status:  IN PROGRESS
-     - Should Test frontend/backend/both after fix? Both
-     - Blocked on something: None
+- None besides fixing the Competitive Analysis issue.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
     *   **P0 - Implement Stripe Integration:** Set up the subscription model via Stripe as per the original requirements. This is the last major piece of the monetization strategy.
-    *   **P1 - Planification de contenu (calendrier éditorial GEO):** A new feature suggested by the agent.
-    *   **P2 - Team/multi-user support:** A new feature suggested by the agent.
+    *   **P1 - Refactor Backend:** The  file is critically oversized and must be broken down into a proper package structure (e.g., , , ).
+    *   **P2 - Refactor Frontend PDF Generator:** The  file is nearly 1000 lines long and should be modularized.
 *   **Future Tasks:**
-    *   **P1 - Advanced Scoring & AI Features:** Refine the  score and .
+    *   **P1 - Planification de contenu (calendrier éditorial GEO):** A new feature suggested by the agent.
+    *   **P1 - Team/multi-user support:** A new feature suggested by the agent.
     *   **P2 - Onboarding Flow:** Implement the 1-click connection - ready - analysis launched automatically flow.
-    *   **P2 - Detailed Reporting Module**: Enhance the PDF/UI reports.
     *   **P2 - Implement Magic Link fallback**: Fully test and secure the magic link implementation.
 
 **Completed work in this session**
-- **Implemented Full PDF Report Generation:**
-  - Created a client-side PDF generation service in  using .
-  - Added Download PDF and Preview Report buttons to the  and .
-  - Created a preview modal () to display the report's content before download.
-- **Implemented Dynamic Project & Competitor Data:**
-  - The backend now automatically fetches a website's favicon on project creation and stores it ().
-  - The analysis engine dynamically identifies new competitors not listed at project creation ().
-  - The frontend  now displays project logos and links.
-- **Implemented Comprehensive Free Trial Security:**
-  - Created a robust anti-abuse system blocking trial access based on IP address, domain, email, and browser fingerprint (, ).
-  - Integrated a list of disposable email domains to block temporary accounts.
-- **Implemented Mandatory Email Verification:**
-  - New users must now verify their email address via a link sent using Resend.
-  - Created a  and an  to guide users through the process.
-- **Configured Subscription Plan Quotas:**
-  - Precisely implemented the complex query calculation logic for all subscription tiers (Free, Starter, Pro, Business) in .
+- **Full-featured Notification System**: Implemented backend logic and frontend UI for real-time notifications on analysis completion.
+- **Advanced Scan Engine**: Enhanced the analysis engine to include brand variants, site enrichment analysis (schema.org, etc.), and historical diffing.
+- **Scheduled Scans & Email Reports**: Implemented a feature for Pro/Business users to schedule recurring scans and receive PDF reports via email, using .
+- **Pricing Plan Updates**: Updated backend logic and frontend UI to reflect complex, dynamically calculated request quotas and new feature tiers.
+- **Legal & Content Pages**: Created and integrated a full suite of pages: , , , , , , and .
+- **Email Verification Flow Changed**: Removed the blocker requiring email verification to access the free trial.
+- **UI Enhancements**:
+  - Added project logos to project lists and analysis pages.
+  - Implemented URL shortening for display.
+  - Added a search bar to the Mes Projets page.
+- **Fixed Logo Fetching**: Debugged and fixed the logic for fetching and updating project logos, which were previously missing.
 
 **Earlier issues found/mentioned but not fixed**
-   - None. The agent addressed all issues raised by the user during this session.
+   - None. The current in-progress issue (Competitive Analysis) is the only one from this session that remains unfixed.
 
 **Known issue recurrence from previous fork**
   - **Issue recurrence in previous fork:** React DOM .
@@ -133,91 +132,93 @@ A full-stack application (React/FastAPI/MongoDB).
 
 
 **Key Technical Concepts**
-- **Frontend:** React  (locked), Tailwind CSS, Radix UI, Recharts, , , 
+- **Frontend:** React  (locked), Tailwind CSS, , 
 - **Backend:** FastAPI, , , 
 - **Database:** MongoDB
 - **AI Integration:**  library
 
 **key DB schema**
-  - **users**: {..., : bool, : str}
+  - **users**: {..., : str, : int}
   - **projects**: {..., : str, : list}
   - **analyses**: {..., : str, : dict}
-  - **free_trial_usage**: (New) {, , , , }
-  - **email_verification_tokens**: (New) {, , }
-  - **notifications**: (New) {, , , , }
+  - **notifications**: {, , , , }
+  - **scan_schedules**: (New) {, , , , , , }
+  - **contact_submissions**: (New) {, , , }
 
 **changes in tech stack**
-  - ****: Added for client-side PDF generation.
-  - ****: Added for browser fingerprinting as part of the anti-abuse system.
+  - ****: Added for handling scheduled background tasks (automated scans).
 
 **All files of reference**
-- ****: Massively expanded to handle PDF data, logo/competitor fetching, the entire anti-abuse system, email verification logic, plan quotas, and notification models.
-- ****: New file containing all logic for generating the multi-section PDF report.
-- ****: Modified to integrate PDF export/preview, fingerprinting, and error handling for trial eligibility.
-- ****: Modified to display project logos, the email verification banner, and PDF export/preview buttons.
-- ****: New React hook to generate and provide the browser fingerprint.
-- ****: New page to handle the email verification flow.
-- ****: New component shown to unverified users.
-- ****: Modified to add the verification page route and integrate the fingerprint hook at the top level.
+- ****: Massively expanded. Now includes logic for notifications, advanced analysis features, scheduled scans, and the contact form. **URGENTLY needs refactoring.**
+- ****: Heavily modified to include the new advanced analysis components and project logo.
+- ****: Modified to add a search bar and project logos.
+- ****: Modified to update pricing plans and footer links.
+- ****: Heavily modified to add routes for all new legal/content pages.
+- **New Frontend Components**:
+    - 
+    - 
+    - All components in  and  folders.
+- ****: New utility for formatting URLs.
 
 **Areas that need refactoring**:
-- ****: This file is now critically oversized and complex. It handles authentication, project management, analysis execution, anti-abuse, email, and API routing. It MUST be broken down into a proper package structure (e.g., , , , ).
-- ****: This file is nearly 1000 lines long. The logic for generating each PDF section should be extracted into its own function or module to improve readability and maintainability.
+- ****: This is a top priority. The file now contains logic for nearly every feature in the application and is becoming unmaintainable. It must be broken down into a proper package structure (e.g., separating routers, services, and database models).
+- ****: This large file should be broken down into smaller modules, each responsible for a section of the PDF.
 
 **key api endpoints**
-- : **(New)** Verifies a user's email using a token.
-- : **(New)** Resends the verification email.
-- : **(New)** Checks if a user is eligible for the free trial based on the anti-abuse rules.
-- : **(Modified)** Now performs anti-abuse and email verification checks before starting an analysis.
-- : **(Modified)** Now fetches the project's favicon upon creation.
+- : **(New)** Fetches unread notifications for the user.
+- : **(New)** Marks a notification as read.
+- : **(New)** Marks all notifications as read.
+- : **(New)** Deletes a notification.
+- : **(New)** Submits the contact form.
+- : **(New)** CRUD endpoints for managing scan schedules.
 
 **Critical Info for New Agent**
 - **Vous DEVEZ répondre en français.**
-- **FINISH NOTIFICATION IMPLEMENTATION:** The immediate priority is to complete the background task notification system. The backend models exist, but the analysis function needs to be updated to create notifications, and the frontend needs to be updated to poll for and display them.
-- **VERIFY CRITICAL FEATURES WITH USER:** The long-standing analysis  issue and the recent PDF download fix ( error) are both implemented but unverified. You must guide the user to test these two things to confirm they are resolved.
-- **PROPOSE REFACTORING:** The  and  files have become unmaintainable. Propose a refactoring task to the user as a high-priority technical debt item.
-- **DO NOT UPGRADE REACT:** The application is locked to **React 18.2.0** to prevent a critical, recurring crash. Do not attempt to upgrade it.
+- **FIX COMPETITOR ANALYSIS:** Your immediate priority is to fix the broken competitive analysis feature. The bug has been identified in  ( function). You need to implement the fix to correctly parse the analysis results and extract discovered competitors.
+- **VERIFY OLD FIXES:** The timeout issue and the PDF download error were fixed in a previous session but never verified by the user. After fixing the main bug, you should guide the user to test these to ensure they are resolved.
+- **PROPOSE REFACTORING:** The  file is now a critical liability. After fixing the immediate bug, you must propose a refactoring task to the user.
+- **DO NOT UPGRADE REACT:** The application is locked to **React 18.2.0**. Do not upgrade it or its dependencies.
 
 **documents and test reports created in this job**
   -  (updated)
-  -  (Note: Agent ran tests successfully, but a report name was not explicitly mentioned. This is the likely path).
+  -  (Generated after testing the notification system)
 
 **Last 10 User Messages and any pending HUMAN messages** 
- - 10. **Request for background analysis and notifications**: User wants scans to run in the background and to be notified on completion. (IN PROGRESS)
- - 9. **Provided BUSINESS plan configuration**: User specified the exact quotas for the Business tier. (COMPLETED)
- - 8. **Provided PRO plan configuration**: User specified the exact quotas for the Pro tier. (COMPLETED)
- - 7. **Provided STARTER plan configuration**: User specified the exact quotas for the Starter tier. (COMPLETED)
- - 6. **Provided FREE plan configuration**: User specified the exact quotas for the Free trial, including the concept of variations. (COMPLETED)
- - 5. **Request for mandatory email verification**: User asked to force email verification on signup. (COMPLETED)
- - 4. **continue**: User prompted the agent to proceed after it paused. (ADDRESSED)
- - 3. **Request for anti-abuse system**: User detailed the requirements for securing the free trial (IP, fingerprint, domain, email blocking). (COMPLETED)
- - 2. **Question about request count**: User asked for a breakdown of API calls per analysis. (ADDRESSED)
- - 1. **Request for dynamic data**: User asked to display project logos/links and to discover competitors dynamically during analysis. (COMPLETED)
+ - 10. Request to improve competitive analysis with more detail. (IN PROGRESS)
+ - 9. Request to add a search bar to the projects page. (COMPLETED)
+ - 8. Request to shorten the project URL display. (COMPLETED)
+ - 7. Request to add the project logo to the project list/selector page. (COMPLETED)
+ - 6. User reported the project logo was still not showing on the analysis page. (COMPLETED, was a data issue)
+ - 5. Request to add a feature for scheduling automated scans for Pro/Business plans. (COMPLETED)
+ - 4. User asked to remove API access from the Business plan features. (COMPLETED)
+ - 3. User clarified that the pricing plan update request was to use the *real calculated* request numbers, not the simple ones they provided. (COMPLETED)
+ - 2. Request to update the pricing plans with new prices and features. (COMPLETED)
+ - 1. Request to remove the mandatory email verification step for the free trial. (COMPLETED)
 
 **Project Health Check:**
-- **Broken**: The core analysis feature is still potentially broken due to the unverified  bug.
-- **Mocked**: Microsoft and LinkedIn SSO are present in the UI but non-functional.
+- **Broken**: The competitive analysis feature is non-functional due to a backend bug.
+- **Mocked**: Microsoft and LinkedIn SSO are present in the UI but non-functional, awaiting user credentials.
+- **At Risk**: The core analysis feature's stability is unconfirmed due to the pending user verification of the timeout fix.
 
 **3rd Party Integrations**
-- **OpenAI, Anthropic, Gemini, Perplexity (AI Analysis)**: Implemented via  library using the Emergent LLM Key. (Operational)
-- **Emergent-managed Google Auth**: Implemented and functional.
-- **Resend (Email)**: Implemented for magic links and now for email verification. (Operational in Sandbox)
-- **Recharts (Charts)**: Implemented.
-- **Stripe (Payments)**: Planned.
-- **Microsoft & LinkedIn SSO**: Placeholder implemented, non-functional (requires user keys).
-- **jspdf (PDF Generation)**: **(New)** Implemented for client-side report generation.
-- **@fingerprintjs/fingerprintjs (Security)**: **(New)** Implemented for browser fingerprinting.
+- **AI Analysis**: OpenAI, Anthropic, Gemini, Perplexity (via ).
+- **Authentication**: Emergent-managed Google Auth (functional), Microsoft & LinkedIn SSO (non-functional).
+- **Email**: Resend (for verification and contact form notifications).
+- **Scheduling**:  (for automated scans).
+- **PDF Generation**: .
+- **Security**: .
+- **Charts**: Recharts.
+- **Payments**: Stripe (Planned).
 
 **Testing status**
-  - Testing agent used after significant changes: YES, but only after the initial PDF generation feature.
+  - Testing agent used after significant changes: YES, for the notification system.
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created:  (hypothetical, agent did not create a specific test for PDF but tested the endpoints)
-  - Known regressions: None identified, but several major features (anti-abuse, email verification) were added *after* the last test run and are not covered by automated tests.
+  - Test files created: Test agent created files during its run, visible in .
+  - Known regressions: None identified, but major features like Advanced Scan, Scheduled Scans, and the numerous content pages were added *after* the last test agent run and lack automated test coverage.
 
 **Credentials to test flow:**
-Use Google SSO for authentication. New accounts will now trigger the email verification flow. The free trial is subject to the new anti-abuse rules.
+Use Google SSO for authentication. New accounts no longer require email verification to start. To test scheduling or advanced analysis, ensure the test user is on a Pro or Business plan.
 
 **What agent forgot to execute**
-- The agent did not complete the implementation of the background task notification system; it was left halfway through.
-- The agent added several critical security and authentication features (anti-abuse, email verification, complex plan logic) *after* the last run of the testing agent. These new, complex workflows are untested and could contain bugs.
-- The agent did not act on the urgent need to refactor , which was noted in the previous handoff and has since become much worse.</analysis>
+- The agent correctly identified the root cause of the broken competitive analysis feature but did not implement the fix before the session ended.
+- The agent did not write any new automated tests for the large number of features implemented after the notification system (Advanced Analysis, Scheduled Scans, etc.), increasing the risk of regressions.</analysis>
