@@ -363,13 +363,13 @@ class TestIdentifyCompetitorsFunction:
         assert result == [], "Empty responses should return empty list"
 
     def test_short_responses_skipped(self):
-        """Test that very short responses are skipped"""
+        """Test that very short responses are skipped (< 50 chars)"""
         from server import identify_competitors_from_analysis
         import asyncio
         
         responses = [
-            {"response_excerpt": "Short response.", "ai_type": "chatgpt"},  # < 50 chars
-            {"response_excerpt": "This is a much longer response that mentions Semrush and other SEO tools in detail.", "ai_type": "claude"}
+            {"response_excerpt": "Short response with Semrush.", "ai_type": "chatgpt"},  # < 50 chars - should be skipped
+            {"response_excerpt": "This is a much longer response that mentions Semrush and other SEO tools in detail for comprehensive analysis.", "ai_type": "claude"}  # > 50 chars
         ]
         
         result = asyncio.get_event_loop().run_until_complete(
@@ -378,7 +378,12 @@ class TestIdentifyCompetitorsFunction:
         
         # Should still find Semrush from the longer response
         semrush_found = any(c["name"].lower() == "semrush" for c in result)
-        assert semrush_found, "Semrush should be detected from longer response"
+        assert semrush_found, f"Semrush should be detected from longer response. Found: {[c['name'] for c in result]}"
+        
+        # Verify only 1 response was counted
+        semrush_entry = next((c for c in result if c["name"].lower() == "semrush"), None)
+        if semrush_entry:
+            assert semrush_entry["responses_containing"] == 1, "Only 1 response should be counted (short one skipped)"
 
 
 class TestCompetitorComparisonStructure:
