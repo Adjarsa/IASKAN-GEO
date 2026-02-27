@@ -375,8 +375,9 @@ const AnalysisPage = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-violet-600 hover:underline"
+                        title={currentProject.website_url}
                       >
-                        {currentProject.website_url}
+                        {formatUrl(currentProject.website_url)}
                       </a>
                     )}
                   </div>
