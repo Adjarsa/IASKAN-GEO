@@ -345,6 +345,7 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 - `/app/frontend/src/services/pdfReportGenerator.js` - **PDF Report Generator (10 sections)**
 - `/app/frontend/src/components/ReportPreviewModal.jsx` - **Preview Modal with navigation**
 - `/app/frontend/src/components/NotificationBell.jsx` - **NEW: Notification bell component**
+- `/app/frontend/src/components/CompetitorAnalysisCard.jsx` - **UPDATED: Competitor analysis display**
 - `/app/frontend/src/components/PDFExportButton.jsx` - PDF Export Components
 - `/app/frontend/src/pages/ContentGeneratorPage.jsx` - Content generation page
 - `/app/frontend/src/pages/VisibilityPage.jsx` - Visibility tracking page
@@ -354,4 +355,33 @@ React was downgraded from v19 to v18.2.0 to fix a critical `insertBefore` crash 
 - `/app/frontend/src/components/layout/DashboardLayout.jsx` - Sidebar navigation + NotificationBell
 
 ## Test Reports
-- `/app/test_reports/iteration_8.json` - Latest test report (100% pass rate - Notification System)
+- `/app/test_reports/iteration_9.json` - Latest test report (100% pass rate - Competitor Analysis)
+
+---
+
+## CHANGELOG
+
+### Feb 27, 2026 - Competitor Analysis Fix
+**Bug Fixed: identify_competitors_from_analysis function**
+
+The competitive analysis feature was broken because the function wasn't correctly parsing AI responses to extract competitor mentions.
+
+**Changes Made:**
+1. **Expanded known brands database** - From ~60 to 150+ brands across industries (Tech, E-commerce, SaaS, Marketing tools, etc.)
+2. **Added 3-strategy competitor detection:**
+   - Strategy 1: Known brands database matching
+   - Strategy 2: User-defined competitors tracking via `competitor_analysis` field in responses
+   - Strategy 3: NLP-based entity extraction using regex patterns for proper nouns
+3. **Improved false positive filtering** - Extended common words list for French and English
+4. **Enhanced visibility scoring:**
+   - `visibility_score = (mentions * 3) + (responses_containing * 5) + (ai_sources_count * 10)` (capped at 100)
+   - Added `presence_rate` = % of responses containing the competitor
+   - Added `responses_containing` count
+5. **Updated competitor_comparison structure** in analysis results with new fields:
+   - `presence_rate`, `responses_containing`, `user_defined`
+6. **Frontend update** - CompetitorAnalysisCard now displays presence rate
+
+**Tests:**
+- Backend: 31/31 unit tests passed
+- Frontend: 19/19 E2E tests passed
+- Test files created: `/app/backend/tests/test_competitor_analysis.py`, `/app/tests/e2e/competitor-analysis.spec.ts`
