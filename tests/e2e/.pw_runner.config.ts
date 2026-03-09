@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260227_115741/results.json' }],
   ],
   use: {
-    baseURL: 'https://brand-audit-2.preview.emergentagent.com',
+    baseURL: 'https://search-optimization-3.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,
