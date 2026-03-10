@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Logo from "@/components/Logo";
+import OnboardingModal from "@/components/OnboardingModal";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,8 @@ import {
   LogOut,
   CreditCard,
   Sparkles,
-  Search
+  Search,
+  HelpCircle
 } from "lucide-react";
 
 const ProjectSelectorPage = () => {
@@ -46,6 +48,7 @@ const ProjectSelectorPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -68,7 +71,19 @@ const ProjectSelectorPage = () => {
 
   useEffect(() => {
     fetchProjects();
+    checkOnboardingStatus();
   }, []);
+
+  const checkOnboardingStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/onboarding/status`, { withCredentials: true });
+      if (response.data.show_onboarding) {
+        setShowOnboarding(true);
+      }
+    } catch (error) {
+      console.error("Onboarding check error:", error);
+    }
+  };
 
   const fetchProjects = async () => {
     try {
@@ -415,6 +430,26 @@ const ProjectSelectorPage = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Onboarding Modal */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onComplete={() => {
+          setShowOnboarding(false);
+          toast.success("Tutoriel terminé ! Bienvenue sur IAskan.");
+        }}
+      />
+
+      {/* Help button to restart onboarding */}
+      <button
+        onClick={() => setShowOnboarding(true)}
+        className="fixed bottom-6 right-6 w-12 h-12 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform"
+        title="Aide et tutoriel"
+        data-testid="help-button"
+      >
+        <HelpCircle className="w-6 h-6" />
+      </button>
     </div>
   );
 };

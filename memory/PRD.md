@@ -74,6 +74,13 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
   - Reset quotas
   - Logs admin
 
+- [x] **Onboarding Guidé** (Nouveau!)
+  - Tutoriel interactif en 6 étapes
+  - Illustrations animées
+  - Progression sauvegardée
+  - Tooltips contextuels
+  - Bouton d'aide flottant
+
 - [x] **Engines Backend Modulaires** (Nouveau!)
   - Query Generation Engine
   - Prompt Variation Engine
@@ -119,6 +126,12 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - `PUT /api/admin/users/{id}/subscription` - Modifier plan
 - `POST /api/admin/users/{id}/reset-quota` - Reset quota
 
+### Onboarding
+- `GET /api/onboarding/status` - Statut onboarding utilisateur
+- `POST /api/onboarding/step/{id}/complete` - Marquer étape terminée
+- `POST /api/onboarding/skip` - Ignorer l'onboarding
+- `GET /api/onboarding/tips/{feature}` - Astuces contextuelles
+
 ## Notes Critiques
 
 ⚠️ **NE PAS UPGRADER REACT** - Version 18.2.0 verrouillée (bug `insertBefore`)
@@ -133,8 +146,10 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - Ajout Optimiseur d'Article GEO (frontend + backend)
 - Ajout système Organisations/Workspaces
 - Ajout Admin Backoffice
+- **Ajout Onboarding Guidé interactif** (6 étapes avec illustrations)
 - Création architecture modulaire `/app/backend/app/`
 - Nouveaux engines: Query, Semantic, Influence, Gap, Optimizer
+- Composant FeatureTips pour tooltips contextuels
 - Mise à jour plans d'abonnement avec nouvelles features
 
 ### Sessions précédentes

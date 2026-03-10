@@ -24,7 +24,7 @@ from emergentintegrations.payments.stripe.checkout import StripeCheckout, Checko
 import resend
 
 # Import new modular routers
-from app.routers import organizations, article_optimizer, admin
+from app.routers import organizations, article_optimizer, admin, onboarding
 from app.engines.query import query_engine, variation_engine
 from app.engines.semantic import semantic_engine
 from app.engines.influence import influence_engine
@@ -5742,6 +5742,7 @@ app.include_router(api_router)
 app.include_router(organizations.router)
 app.include_router(article_optimizer.router)
 app.include_router(admin.router)
+app.include_router(onboarding.router)
 
 # CORS middleware
 app.add_middleware(
