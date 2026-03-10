@@ -1,5 +1,5 @@
 """
-Authentication Router
+Authentication Router - PostgreSQL Version
 Handles all authentication related endpoints including:
 - Session management (Emergent Auth)
 - Microsoft OAuth
@@ -10,6 +10,7 @@ Handles all authentication related endpoints including:
 """
 from fastapi import APIRouter, HTTPException, Request, Response, Depends
 from fastapi.responses import RedirectResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel, EmailStr
@@ -20,7 +21,9 @@ import httpx
 import logging
 import asyncio
 
-from ..core.database import db
+from ..db.database import get_db, async_session_maker
+from ..db.services import UserService, SessionService, SubscriptionService, generate_id
+from ..db.models import User, UserSession, Subscription, EmailVerificationToken, PasswordReset, MagicLink
 from ..core.config import (
     BLOCKED_EMAIL_DOMAINS, 
     SUBSCRIPTION_PLANS,
@@ -183,19 +186,6 @@ def is_temporary_email(email: str) -> bool:
     return domain in BLOCKED_EMAIL_DOMAINS
 
 
-async def get_session_from_token(token: str) -> Optional[dict]:
-    """Get session from token"""
-    if not token:
-        return None
-    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
-    if not session:
-        return None
-    expires_at = datetime.fromisoformat(session["expires_at"].replace('Z', '+00:00'))
-    if datetime.now(timezone.utc) > expires_at:
-        return None
-    return session
-
-
 async def get_current_user(request: Request) -> dict:
     """Dependency to get current authenticated user"""
     token = request.cookies.get("session_token")
@@ -207,79 +197,16 @@ async def get_current_user(request: Request) -> dict:
     if not token:
         raise HTTPException(status_code=401, detail="Non authentifié")
     
-    session = await get_session_from_token(token)
-    if not session:
-        raise HTTPException(status_code=401, detail="Session expirée")
-    
-    user = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
-    
-    return user
-
-
-async def create_verification_token(user_id: str, email: str) -> str:
-    """Create email verification token"""
-    token = uuid.uuid4().hex
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
-    
-    token_doc = {
-        "token_id": f"evt_{uuid.uuid4().hex[:12]}",
-        "user_id": user_id,
-        "email": email,
-        "token": token,
-        "expires_at": expires_at.isoformat(),
-        "used": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.email_verification_tokens.insert_one(token_doc)
-    return token
-
-
-async def send_verification_email(email: str, user_name: str, token: str) -> bool:
-    """Send verification email"""
-    try:
-        import resend
+    async with async_session_maker() as db:
+        session = await SessionService.get_by_token(db, token)
+        if not session:
+            raise HTTPException(status_code=401, detail="Session expirée")
         
-        if not RESEND_API_KEY:
-            logger.warning("RESEND_API_KEY not set, skipping verification email")
-            return False
+        user = await UserService.get_by_user_id(db, session.user_id)
+        if not user:
+            raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
         
-        resend.api_key = RESEND_API_KEY
-        verification_url = f"{FRONTEND_URL}/verify-email?token={token}"
-        
-        html_content = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%); padding: 30px; text-align: center;">
-                <h1 style="color: white; margin: 0;">IAskan</h1>
-            </div>
-            <div style="padding: 30px; background: #ffffff;">
-                <h2 style="color: #1e293b;">Vérifiez votre email</h2>
-                <p style="color: #475569;">Bonjour {user_name},</p>
-                <p style="color: #475569;">Cliquez sur le bouton ci-dessous pour vérifier votre adresse email :</p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{verification_url}" 
-                       style="background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%); 
-                              color: white; padding: 15px 30px; text-decoration: none; 
-                              border-radius: 8px; font-weight: bold;">
-                        Vérifier mon email
-                    </a>
-                </div>
-                <p style="color: #94a3b8; font-size: 12px;">Ce lien expire dans 24 heures.</p>
-            </div>
-        </div>
-        """
-        
-        resend.Emails.send({
-            "from": f"IAskan <{SENDER_EMAIL}>",
-            "to": [email],
-            "subject": "Vérifiez votre email - IAskan",
-            "html": html_content
-        })
-        return True
-    except Exception as e:
-        logger.error(f"Error sending verification email: {e}")
-        return False
+        return UserService.to_dict(user)
 
 
 async def send_email_async(to_email: str, subject: str, html_content: str) -> dict:
@@ -316,80 +243,9 @@ async def send_password_reset_email(email: str, name: str, reset_token: str, fro
 
 async def send_magic_link_email(email: str, name: str, magic_token: str, frontend_url: str):
     """Send magic link login email"""
-    magic_link = f"{frontend_url}/auth/magic?token={magic_token}"
-    html = get_email_template_magic_link(name or "cher utilisateur", magic_link)
+    magic_link_url = f"{frontend_url}/auth/magic?token={magic_token}"
+    html = get_email_template_magic_link(name or "cher utilisateur", magic_link_url)
     return await send_email_async(email, "Votre lien de connexion IAskan", html)
-
-
-async def create_oauth_user_session(email: str, name: str, picture: str, provider: str, response: Response) -> dict:
-    """Create or update user and create session for OAuth providers"""
-    existing_user = await db.users.find_one({"email": email}, {"_id": 0})
-    
-    if existing_user:
-        user_id = existing_user["user_id"]
-        # Update auth provider if not set
-        if not existing_user.get("auth_provider"):
-            await db.users.update_one(
-                {"user_id": user_id},
-                {"$set": {"auth_provider": provider}}
-            )
-    else:
-        # Create new user
-        user_id = f"user_{uuid.uuid4().hex[:12]}"
-        user_doc = {
-            "user_id": user_id,
-            "email": email,
-            "name": name,
-            "picture": picture,
-            "auth_provider": provider,
-            "email_verified": True,  # OAuth emails are pre-verified
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.users.insert_one(user_doc)
-        
-        # Create free subscription
-        free_sub = {
-            "subscription_id": f"sub_{uuid.uuid4().hex[:12]}",
-            "user_id": user_id,
-            "plan": "free",
-            "status": "active",
-            "queries_limit": 1,
-            "queries_used": 0,
-            "free_scans_remaining": 1,
-            "current_period_start": datetime.now(timezone.utc).isoformat(),
-            "current_period_end": None,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.subscriptions.insert_one(free_sub)
-        
-        # Send welcome email
-        await email_service.send_welcome_email(email, name)
-        logger.info(f"New user registered via {provider}: email={email}")
-    
-    # Create session
-    session_token = f"sess_{uuid.uuid4().hex}"
-    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-    session_doc = {
-        "session_id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "session_token": session_token,
-        "expires_at": expires_at.isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.user_sessions.insert_one(session_doc)
-    
-    # Set cookie
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/",
-        max_age=30 * 24 * 60 * 60
-    )
-    
-    return {"user_id": user_id, "session_token": session_token}
 
 
 # ================== ROUTES - SESSION MANAGEMENT ==================
@@ -421,7 +277,6 @@ async def create_session(request: Request, response: Response):
         logger.error(f"Auth session error: {e}")
         raise HTTPException(status_code=401, detail="Session invalide")
     
-    user_id = f"user_{uuid.uuid4().hex[:12]}"
     email = auth_data.get("email")
     name = auth_data.get("name")
     picture = auth_data.get("picture")
@@ -438,79 +293,57 @@ async def create_session(request: Request, response: Response):
         )
     
     client_ip = get_client_ip(request)
-    existing_user = await db.users.find_one({"email": email}, {"_id": 0})
     
-    if existing_user:
-        user_id = existing_user["user_id"]
-    else:
-        # Create new user
-        user_doc = {
-            "user_id": user_id,
-            "email": email,
-            "name": name,
-            "picture": picture,
-            "email_verified": False,
-            "registration_ip": client_ip,
-            "registration_fingerprint": fingerprint,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.users.insert_one(user_doc)
+    async with async_session_maker() as db:
+        existing_user = await UserService.get_by_email(db, email)
         
-        # Create free subscription
-        free_sub = {
-            "subscription_id": f"sub_{uuid.uuid4().hex[:12]}",
-            "user_id": user_id,
-            "plan": "free",
-            "status": "active",
-            "queries_limit": 1,
-            "queries_used": 0,
-            "free_scans_remaining": 1,
-            "current_period_start": datetime.now(timezone.utc).isoformat(),
-            "current_period_end": None,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.subscriptions.insert_one(free_sub)
+        if existing_user:
+            user_id = existing_user.user_id
+            user = existing_user
+        else:
+            # Create new user
+            user = await UserService.create(
+                db,
+                email=email,
+                name=name,
+                picture=picture,
+                auth_provider="google",
+                registration_ip=client_ip,
+                registration_fingerprint=fingerprint
+            )
+            user_id = user.user_id
+            
+            # Create free subscription
+            await SubscriptionService.create_free(db, user_id)
+            
+            # Send welcome email
+            await email_service.send_welcome_email(email, name)
+            logger.info(f"New user registered: email={email}")
         
-        # Send verification email
-        verification_token = await create_verification_token(user_id, email)
-        await send_verification_email(email, name, verification_token)
+        # Create session
+        session = await SessionService.create(db, user_id, session_token)
         
-        # Send welcome email
-        await email_service.send_welcome_email(email, name)
+        # Set cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=True,
+            samesite="none",
+            path="/",
+            max_age=7 * 24 * 60 * 60
+        )
         
-        logger.info(f"New user registered: email={email}")
-    
-    # Create session
-    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-    session_doc = {
-        "session_id": str(uuid.uuid4()),
-        "user_id": user_id,
-        "session_token": session_token,
-        "expires_at": expires_at.isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.user_sessions.insert_one(session_doc)
-    
-    # Set cookie
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/",
-        max_age=7 * 24 * 60 * 60
-    )
-    
-    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
-    return {"user": user, "session_token": session_token}
+        user_dict = UserService.to_dict(user)
+        return {"user": user_dict, "session_token": session_token}
 
 
 @router.get("/me")
 async def get_me(user: dict = Depends(get_current_user)):
     """Get current authenticated user"""
-    subscription = await db.subscriptions.find_one({"user_id": user["user_id"]}, {"_id": 0})
-    return {"user": user, "subscription": subscription}
+    async with async_session_maker() as db:
+        subscription = await SubscriptionService.get_by_user_id(db, user["user_id"])
+        return {"user": user, "subscription": SubscriptionService.to_dict(subscription)}
 
 
 @router.post("/logout")
@@ -518,76 +351,11 @@ async def logout(request: Request, response: Response):
     """Logout user and clear session"""
     token = request.cookies.get("session_token")
     if token:
-        await db.user_sessions.delete_many({"session_token": token})
+        async with async_session_maker() as db:
+            await SessionService.delete_by_token(db, token)
     
     response.delete_cookie("session_token", path="/")
     return {"message": "Déconnexion réussie"}
-
-
-# ================== ROUTES - EMAIL VERIFICATION ==================
-
-@router.post("/verify-email")
-async def verify_email_endpoint(request: Request):
-    """Verify email with token"""
-    body = await request.json()
-    token = body.get("token")
-    
-    if not token:
-        raise HTTPException(status_code=400, detail="Token requis")
-    
-    token_doc = await db.email_verification_tokens.find_one(
-        {"token": token, "used": False},
-        {"_id": 0}
-    )
-    
-    if not token_doc:
-        raise HTTPException(status_code=400, detail="Token invalide ou déjà utilisé")
-    
-    expires_at = datetime.fromisoformat(token_doc["expires_at"].replace('Z', '+00:00'))
-    if datetime.now(timezone.utc) > expires_at:
-        raise HTTPException(status_code=400, detail="Token expiré")
-    
-    # Mark email as verified
-    await db.users.update_one(
-        {"user_id": token_doc["user_id"]},
-        {"$set": {
-            "email_verified": True,
-            "email_verified_at": datetime.now(timezone.utc).isoformat()
-        }}
-    )
-    
-    # Mark token as used
-    await db.email_verification_tokens.update_one(
-        {"token": token},
-        {"$set": {"used": True}}
-    )
-    
-    return {"success": True, "message": "Email vérifié avec succès"}
-
-
-@router.post("/resend-verification")
-async def resend_verification_email_endpoint(user: dict = Depends(get_current_user)):
-    """Resend verification email"""
-    if user.get("email_verified"):
-        return {"success": True, "message": "Email déjà vérifié"}
-    
-    # Delete old tokens
-    await db.email_verification_tokens.delete_many({"user_id": user["user_id"]})
-    
-    # Create new token
-    token = await create_verification_token(user["user_id"], user["email"])
-    await send_verification_email(user["email"], user["name"], token)
-    
-    return {"success": True, "message": "Email de vérification envoyé"}
-
-
-@router.get("/verification-status")
-async def get_verification_status(user: dict = Depends(get_current_user)):
-    """Get email verification status"""
-    return {
-        "email_verified": user.get("email_verified", False),
-        "email": user.get("email")
-    }
 
 
 # ================== ROUTES - AUTH PROVIDERS ==================
@@ -611,9 +379,8 @@ async def get_auth_providers():
 async def microsoft_login(request: Request):
     """Initiate Microsoft OAuth2 login"""
     if not MICROSOFT_CLIENT_ID or not MICROSOFT_CLIENT_SECRET:
-        raise HTTPException(status_code=501, detail="Microsoft OAuth non configuré. Veuillez contacter l'administrateur.")
+        raise HTTPException(status_code=501, detail="Microsoft OAuth non configuré.")
     
-    # Get the frontend URL from referer or use default
     referer = request.headers.get("referer", "")
     frontend_url = referer.split("/login")[0] if "/login" in referer else request.headers.get("origin", "")
     
@@ -637,9 +404,9 @@ async def microsoft_login(request: Request):
 
 
 @router.get("/microsoft/callback")
-async def microsoft_callback(request: Request, code: str = None, state: str = None, error: str = None):
+async def microsoft_callback(request: Request, response: Response, code: str = None, state: str = None, error: str = None):
     """Handle Microsoft OAuth2 callback"""
-    frontend_url = request.session.get("frontend_url", "")
+    frontend_url = request.session.get("frontend_url", FRONTEND_URL)
     
     if error:
         return RedirectResponse(url=f"{frontend_url}/login?error=microsoft_auth_failed")
@@ -650,7 +417,6 @@ async def microsoft_callback(request: Request, code: str = None, state: str = No
     
     redirect_uri = str(request.base_url) + "api/auth/microsoft/callback"
     
-    # Exchange code for token
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
             "https://login.microsoftonline.com/common/oauth2/v2.0/token",
@@ -670,7 +436,6 @@ async def microsoft_callback(request: Request, code: str = None, state: str = No
         token_data = token_response.json()
         access_token = token_data.get("access_token")
         
-        # Get user info
         user_response = await client.get(
             "https://graph.microsoft.com/v1.0/me",
             headers={"Authorization": f"Bearer {access_token}"}
@@ -683,12 +448,32 @@ async def microsoft_callback(request: Request, code: str = None, state: str = No
     
     email = user_data.get("mail") or user_data.get("userPrincipalName")
     name = user_data.get("displayName")
-    picture = None
     
-    response = RedirectResponse(url=f"{frontend_url}/projects")
-    await create_oauth_user_session(email, name, picture, "microsoft", response)
+    # Create or get user and session
+    async with async_session_maker() as db:
+        existing_user = await UserService.get_by_email(db, email)
+        
+        if existing_user:
+            user_id = existing_user.user_id
+            if not existing_user.auth_provider:
+                await UserService.update(db, user_id, auth_provider="microsoft")
+        else:
+            user = await UserService.create(
+                db, email=email, name=name, auth_provider="microsoft", email_verified=True
+            )
+            user_id = user.user_id
+            await SubscriptionService.create_free(db, user_id)
+            await email_service.send_welcome_email(email, name)
+        
+        session_token = f"sess_{uuid.uuid4().hex}"
+        await SessionService.create(db, user_id, session_token, expires_days=30)
     
-    return response
+    redirect_response = RedirectResponse(url=f"{frontend_url}/projects")
+    redirect_response.set_cookie(
+        key="session_token", value=session_token,
+        httponly=True, secure=True, samesite="none", path="/", max_age=30*24*60*60
+    )
+    return redirect_response
 
 
 # ================== ROUTES - LINKEDIN OAUTH ==================
@@ -697,7 +482,7 @@ async def microsoft_callback(request: Request, code: str = None, state: str = No
 async def linkedin_login(request: Request):
     """Initiate LinkedIn OAuth2 login"""
     if not LINKEDIN_CLIENT_ID or not LINKEDIN_CLIENT_SECRET:
-        raise HTTPException(status_code=501, detail="LinkedIn OAuth non configuré. Veuillez contacter l'administrateur.")
+        raise HTTPException(status_code=501, detail="LinkedIn OAuth non configuré.")
     
     referer = request.headers.get("referer", "")
     frontend_url = referer.split("/login")[0] if "/login" in referer else request.headers.get("origin", "")
@@ -721,9 +506,9 @@ async def linkedin_login(request: Request):
 
 
 @router.get("/linkedin/callback")
-async def linkedin_callback(request: Request, code: str = None, state: str = None, error: str = None):
+async def linkedin_callback(request: Request, response: Response, code: str = None, state: str = None, error: str = None):
     """Handle LinkedIn OAuth2 callback"""
-    frontend_url = request.session.get("frontend_url", "")
+    frontend_url = request.session.get("frontend_url", FRONTEND_URL)
     
     if error:
         return RedirectResponse(url=f"{frontend_url}/login?error=linkedin_auth_failed")
@@ -734,7 +519,6 @@ async def linkedin_callback(request: Request, code: str = None, state: str = Non
     
     redirect_uri = str(request.base_url) + "api/auth/linkedin/callback"
     
-    # Exchange code for token
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
             "https://www.linkedin.com/oauth/v2/accessToken",
@@ -755,7 +539,6 @@ async def linkedin_callback(request: Request, code: str = None, state: str = Non
         token_data = token_response.json()
         access_token = token_data.get("access_token")
         
-        # Get user info using OpenID Connect userinfo endpoint
         user_response = await client.get(
             "https://api.linkedin.com/v2/userinfo",
             headers={"Authorization": f"Bearer {access_token}"}
@@ -770,10 +553,28 @@ async def linkedin_callback(request: Request, code: str = None, state: str = Non
     name = user_data.get("name") or f"{user_data.get('given_name', '')} {user_data.get('family_name', '')}".strip()
     picture = user_data.get("picture")
     
-    response = RedirectResponse(url=f"{frontend_url}/projects")
-    await create_oauth_user_session(email, name, picture, "linkedin", response)
+    async with async_session_maker() as db:
+        existing_user = await UserService.get_by_email(db, email)
+        
+        if existing_user:
+            user_id = existing_user.user_id
+        else:
+            user = await UserService.create(
+                db, email=email, name=name, picture=picture, auth_provider="linkedin", email_verified=True
+            )
+            user_id = user.user_id
+            await SubscriptionService.create_free(db, user_id)
+            await email_service.send_welcome_email(email, name)
+        
+        session_token = f"sess_{uuid.uuid4().hex}"
+        await SessionService.create(db, user_id, session_token, expires_days=30)
     
-    return response
+    redirect_response = RedirectResponse(url=f"{frontend_url}/projects")
+    redirect_response.set_cookie(
+        key="session_token", value=session_token,
+        httponly=True, secure=True, samesite="none", path="/", max_age=30*24*60*60
+    )
+    return redirect_response
 
 
 # ================== ROUTES - PASSWORD RESET ==================
@@ -781,38 +582,28 @@ async def linkedin_callback(request: Request, code: str = None, state: str = Non
 @router.post("/forgot-password")
 async def forgot_password(request: Request, body: PasswordResetRequest):
     """Request password reset email"""
-    # Find user
-    user = await db.users.find_one({"email": body.email}, {"_id": 0})
+    async with async_session_maker() as db:
+        user = await UserService.get_by_email(db, body.email)
+        
+        if not user:
+            return {"message": "Si un compte existe avec cet email, vous recevrez un lien de réinitialisation."}
+        
+        reset_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        
+        password_reset = PasswordReset(
+            token=reset_token,
+            user_id=user.user_id,
+            email=body.email,
+            expires_at=expires_at
+        )
+        db.add(password_reset)
+        await db.commit()
     
-    # Always return success to prevent email enumeration
-    if not user:
-        return {"message": "Si un compte existe avec cet email, vous recevrez un lien de réinitialisation."}
-    
-    # Generate reset token
-    reset_token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-    
-    # Store reset token
-    await db.password_resets.insert_one({
-        "token": reset_token,
-        "user_id": user["user_id"],
-        "email": body.email,
-        "expires_at": expires_at.isoformat(),
-        "used": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
-    
-    # Get frontend URL
     referer = request.headers.get("referer", "")
-    frontend_url = referer.split("/")[0] + "//" + referer.split("/")[2] if "//" in referer else request.headers.get("origin", "")
+    frontend_url = referer.split("/")[0] + "//" + referer.split("/")[2] if "//" in referer else FRONTEND_URL
     
-    # Send email (non-blocking)
-    asyncio.create_task(send_password_reset_email(
-        body.email, 
-        user.get("name", ""), 
-        reset_token, 
-        frontend_url
-    ))
+    asyncio.create_task(send_password_reset_email(body.email, user.name or "", reset_token, frontend_url))
     
     return {"message": "Si un compte existe avec cet email, vous recevrez un lien de réinitialisation."}
 
@@ -820,39 +611,32 @@ async def forgot_password(request: Request, body: PasswordResetRequest):
 @router.post("/reset-password")
 async def reset_password(body: PasswordResetConfirm):
     """Reset password with token"""
-    # Find valid reset token
-    reset_doc = await db.password_resets.find_one({
-        "token": body.token,
-        "used": False
-    }, {"_id": 0})
+    from sqlalchemy import select, update
     
-    if not reset_doc:
-        raise HTTPException(status_code=400, detail="Lien de réinitialisation invalide ou expiré.")
+    async with async_session_maker() as db:
+        result = await db.execute(
+            select(PasswordReset).where(PasswordReset.token == body.token, PasswordReset.used == False)
+        )
+        reset_doc = result.scalar_one_or_none()
+        
+        if not reset_doc:
+            raise HTTPException(status_code=400, detail="Lien de réinitialisation invalide ou expiré.")
+        
+        if datetime.now(timezone.utc) > reset_doc.expires_at:
+            raise HTTPException(status_code=400, detail="Ce lien a expiré.")
+        
+        password_hash = hashlib.sha256(body.new_password.encode()).hexdigest()
+        
+        await UserService.update(db, reset_doc.user_id, password_hash=password_hash)
+        
+        await db.execute(
+            update(PasswordReset).where(PasswordReset.token == body.token).values(used=True)
+        )
+        await db.commit()
+        
+        await SessionService.delete_by_user(db, reset_doc.user_id)
     
-    # Check expiration
-    expires_at = datetime.fromisoformat(reset_doc["expires_at"].replace('Z', '+00:00'))
-    if datetime.now(timezone.utc) > expires_at:
-        raise HTTPException(status_code=400, detail="Ce lien a expiré. Veuillez demander un nouveau lien.")
-    
-    # Hash new password
-    password_hash = hashlib.sha256(body.new_password.encode()).hexdigest()
-    
-    # Update user password
-    await db.users.update_one(
-        {"user_id": reset_doc["user_id"]},
-        {"$set": {"password_hash": password_hash, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    
-    # Mark token as used
-    await db.password_resets.update_one(
-        {"token": body.token},
-        {"$set": {"used": True}}
-    )
-    
-    # Invalidate all existing sessions
-    await db.user_sessions.delete_many({"user_id": reset_doc["user_id"]})
-    
-    return {"message": "Mot de passe mis à jour avec succès. Vous pouvez maintenant vous connecter."}
+    return {"message": "Mot de passe mis à jour avec succès."}
 
 
 # ================== ROUTES - MAGIC LINK ==================
@@ -860,61 +644,31 @@ async def reset_password(body: PasswordResetConfirm):
 @router.post("/magic-link")
 async def request_magic_link(request: Request, body: MagicLinkRequest):
     """Request magic link login email"""
-    # Find or create user
-    user = await db.users.find_one({"email": body.email}, {"_id": 0})
-    
-    if not user:
-        # Create new user
-        user_id = f"user_{uuid.uuid4().hex[:12]}"
-        user = {
-            "user_id": user_id,
-            "email": body.email,
-            "name": body.email.split("@")[0],
-            "auth_provider": "magic_link",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.users.insert_one(user)
+    async with async_session_maker() as db:
+        user = await UserService.get_by_email(db, body.email)
         
-        # Create free subscription with 1 free scan
-        free_sub = {
-            "subscription_id": f"sub_{uuid.uuid4().hex[:12]}",
-            "user_id": user_id,
-            "plan": "free",
-            "status": "active",
-            "queries_limit": 1,
-            "queries_used": 0,
-            "free_scans_remaining": 1,
-            "current_period_start": datetime.now(timezone.utc).isoformat(),
-            "current_period_end": None,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.subscriptions.insert_one(free_sub)
+        if not user:
+            user = await UserService.create(
+                db, email=body.email, name=body.email.split("@")[0], auth_provider="magic_link"
+            )
+            await SubscriptionService.create_free(db, user.user_id)
+        
+        magic_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+        
+        magic_link = MagicLink(
+            token=magic_token,
+            user_id=user.user_id,
+            email=body.email,
+            expires_at=expires_at
+        )
+        db.add(magic_link)
+        await db.commit()
     
-    # Generate magic token
-    magic_token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
-    
-    # Store magic token
-    await db.magic_links.insert_one({
-        "token": magic_token,
-        "user_id": user["user_id"],
-        "email": body.email,
-        "expires_at": expires_at.isoformat(),
-        "used": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
-    
-    # Get frontend URL
     referer = request.headers.get("referer", "")
-    frontend_url = referer.split("/")[0] + "//" + referer.split("/")[2] if "//" in referer else request.headers.get("origin", "")
+    frontend_url = referer.split("/")[0] + "//" + referer.split("/")[2] if "//" in referer else FRONTEND_URL
     
-    # Send email
-    asyncio.create_task(send_magic_link_email(
-        body.email,
-        user.get("name", ""),
-        magic_token,
-        frontend_url
-    ))
+    asyncio.create_task(send_magic_link_email(body.email, user.name or "", magic_token, frontend_url))
     
     return {"message": "Un lien de connexion a été envoyé à votre adresse email."}
 
@@ -922,52 +676,33 @@ async def request_magic_link(request: Request, body: MagicLinkRequest):
 @router.get("/magic-verify")
 async def verify_magic_link(token: str, response: Response):
     """Verify magic link and create session"""
-    # Find valid magic token
-    magic_doc = await db.magic_links.find_one({
-        "token": token,
-        "used": False
-    }, {"_id": 0})
+    from sqlalchemy import select, update
     
-    if not magic_doc:
-        raise HTTPException(status_code=400, detail="Lien de connexion invalide ou déjà utilisé.")
-    
-    # Check expiration
-    expires_at = datetime.fromisoformat(magic_doc["expires_at"].replace('Z', '+00:00'))
-    if datetime.now(timezone.utc) > expires_at:
-        raise HTTPException(status_code=400, detail="Ce lien a expiré. Veuillez demander un nouveau lien.")
-    
-    # Mark token as used
-    await db.magic_links.update_one(
-        {"token": token},
-        {"$set": {"used": True}}
-    )
-    
-    # Get user
-    user = await db.users.find_one({"user_id": magic_doc["user_id"]}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé.")
-    
-    # Create session
-    session_token = f"sess_{uuid.uuid4().hex}"
-    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
-    session_doc = {
-        "session_id": str(uuid.uuid4()),
-        "user_id": user["user_id"],
-        "session_token": session_token,
-        "expires_at": expires_at.isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.user_sessions.insert_one(session_doc)
-    
-    # Set cookie
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/",
-        max_age=7 * 24 * 60 * 60
-    )
-    
-    return {"message": "Connexion réussie", "user": user}
+    async with async_session_maker() as db:
+        result = await db.execute(
+            select(MagicLink).where(MagicLink.token == token, MagicLink.used == False)
+        )
+        magic_doc = result.scalar_one_or_none()
+        
+        if not magic_doc:
+            raise HTTPException(status_code=400, detail="Lien de connexion invalide ou déjà utilisé.")
+        
+        if datetime.now(timezone.utc) > magic_doc.expires_at:
+            raise HTTPException(status_code=400, detail="Ce lien a expiré.")
+        
+        await db.execute(update(MagicLink).where(MagicLink.token == token).values(used=True))
+        await db.commit()
+        
+        user = await UserService.get_by_user_id(db, magic_doc.user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé.")
+        
+        session_token = f"sess_{uuid.uuid4().hex}"
+        await SessionService.create(db, user.user_id, session_token, expires_days=7)
+        
+        response.set_cookie(
+            key="session_token", value=session_token,
+            httponly=True, secure=True, samesite="none", path="/", max_age=7*24*60*60
+        )
+        
+        return {"message": "Connexion réussie", "user": UserService.to_dict(user)}

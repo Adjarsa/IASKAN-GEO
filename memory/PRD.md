@@ -221,6 +221,15 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 ## Changelog
 
 ### 2026-03-10 (Session actuelle)
+- **MIGRATION ROUTERS VERS POSTGRESQL**
+  - ✅ `auth.py` migré vers PostgreSQL (sessions, OAuth, Magic Link, Password Reset)
+  - ✅ `projects.py` migré vers PostgreSQL (CRUD projets, stats)
+  - ✅ `dashboard.py` migré vers PostgreSQL (stats, activité)
+  - ✅ `notifications.py` migré vers PostgreSQL (CRUD notifications)
+  - ✅ `schedules.py` migré vers PostgreSQL (scans programmés)
+  - ✅ `subscriptions.py` migré vers PostgreSQL (abonnements, Stripe)
+  - Tous les endpoints utilisent maintenant SQLAlchemy ORM avec PostgreSQL
+
 - **MIGRATION POSTGRESQL COMPLÉTÉE**
   - ✅ PostgreSQL local installé et configuré
   - ✅ 17 tables créées (users, projects, analyses, subscriptions, etc.)
