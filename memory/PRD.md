@@ -81,6 +81,18 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
   - Tooltips contextuels
   - Bouton d'aide flottant
 
+- [x] **Emails Transactionnels** (Nouveau!)
+  - Email de bienvenue (à l'inscription)
+  - Email de fin de scan (avec score et recommandations)
+  - Email de désabonnement (confirmation)
+  - Email de rappel d'expiration
+  - Templates HTML responsives avec branding IAskan
+
+- [x] **Gestion des abonnements**
+  - Endpoint de désabonnement
+  - Endpoint de réactivation
+  - Interface utilisateur dans Settings
+
 - [x] **Engines Backend Modulaires** (Nouveau!)
   - Query Generation Engine
   - Prompt Variation Engine
@@ -126,6 +138,10 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - `PUT /api/admin/users/{id}/subscription` - Modifier plan
 - `POST /api/admin/users/{id}/reset-quota` - Reset quota
 
+### Subscription
+- `POST /api/subscription/cancel` - Annuler l'abonnement
+- `POST /api/subscription/reactivate` - Réactiver l'abonnement
+
 ### Onboarding
 - `GET /api/onboarding/status` - Statut onboarding utilisateur
 - `POST /api/onboarding/step/{id}/complete` - Marquer étape terminée
@@ -147,9 +163,12 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - Ajout système Organisations/Workspaces
 - Ajout Admin Backoffice
 - **Ajout Onboarding Guidé interactif** (6 étapes avec illustrations)
+- **Ajout Emails Transactionnels** (bienvenue, fin scan, désabonnement)
+- **Ajout Gestion abonnements** (annulation/réactivation)
 - Création architecture modulaire `/app/backend/app/`
 - Nouveaux engines: Query, Semantic, Influence, Gap, Optimizer
 - Composant FeatureTips pour tooltips contextuels
+- Service EmailService avec templates HTML responsives
 - Mise à jour plans d'abonnement avec nouvelles features
 
 ### Sessions précédentes

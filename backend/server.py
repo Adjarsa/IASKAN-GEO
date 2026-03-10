@@ -29,6 +29,7 @@ from app.engines.query import query_engine, variation_engine
 from app.engines.semantic import semantic_engine
 from app.engines.influence import influence_engine
 from app.engines.gap import gap_engine
+from app.services.email_service import email_service
 
 # Thread pool for LLM calls to avoid blocking the event loop
 llm_executor = ThreadPoolExecutor(max_workers=4)
@@ -1369,6 +1370,9 @@ async def create_session(request: Request, response: Response):
         # Send verification email
         verification_token = await create_verification_token(user_id, email)
         await send_verification_email(email, name, verification_token)
+        
+        # Send welcome email
+        await email_service.send_welcome_email(email, name)
         
         logger.info(f"New user registered: email={email}, ip={client_ip}, verification email sent")
     
@@ -4860,6 +4864,91 @@ async def stripe_webhook(request: Request):
     except Exception as e:
         logger.error(f"Webhook error: {e}")
         return {"received": True, "error": str(e)}
+
+
+@api_router.post("/subscription/cancel")
+async def cancel_subscription(user: dict = Depends(get_current_user)):
+    """Cancel user subscription"""
+    subscription = await db.subscriptions.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Aucun abonnement trouvé")
+    
+    if subscription.get("plan") == "free":
+        raise HTTPException(status_code=400, detail="Vous êtes déjà sur le plan gratuit")
+    
+    # Calculate end date (end of current period)
+    current_period_end = subscription.get("current_period_end")
+    if current_period_end:
+        end_date = datetime.fromisoformat(current_period_end.replace('Z', '+00:00'))
+    else:
+        end_date = datetime.now(timezone.utc) + timedelta(days=30)
+    
+    # Mark subscription as cancelled (will revert to free at end of period)
+    await db.subscriptions.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {
+            "status": "cancelled",
+            "cancelled_at": datetime.now(timezone.utc).isoformat(),
+            "cancellation_effective_date": end_date.isoformat()
+        }}
+    )
+    
+    # Send cancellation email
+    plan_name = SUBSCRIPTION_PLANS.get(subscription.get("plan", "free"), {}).get("name", "Abonnement")
+    end_date_str = end_date.strftime("%d/%m/%Y")
+    
+    await email_service.send_subscription_cancelled_email(
+        email=user.get("email", ""),
+        user_name=user.get("name", ""),
+        plan_name=plan_name,
+        end_date=end_date_str
+    )
+    
+    # Create notification
+    await create_notification(
+        user_id=user["user_id"],
+        notification_type="subscription_cancelled",
+        title="Abonnement annulé",
+        message=f"Votre abonnement {plan_name} sera actif jusqu'au {end_date_str}",
+        data={"end_date": end_date.isoformat(), "plan": subscription.get("plan")}
+    )
+    
+    return {
+        "success": True,
+        "message": f"Votre abonnement sera actif jusqu'au {end_date_str}",
+        "end_date": end_date.isoformat()
+    }
+
+
+@api_router.post("/subscription/reactivate")
+async def reactivate_subscription(user: dict = Depends(get_current_user)):
+    """Reactivate a cancelled subscription"""
+    subscription = await db.subscriptions.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Aucun abonnement trouvé")
+    
+    if subscription.get("status") != "cancelled":
+        raise HTTPException(status_code=400, detail="L'abonnement n'est pas annulé")
+    
+    # Reactivate
+    await db.subscriptions.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {
+            "status": "active",
+            "cancelled_at": None,
+            "cancellation_effective_date": None
+        }}
+    )
+    
+    plan_name = SUBSCRIPTION_PLANS.get(subscription.get("plan", "free"), {}).get("name", "Abonnement")
+    
+    return {
+        "success": True,
+        "message": f"Votre abonnement {plan_name} a été réactivé"
+    }
+
 
 # ================== DASHBOARD STATS ==================
 

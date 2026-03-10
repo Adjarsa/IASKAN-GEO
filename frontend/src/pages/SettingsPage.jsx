@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useAuth } from "@/App";
+import axios from "axios";
+import { useAuth, BACKEND_URL } from "@/App";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,17 +16,59 @@ import {
   Bell,
   Shield,
   LogOut,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+  XCircle
 } from "lucide-react";
 
 const SettingsPage = () => {
-  const { user, subscription, logout } = useAuth();
+  const { user, subscription, logout, refreshSubscription } = useAuth();
   const navigate = useNavigate();
+  const [cancelling, setCancelling] = useState(false);
+  const [reactivating, setReactivating] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     navigate("/");
     toast.success("Déconnexion réussie");
+  };
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/subscription/cancel`,
+        {},
+        { withCredentials: true }
+      );
+      toast.success(response.data.message);
+      setShowCancelConfirm(false);
+      if (refreshSubscription) refreshSubscription();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Erreur lors de l'annulation");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    setReactivating(true);
+    try {
+      const response = await axios.post(
+        `${BACKEND_URL}/api/subscription/reactivate`,
+        {},
+        { withCredentials: true }
+      );
+      toast.success(response.data.message);
+      if (refreshSubscription) refreshSubscription();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Erreur lors de la réactivation");
+    } finally {
+      setReactivating(false);
+    }
   };
 
   return (
@@ -131,6 +174,80 @@ const SettingsPage = () => {
                       Votre essai gratuit se termine le{" "}
                       {new Date(subscription.trial_ends_at).toLocaleDateString("fr-FR")}
                     </p>
+                  </div>
+                )}
+
+                {/* Subscription Status */}
+                {subscription?.status === "cancelled" && subscription?.cancellation_effective_date && (
+                  <div className="p-4 rounded-lg bg-orange-50 border border-orange-200">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-orange-800 font-medium">Abonnement annulé</p>
+                        <p className="text-orange-700 text-sm mt-1">
+                          Votre abonnement sera actif jusqu'au{" "}
+                          {new Date(subscription.cancellation_effective_date).toLocaleDateString("fr-FR")}
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-3 border-orange-300 text-orange-700 hover:bg-orange-100"
+                          onClick={handleReactivateSubscription}
+                          disabled={reactivating}
+                        >
+                          {reactivating ? (
+                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Réactivation...</>
+                          ) : (
+                            "Réactiver mon abonnement"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Cancel Subscription */}
+                {subscription?.plan && subscription.plan !== "free" && subscription?.status !== "cancelled" && (
+                  <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-slate-700 font-medium">Annuler l'abonnement</p>
+                        <p className="text-sm text-slate-500">Vous conserverez l'accès jusqu'à la fin de la période</p>
+                      </div>
+                      {!showCancelConfirm ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-slate-600"
+                          onClick={() => setShowCancelConfirm(true)}
+                          data-testid="cancel-subscription-btn"
+                        >
+                          Annuler
+                        </Button>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setShowCancelConfirm(false)}
+                          >
+                            Non
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={handleCancelSubscription}
+                            disabled={cancelling}
+                          >
+                            {cancelling ? (
+                              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Annulation...</>
+                            ) : (
+                              "Oui, annuler"
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
