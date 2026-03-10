@@ -1,224 +1,193 @@
 <analysis>**original_problem_statement:**
-The user wants to build a highly-detailed SaaS platform named **IAskan**. The platform is a **Generative Engine Optimization (GEO)** tool designed to help businesses improve their visibility in AI-generated responses (like ChatGPT, Gemini, etc.).
+The user wants to build a highly-detailed SaaS platform named **IAskan**. The platform is a **Generative Engine Optimization (GEO)** tool designed to help businesses improve their visibility in AI-generated responses.
 
-**PRODUCT REQUIREMENTS:**
--   **Core Functionality:** An intelligent GEO engine that simulates real user queries across multiple AIs, analyzes brand visibility, benchmarks against competitors, and generates detailed reports with actionable recommendations.
--   **GEO Audit & Analysis:**
-    -   Track presence, citation score, and position in AI responses.
-    -   Analyze content citability, detect gaps, and verify structured data.
-    -   Benchmark against competitors, including dynamically discovered ones.
--   **GEO Content Optimization & Generation:**
-    -   Generate and reformulate content (FAQs, articles) optimized for LLM citation.
--   **Reporting:** Generate a detailed, multi-section PDF audit report based on user-provided samples.
--   **Authentication & Security:**
-    -   Mandatory SSO with Google, Microsoft, and LinkedIn.
-    -   A comprehensive anti-abuse system for a one-time free trial.
--   **Monetization:** A subscription model (Free, Starter, Pro, Business) integrated via Stripe.
--   **User Experience:**
-    -   Analyses must run in the background, with in-app and email notifications on completion.
-    -   Display project logos and site links on the dashboard.
-    -   Allow scheduling of automated scans for Pro and Business plans.
--   **UI/UX:** A minimalist, premium, fast, and decision-oriented interface using the IAskan color scheme.
+Following the initial setup, the user provided a comprehensive **23-section product blueprint** that now serves as the definitive guide for the project's architecture and feature set. This blueprint supersedes all previous requirements.
+
+**PRODUCT REQUIREMENTS (based on the new blueprint):**
+-   **Architecture:** A robust, scalable backend using FastAPI, PostgreSQL for the database, pgvector for semantic search, and Celery with Redis for distributed task queuing. The frontend should be clean and performant.
+-   **Core Engine:** A sophisticated analysis pipeline composed of several distinct engines:
+    -   **Query Generation & Variation:** To create and diversify prompts.
+    -   **LLM Connectors:** A modular layer to interact with multiple AIs (OpenAI, Claude, Gemini).
+    -   **Response Parsing & Brand Normalization:** To extract and standardize brand mentions.
+    -   **GEO Scoring:** To calculate complex metrics like AI Visibility Score and LLM Share of Voice.
+    -   **Competitive Intelligence, Semantic Analysis, Influence Mapping, and Opportunity Finding:** To provide deep, actionable insights.
+-   **Key Features:**
+    -   **Article Optimizer:** A simulator to analyze a URL and provide a detailed improvement plan.
+    -   **Onboarding & Project Setup:** A guided process for users to define their brand, competitors, and analysis scope.
+    -   **Continuous Monitoring & Alerting:** Automated scans and notifications for significant changes.
+    -   **Multi-tenancy:** Support for Organizations/Workspaces.
+    -   **Billing & Quotas:** A Stripe-integrated system to manage subscription plans.
+    -   **Admin Backoffice:** An internal dashboard to monitor system health, user activity, and costs.
+-   **Phased Implementation:** The user has specified a 4-phase plan to build the product, starting with an intelligent MVP and progressing to advanced, differentiating features.
 
 **User's preferred language**: French
 
 **what currently exists?**
-A full-stack application (React/FastAPI/MongoDB).
--   **Core Engine:** A sophisticated analysis engine that runs scans across multiple AIs, identifies competitor mentions, analyzes site structure (schema.org, etc.), and compares results against previous scans.
--   **Notifications:** A complete background task notification system is in place, with backend logic, API endpoints, and a frontend polling component () to alert users when analyses are complete.
--   **Scheduled Scans:** Pro and Business users can schedule automated scans (daily, weekly, monthly) and have the PDF report sent to them by email. The backend uses  for this.
--   **Legal & Content Pages:** A full suite of static pages (Legal, Privacy, Terms, Contact, About, FAQ, GDPR) has been created and integrated into the application's routing and footer.
--   **Subscription Plans:** Plans have been updated multiple times with complex, calculated request quotas based on prompts, runs, and AI engines. The UI and backend reflect these tiers.
--   **UI/UX Enhancements:** Project logos are now displayed on the project list, project selector, and analysis pages. URLs are truncated for better readability. A search bar has been added to the projects page.
--   **Email Verification Change:** The requirement for users to verify their email before accessing the free trial has been removed at the user's request.
+The application is in a major transitional state. The previous agent initiated a massive refactoring and feature implementation based on the user's new blueprint. A monolithic  file still contains most of the original logic, but a new modular backend structure (, , ) has been created with numerous empty or placeholder files. Several new frontend pages (, , ) and an onboarding flow have been created as UI shells. An email notification service (welcome, scan complete, unsubscribe) has also been implemented. The database is still MongoDB, which conflicts with the new blueprint's requirement for PostgreSQL.
 
 **Last working item**:
-    - Last item agent was working: The user reported that the Benchmark (Competitor Analysis) section was not showing the improved data. The agent investigated and found that the  function in  was not being called correctly because it expected a different data structure () than what was actually being saved (). The agent was in the process of adapting the function to parse the correct data format and extract competitor mentions from the text.
+    - Last item agent was working: The agent was performing a major refactoring of the backend. It had just finished creating the new directory structure and a series of empty router files (, , , etc.) with the goal of breaking down the monolithic .
     - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? backend testing agent. The agent should verify that after the fix, running a new analysis correctly populates the  and other related fields in the analysis results. A  command to trigger an analysis and then another to fetch the results would be sufficient.
+    - Which testing method agent to use? backend testing agent
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Competitive Analysis is Broken (Priority: P0 - BLOCKER)
-  - Issue 2: Backend Performance Degradation / Frontend Timeouts (Priority: P1)
-  - Issue 3: jsPDF Download Error (Priority: P2)
-  - Issue 4: Microsoft/LinkedIn SSO Failure (Priority: P2)
+  - Issue 1: Complete Backend Refactoring (Priority: P0)
+  - Issue 2: Database Migration to PostgreSQL (Priority: P0)
+  - Issue 3: Implement Celery + Redis for Background Tasks (Priority: P1)
+  - Issue 4: Older Unverified Fixes (URL truncation, PDF download, async timeout) (Priority: P3)
+  - Issue 5: Microsoft/LinkedIn SSO Failure (Priority: P3)
   
   Issues Detail:
   - Issue 1: 
-     - Description: The enhanced competitive analysis feature is not working. The frontend component () was built, but the backend does not provide the necessary data because the  function fails to parse the analysis results. Discovered competitors are always empty.
-     - Attempted fixes: The agent correctly identified that the function was trying to read from a non-existent  key instead of parsing the  field in the analysis data. The fix was planned but not implemented.
+     - Description: The  file is over 5700 lines long. The agent created the new modular file structure in  but did not move any of the endpoint logic out of . This is the most critical blocker to any further development.
      - Next debug checklist: 
-        1. Modify the  function in .
-        2. Instead of looking for , it should iterate through the  list.
-        3. For each item, it should analyze the  text to extract mentions of competitors.
-        4. Use NLP or regex techniques to identify company names that are not the user's brand or its variants.
-        5. Populate the  field in the analysis document.
-     - Why fix this issue and what will be achieved with the fix? This is a core feature enhancement requested by the user. Fixing it will make the competitive analysis section functional and provide valuable insights.
+       1. Systematically move endpoint logic for each domain (auth, projects, dashboard, etc.) from  into its corresponding file in .
+       2. Update the main  to import and include these new routers.
+       3. Remove the now-redundant code from .
+       4. Run a full regression test to ensure all existing functionality works correctly.
+     - Why fix this issue and what will be achieved with the fix? To establish a scalable and maintainable backend architecture as mandated by the user's blueprint, enabling parallel development and easier debugging.
      - Status:  IN PROGRESS
      - Is recurring issue? N
      - Should Test frontend/backend/both after fix? Backend
      - Blocked on other issue: None
   - Issue 2: 
-     - Description: The application's core analysis feature may hang, leading to a frontend  error. A fix using  was implemented in a previous session but remains unverified by the user.
-     - Attempted fixes: The backend was modified to run blocking LLM calls in a thread pool executor.
+     - Description: The user's blueprint explicitly requires **PostgreSQL** with **pgvector**. The application currently uses **MongoDB**. The entire data access layer needs to be migrated.
      - Next debug checklist: 
-        1. After fixing Issue #1, ask the user to run a new, complete analysis.
-        2. Confirm with them if the results page loads without a timeout.
-     - Why fix this issue and what will be achieved with the fix? This is the application's primary function. The app is not viable until this is confirmed as stable.
-     - Status:  USER VERIFICATION PENDING
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix? Both
-     - Blocked on other issue: None
-  - Issue 3: 
-     - Description: The user previously experienced a  error when trying to download the generated PDF report.
-     - Attempted fixes: The agent replaced all instances of  with  in .
-     - Next debug checklist: 
-        1. Guide the user to an analysis page.
-        2. Ask them to click the Télécharger le PDF button.
-        3. Confirm that the PDF downloads successfully.
-     - Why fix this issue and what will be achieved with the fix? It will make the core reporting feature functional for the user.
-     - Status:  USER VERIFICATION PENDING
-     - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? Frontend
-     - Blocked on other issue: None
-  - Issue 4: 
-     - Description: User cannot log in with Microsoft or LinkedIn SSO, receiving a  error.
-     - Attempted fixes: The agent identified that the required environment variables are missing.
-     - Next debug checklist: Wait for the user to provide the necessary SSO credentials.
-     - Why fix this issue and what will be achieved with the fix? Fulfills the original product requirement for multi-provider SSO.
-     - Status:  BLOCKED
+       1. Define the new SQL schemas using SQLAlchemy or a similar ORM.
+       2. Implement a data migration script to move existing data from MongoDB to PostgreSQL.
+       3. Replace all  calls throughout the codebase with the new ORM-based queries.
+     - Why fix this issue and what will be achieved with the fix? To align the tech stack with the product blueprint, enabling relational data, structured queries, and powerful vector search capabilities for semantic features.
+     - Status:  NOT STARTED
      - Is recurring issue? N
      - Should Test frontend/backend/both after fix? Backend
-     - Blocked on other issue: Blocked on user providing credentials.
+  - Issue 3: 
+     - Description: The user's blueprint specifies using **Celery + Redis** for the distributed analysis pipeline. The current implementation uses a simpler, non-distributed  or  approach within .
+     - Next debug checklist: 
+       1. Set up Celery and Redis services.
+       2. Refactor the existing scan logic into Celery tasks.
+       3. Modify the API endpoints to enqueue these tasks instead of running them directly.
+     - Why fix this issue and what will be achieved with the fix? To create a robust, scalable, and resilient background processing system capable of handling long-running, multi-stage AI analyses without timing out the frontend.
+     - Status:  NOT STARTED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Backend
+  - Issue 4: 
+     - Description: Several UI/UX fixes from previous sessions (URL truncation on the analysis page,  download error, and a backend timeout fix) were implemented but never verified by the user.
+     - Status:  USER VERIFICATION PENDING
+  - Issue 5: 
+     - Description: Microsoft/LinkedIn SSO login fails with a  error.
+     - Status:  BLOCKED (Awaiting user credentials)
 
 **In progress Task List**:
-- None besides fixing the Competitive Analysis issue.
+  - Task 1:  Backend Refactoring (Priority: P0)
+ 
+ Task Detail:
+  - Task 1: 
+     - Where to resume: The new router files exist in . The next step is to cut the corresponding code blocks (e.g., all  related logic) from  and paste them into the appropriate router file (e.g., ). This must be done for all endpoints.
+     - What will be achieved with this? A clean, modular backend codebase that is easy to manage and extend.
+     - Status:  IN PROGRESS
+     - Should Test frontend/backend/both after fix? Backend
+     - Blocked on something: Nothing. This is the top priority.
 
 **Upcoming and Future Tasks**
-*   **Upcoming Tasks:**
-    *   **P0 - Implement Stripe Integration:** Set up the subscription model via Stripe as per the original requirements. This is the last major piece of the monetization strategy.
-    *   **P1 - Refactor Backend:** The  file is critically oversized and must be broken down into a proper package structure (e.g., , , ).
-    *   **P2 - Refactor Frontend PDF Generator:** The  file is nearly 1000 lines long and should be modularized.
-*   **Future Tasks:**
-    *   **P1 - Planification de contenu (calendrier éditorial GEO):** A new feature suggested by the agent.
-    *   **P1 - Team/multi-user support:** A new feature suggested by the agent.
-    *   **P2 - Onboarding Flow:** Implement the 1-click connection - ready - analysis launched automatically flow.
-    *   **P2 - Implement Magic Link fallback**: Fully test and secure the magic link implementation.
+*   **Phase 1 — MVP intelligent (Implement Core Logic):**
+    *   **P0 - Implement Database Logic:** Populate all backend services with PostgreSQL queries for CRUD operations on , , , etc.
+    *   **P1 - Implement Scan Pipeline:** Build the full scan pipeline using Celery, Redis, and the (currently empty) engine files (, , , ).
+    *   **P1 - Implement Admin Backoffice Backend:** Create API endpoints to fetch data for the admin dashboard (user lists, project stats, API costs).
+    *   **P2 - Connect Frontend Pages:** Wire up the , , and  to their respective backend APIs.
+
+*   **Phase 2 — Qualité des résultats:**
+    *   **P1 - Implement GEO Strategy Engine:** Build the logic to generate actionable recommendations.
+    *   **P2 - Implement Advanced Scoring:** Add logic for multi-run stability and other advanced metrics.
+    *   **P2 - Implement Full Exports:** Create backend logic for CSV/JSON exports.
+
+*   **Phase 3 & 4 — Differentiation & Competitive Advantage:**
+    *   **P1 - Implement Article Optimizer/Simulator:** Build the core backend logic for this key feature.
+    *   **P2 - Implement Remaining Engines:** Build out the logic for , , and .
+    -   **P2 - Stripe Integration:** Implement the full billing, subscription, and quota management system.
 
 **Completed work in this session**
-- **Full-featured Notification System**: Implemented backend logic and frontend UI for real-time notifications on analysis completion.
-- **Advanced Scan Engine**: Enhanced the analysis engine to include brand variants, site enrichment analysis (schema.org, etc.), and historical diffing.
-- **Scheduled Scans & Email Reports**: Implemented a feature for Pro/Business users to schedule recurring scans and receive PDF reports via email, using .
-- **Pricing Plan Updates**: Updated backend logic and frontend UI to reflect complex, dynamically calculated request quotas and new feature tiers.
-- **Legal & Content Pages**: Created and integrated a full suite of pages: , , , , , , and .
-- **Email Verification Flow Changed**: Removed the blocker requiring email verification to access the free trial.
-- **UI Enhancements**:
-  - Added project logos to project lists and analysis pages.
-  - Implemented URL shortening for display.
-  - Added a search bar to the Mes Projets page.
-- **Fixed Logo Fetching**: Debugged and fixed the logic for fetching and updating project logos, which were previously missing.
+- **Initiated Major Backend Refactoring:** Created the modular directory structure (, , ) and dozens of placeholder files.
+- **Scaffolded New Frontend Features:** Created React components and pages for the Article Optimizer, Admin Backoffice, and Organizations management.
+- **Implemented Onboarding Flow:** Added a guided tour modal for new users and contextual tooltips.
+- **Implemented Email Notifications:** Integrated  to send welcome, scan completion, and unsubscription confirmation emails.
 
 **Earlier issues found/mentioned but not fixed**
-   - None. The current in-progress issue (Competitive Analysis) is the only one from this session that remains unfixed.
+   - None that aren't already captured in the pending list.
 
 **Known issue recurrence from previous fork**
   - **Issue recurrence in previous fork:** React DOM .
   - **Recurrence count:** High.
-  - **Status:** RESOLVED. The solution was to **downgrade and lock React to v18.2.0**. This is a critical constraint. Do not upgrade React or its related dependencies.
+  - **Status:** RESOLVED (in a past session). **Critical Constraint: DO NOT upgrade React from v18.2.0.**
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend:** React  (locked), Tailwind CSS, , 
-- **Backend:** FastAPI, , , 
-- **Database:** MongoDB
-- **AI Integration:**  library
+- **Frontend:** React  (locked), Tailwind CSS, Shadcn/UI, 
+- **Backend:** FastAPI,  (to be replaced)
+- **Database:** MongoDB (to be migrated to PostgreSQL + pgvector)
+- **Async Tasks:**  (to be migrated to Celery + Redis)
+- **Email:** Resend
 
 **key DB schema**
-  - **users**: {..., : str, : int}
-  - **projects**: {..., : str, : list}
-  - **analyses**: {..., : str, : dict}
-  - **notifications**: {, , , , }
-  - **scan_schedules**: (New) {, , , , , , }
-  - **contact_submissions**: (New) {, , , }
+The application must be migrated to a new PostgreSQL schema as defined in the user's blueprint. The primary tables will be: , , , , , , , .
 
 **changes in tech stack**
-  - ****: Added for handling scheduled background tasks (automated scans).
+- **MANDATORY MIGRATION:** MongoDB -> PostgreSQL.
+- **MANDATORY MIGRATION:**  -> Celery + Redis.
 
 **All files of reference**
-- ****: Massively expanded. Now includes logic for notifications, advanced analysis features, scheduled scans, and the contact form. **URGENTLY needs refactoring.**
-- ****: Heavily modified to include the new advanced analysis components and project logo.
-- ****: Modified to add a search bar and project logos.
-- ****: Modified to update pricing plans and footer links.
-- ****: Heavily modified to add routes for all new legal/content pages.
-- **New Frontend Components**:
-    - 
-    - 
-    - All components in  and  folders.
-- ****: New utility for formatting URLs.
+- **User Blueprint:** The user's detailed message (message #5) is the primary source of truth for all future development.
+- **:** The monolithic source file from which all backend logic must be extracted.
+- **All new files in , , **: Destination for the refactored code.
+- **All new files in **: UI shells that need to be connected to the backend.
 
 **Areas that need refactoring**:
-- ****: This is a top priority. The file now contains logic for nearly every feature in the application and is becoming unmaintainable. It must be broken down into a proper package structure (e.g., separating routers, services, and database models).
-- ****: This large file should be broken down into smaller modules, each responsible for a section of the PDF.
+- ****: **TOP PRIORITY**. The refactoring is in progress and must be completed.
+- **Entire Data Layer**: Must be refactored from MongoDB to PostgreSQL.
 
 **key api endpoints**
-- : **(New)** Fetches unread notifications for the user.
-- : **(New)** Marks a notification as read.
-- : **(New)** Marks all notifications as read.
-- : **(New)** Deletes a notification.
-- : **(New)** Submits the contact form.
-- : **(New)** CRUD endpoints for managing scan schedules.
+- All endpoints are currently defined in . They need to be moved to their respective files in .
+- New endpoints added: , .
 
 **Critical Info for New Agent**
 - **Vous DEVEZ répondre en français.**
-- **FIX COMPETITOR ANALYSIS:** Your immediate priority is to fix the broken competitive analysis feature. The bug has been identified in  ( function). You need to implement the fix to correctly parse the analysis results and extract discovered competitors.
-- **VERIFY OLD FIXES:** The timeout issue and the PDF download error were fixed in a previous session but never verified by the user. After fixing the main bug, you should guide the user to test these to ensure they are resolved.
-- **PROPOSE REFACTORING:** The  file is now a critical liability. After fixing the immediate bug, you must propose a refactoring task to the user.
-- **DO NOT UPGRADE REACT:** The application is locked to **React 18.2.0**. Do not upgrade it or its dependencies.
+- The user's **blueprint document (user message #5) is the new bible.** All work must align with it.
+- **Your first task is to complete the backend refactoring.** Move logic from  into the new modular files. This is not optional.
+- Immediately after refactoring, you must plan and execute the **database migration from MongoDB to PostgreSQL**.
+- Follow the user's phased implementation plan from the blueprint. Do not implement features out of order.
+- **DO NOT UPGRADE REACT from 18.2.0.**
 
 **documents and test reports created in this job**
-  -  (updated)
-  -  (Generated after testing the notification system)
+  -  was updated.
 
 **Last 10 User Messages and any pending HUMAN messages** 
- - 10. Request to improve competitive analysis with more detail. (IN PROGRESS)
- - 9. Request to add a search bar to the projects page. (COMPLETED)
- - 8. Request to shorten the project URL display. (COMPLETED)
- - 7. Request to add the project logo to the project list/selector page. (COMPLETED)
- - 6. User reported the project logo was still not showing on the analysis page. (COMPLETED, was a data issue)
- - 5. Request to add a feature for scheduling automated scans for Pro/Business plans. (COMPLETED)
- - 4. User asked to remove API access from the Business plan features. (COMPLETED)
- - 3. User clarified that the pricing plan update request was to use the *real calculated* request numbers, not the simple ones they provided. (COMPLETED)
- - 2. Request to update the pricing plans with new prices and features. (COMPLETED)
- - 1. Request to remove the mandatory email verification step for the free trial. (COMPLETED)
+ - **oui vas y**: User gave approval to start the major refactoring of . (Status: In Progress)
+ - **email de bienvenue, fin de scan, désabonnement**: User requested specific automated emails. (Status: Completed)
+ - **oui**: User approved the implementation of the onboarding feature. (Status: Completed)
+ - **implemente tous ce qui manque dans lordre logique**: User's primary directive to implement the entire product blueprint. (Status: In Progress)
+ - **User provides a massive 23-section product blueprint**: This is the most important message, defining the entire project scope. (Status: In Progress)
 
 **Project Health Check:**
-- **Broken**: The competitive analysis feature is non-functional due to a backend bug.
-- **Mocked**: Microsoft and LinkedIn SSO are present in the UI but non-functional, awaiting user credentials.
-- **At Risk**: The core analysis feature's stability is unconfirmed due to the pending user verification of the timeout fix.
+- **Broken**: The backend is in a highly fragile, transitional state. The refactoring is incomplete, and any error during the process could break the entire application.
+- **Mocked**: The new frontend pages (, , ) are UI shells. All the new backend engines are empty files without any logic.
+- **At Risk**: The entire application. The refactoring and the subsequent database migration are high-risk operations that must be handled with extreme care.
 
 **3rd Party Integrations**
-- **AI Analysis**: OpenAI, Anthropic, Gemini, Perplexity (via ).
-- **Authentication**: Emergent-managed Google Auth (functional), Microsoft & LinkedIn SSO (non-functional).
-- **Email**: Resend (for verification and contact form notifications).
-- **Scheduling**:  (for automated scans).
-- **PDF Generation**: .
-- **Security**: .
-- **Charts**: Recharts.
-- **Payments**: Stripe (Planned).
+- **Current**: Emergent-managed Google Auth, Resend, , OpenAI/Anthropic/Gemini (via ).
+- **Planned/Required**: Stripe, **PostgreSQL**, **pgvector**, **Celery**, **Redis**.
 
 **Testing status**
-  - Testing agent used after significant changes: YES, for the notification system.
+  - Testing agent used after significant changes: NO
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: Test agent created files during its run, visible in .
-  - Known regressions: None identified, but major features like Advanced Scan, Scheduled Scans, and the numerous content pages were added *after* the last test agent run and lack automated test coverage.
+  - Test files created: No.
+  - Known regressions: None known, but high risk after refactoring.
 
 **Credentials to test flow:**
-Use Google SSO for authentication. New accounts no longer require email verification to start. To test scheduling or advanced analysis, ensure the test user is on a Pro or Business plan.
+Use Google SSO for authentication.
 
 **What agent forgot to execute**
-- The agent correctly identified the root cause of the broken competitive analysis feature but did not implement the fix before the session ended.
-- The agent did not write any new automated tests for the large number of features implemented after the notification system (Advanced Analysis, Scheduled Scans, etc.), increasing the risk of regressions.</analysis>
+- The agent correctly created the file structure for the refactoring but did not perform the most critical step: **moving the actual code** from  into the new files.
+- The agent did not start or plan the mandatory **database migration from MongoDB to PostgreSQL**, which is a core requirement of the new blueprint.</analysis>

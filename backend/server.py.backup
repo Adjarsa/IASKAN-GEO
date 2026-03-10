@@ -29,13 +29,12 @@ from app.routers import (
     article_optimizer, 
     admin, 
     onboarding,
-    # Temporarily commented - duplicated in server.py
-    # auth,
-    # projects,
-    # dashboard,
-    # notifications,
-    # schedules,
-    # subscriptions
+    auth,
+    projects,
+    dashboard,
+    notifications,
+    schedules,
+    subscriptions
 )
 from app.engines.query import query_engine, variation_engine
 from app.engines.semantic import semantic_engine
@@ -5839,24 +5838,17 @@ async def health():
 # Include router
 app.include_router(api_router)
 
-# Include modular routers
-# Note: Some routers are disabled because their functionality is still in server.py
-# They will be enabled once server.py endpoints are fully migrated
-
-# Routers with unique functionality (no duplicates in server.py)
-app.include_router(organizations.router)      # Organizations/workspaces management
-app.include_router(article_optimizer.router)  # Article optimization feature
-app.include_router(admin.router)              # Admin backoffice
-app.include_router(onboarding.router)         # User onboarding flow
-
-# Routers temporarily disabled due to duplicates in api_router (server.py)
-# TODO: Remove duplicates from server.py then enable these:
-# app.include_router(auth.router)            # Auth endpoints still in server.py
-# app.include_router(projects.router)        # Projects endpoints still in server.py
-# app.include_router(dashboard.router)       # Dashboard endpoints still in server.py  
-# app.include_router(notifications.router)   # Notifications endpoints still in server.py
-# app.include_router(schedules.router)       # Schedules endpoints still in server.py
-# app.include_router(subscriptions.router)   # Subscriptions endpoints still in server.py
+# Include all modular routers
+app.include_router(auth.router)
+app.include_router(projects.router)
+app.include_router(dashboard.router)
+app.include_router(notifications.router)
+app.include_router(schedules.router)
+app.include_router(subscriptions.router)
+app.include_router(organizations.router)
+app.include_router(article_optimizer.router)
+app.include_router(admin.router)
+app.include_router(onboarding.router)
 
 # CORS middleware
 app.add_middleware(

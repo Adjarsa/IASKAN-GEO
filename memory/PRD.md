@@ -152,13 +152,54 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 
 ⚠️ **NE PAS UPGRADER REACT** - Version 18.2.0 verrouillée (bug `insertBefore`)
 
-⚠️ **server.py** - Fichier monolithique de 5700+ lignes, refactoring prioritaire
+⚠️ **server.py** - Fichier monolithique de 5700+ lignes
+  - Refactoring EN COURS (Mars 2026)
+  - Structure modulaire créée dans `/app/backend/app/`
+  - Routers actifs: organizations, article_optimizer, admin, onboarding
+  - Routers désactivés (endpoints encore dans server.py): auth, projects, dashboard, notifications, schedules, subscriptions
 
 ⚠️ **Tests en attente** - PDF download, URL truncation, timeout backend
 
+## Architecture Backend Modulaire
+
+```
+/app/backend/
+├── server.py                    # Monolithe principal (à refactorer progressivement)
+├── app/
+│   ├── core/
+│   │   ├── config.py           # Configuration centralisée
+│   │   └── database.py         # Connexion MongoDB
+│   ├── routers/
+│   │   ├── auth.py             # [DÉSACTIVÉ] Encore dans server.py
+│   │   ├── projects.py         # [DÉSACTIVÉ] Encore dans server.py  
+│   │   ├── dashboard.py        # [DÉSACTIVÉ] Encore dans server.py
+│   │   ├── notifications.py    # [DÉSACTIVÉ] Encore dans server.py
+│   │   ├── schedules.py        # [DÉSACTIVÉ] Encore dans server.py
+│   │   ├── subscriptions.py    # [DÉSACTIVÉ] Encore dans server.py
+│   │   ├── organizations.py    # [ACTIF] Gestion organisations
+│   │   ├── article_optimizer.py # [ACTIF] Optimiseur articles
+│   │   ├── admin.py            # [ACTIF] Admin backoffice
+│   │   └── onboarding.py       # [ACTIF] Onboarding utilisateur
+│   ├── engines/
+│   │   ├── query/              # Query generation
+│   │   ├── semantic/           # Analyse sémantique
+│   │   ├── influence/          # Mapping d'influence
+│   │   ├── gap/                # Content gap finder
+│   │   └── optimizer/          # Article optimizer
+│   └── services/
+│       └── email_service.py    # Service emails (Resend)
+```
+
 ## Changelog
 
-### 2026-03-10
+### 2026-03-10 (Session actuelle)
+- **REFACTORING BACKEND INITIÉ**
+  - Import de tous les routers modulaires dans server.py
+  - Activation des routers sans conflits: organizations, article_optimizer, admin, onboarding
+  - Désactivation temporaire des routers avec doublons: auth, projects, dashboard, notifications, schedules, subscriptions
+  - Documentation de l'architecture modulaire
+  - Backup de server.py créé
+
 - Ajout Optimiseur d'Article GEO (frontend + backend)
 - Ajout système Organisations/Workspaces
 - Ajout Admin Backoffice
