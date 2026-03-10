@@ -23,6 +23,13 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 import resend
 
+# Import new modular routers
+from app.routers import organizations, article_optimizer, admin
+from app.engines.query import query_engine, variation_engine
+from app.engines.semantic import semantic_engine
+from app.engines.influence import influence_engine
+from app.engines.gap import gap_engine
+
 # Thread pool for LLM calls to avoid blocking the event loop
 llm_executor = ThreadPoolExecutor(max_workers=4)
 
@@ -254,7 +261,10 @@ SUBSCRIPTION_PLANS = {
         "num_prompts": 30,
         "runs_per_query": 3,
         "ai_engines": ["chatgpt"],
-        "features": ["1 scan offert", "30 prompts", "ChatGPT uniquement", "Rapport standard", "1 projet"]
+        "features": ["1 scan offert", "30 prompts", "ChatGPT uniquement", "Rapport standard", "1 projet"],
+        "article_optimizer": False,
+        "article_optimizer_limit": 0,
+        "organizations": False
     },
     "starter": {
         "name": "Starter",
@@ -265,7 +275,10 @@ SUBSCRIPTION_PLANS = {
         "num_prompts": 50,
         "runs_per_query": 3,
         "ai_engines": ["chatgpt"],
-        "features": ["10 scans/mois", "50 prompts/scan", "150 requêtes/scan", "1 500 requêtes/mois", "ChatGPT uniquement", "Rapport standard", "Support email"]
+        "features": ["10 scans/mois", "50 prompts/scan", "150 requêtes/scan", "1 500 requêtes/mois", "ChatGPT uniquement", "Rapport standard", "Support email", "5 optimisations d'articles/mois"],
+        "article_optimizer": True,
+        "article_optimizer_limit": 5,
+        "organizations": False
     },
     "pro": {
         "name": "Pro",
@@ -276,7 +289,10 @@ SUBSCRIPTION_PLANS = {
         "num_prompts": 100,
         "runs_per_query": 4,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["50 scans/mois", "100 prompts/scan", "4 runs/requête", "1 600 requêtes/scan", "80 000 requêtes/mois", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Benchmark concurrents", "Analyse de stabilité", "Scans programmés + rapport par email", "5 projets", "Support prioritaire"]
+        "features": ["50 scans/mois", "100 prompts/scan", "4 runs/requête", "1 600 requêtes/scan", "80 000 requêtes/mois", "4 IA (ChatGPT, Claude, Gemini, Perplexity)", "Benchmark concurrents", "Analyse de stabilité", "Scans programmés + rapport par email", "5 projets", "30 optimisations d'articles/mois", "Support prioritaire"],
+        "article_optimizer": True,
+        "article_optimizer_limit": 30,
+        "organizations": True
     },
     "business": {
         "name": "Business",
@@ -287,7 +303,10 @@ SUBSCRIPTION_PLANS = {
         "num_prompts": 200,
         "runs_per_query": 5,
         "ai_engines": ["chatgpt", "claude", "gemini", "perplexity"],
-        "features": ["150 scans/mois", "200 prompts/scan", "5 runs/requête", "4 000 requêtes/scan", "600 000 requêtes/mois", "4 IA", "Génération d'articles GEO", "Intelligence stratégique", "Scans programmés + rapport par email", "Projets illimités", "Support dédié"]
+        "features": ["150 scans/mois", "200 prompts/scan", "5 runs/requête", "4 000 requêtes/scan", "600 000 requêtes/mois", "4 IA", "Génération d'articles GEO", "Intelligence stratégique", "Scans programmés + rapport par email", "Projets illimités", "Optimisations illimitées", "Organisations/Équipes", "Support dédié"],
+        "article_optimizer": True,
+        "article_optimizer_limit": -1,
+        "organizations": True
     }
 }
 
@@ -5718,6 +5737,11 @@ async def health():
 
 # Include router
 app.include_router(api_router)
+
+# Include new modular routers
+app.include_router(organizations.router)
+app.include_router(article_optimizer.router)
+app.include_router(admin.router)
 
 # CORS middleware
 app.add_middleware(

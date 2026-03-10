@@ -28,7 +28,9 @@ import {
   TrendingUp,
   Eye,
   FileText,
-  Wand2
+  Wand2,
+  Sparkles,
+  Building2
 } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
@@ -52,10 +54,12 @@ const DashboardLayout = ({ children }) => {
     { path: "/analysis", label: "Analyses", icon: BarChart3 },
     { path: "/visibility", label: "Visibilite", icon: Eye },
     { path: "/content-audit", label: "Audit Contenu", icon: FileText },
+    { path: "/article-optimizer", label: "Optimiseur GEO", icon: Sparkles, highlight: true },
     { path: "/content-generator", label: "Generateur", icon: Wand2 },
     { path: "/competitors", label: "Benchmark", icon: Users },
     { path: "/history", label: "Evolution", icon: TrendingUp },
     { path: "/recommendations", label: "Recommandations", icon: Target },
+    { path: "/organizations", label: "Organisation", icon: Building2 },
     { path: "/settings", label: "Parametres", icon: Settings },
   ];
 
@@ -123,13 +127,18 @@ const DashboardLayout = ({ children }) => {
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive(item.path)
                     ? 'nav-active bg-violet-50 text-violet-700 font-medium'
-                    : 'text-slate-600 hover:text-violet-700 hover:bg-slate-50'
+                    : item.highlight 
+                      ? 'text-violet-600 hover:text-violet-700 hover:bg-violet-50 bg-violet-50/50'
+                      : 'text-slate-600 hover:text-violet-700 hover:bg-slate-50'
                 }`}
-                data-testid={`nav-${item.label.toLowerCase()}`}
+                data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                 onClick={() => setSidebarOpen(false)}
               >
-                <item.icon className="w-5 h-5" />
+                <item.icon className={`w-5 h-5 ${item.highlight ? 'text-violet-500' : ''}`} />
                 <span>{item.label}</span>
+                {item.highlight && (
+                  <span className="ml-auto text-xs px-1.5 py-0.5 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full">New</span>
+                )}
               </Link>
             ))}
             

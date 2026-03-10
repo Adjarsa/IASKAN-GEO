@@ -36,6 +36,9 @@ import HistoryChartsPage from "@/pages/HistoryChartsPage";
 import VisibilityPage from "@/pages/VisibilityPage";
 import ContentAuditPage from "@/pages/ContentAuditPage";
 import ContentGeneratorPage from "@/pages/ContentGeneratorPage";
+import ArticleOptimizerPage from "@/pages/ArticleOptimizerPage";
+import AdminPage from "@/pages/AdminPage";
+import OrganizationsPage from "@/pages/OrganizationsPage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import LegalPage from "@/pages/LegalPage";
 import PrivacyPage from "@/pages/PrivacyPage";
@@ -390,6 +393,30 @@ const AppRouter = () => {
           <ProjectRequiredRoute>
             <ContentGeneratorPage />
           </ProjectRequiredRoute>
+        }
+      />
+      <Route
+        path="/article-optimizer"
+        element={
+          <ProtectedRoute>
+            <ArticleOptimizerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/organizations"
+        element={
+          <ProtectedRoute>
+            <OrganizationsPage />
+          </ProtectedRoute>
         }
       />
       <Route
