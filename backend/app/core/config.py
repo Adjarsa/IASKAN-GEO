@@ -9,9 +9,15 @@ from dotenv import load_dotenv
 ROOT_DIR = Path(__file__).parent.parent.parent
 load_dotenv(ROOT_DIR / '.env')
 
-# Database
+# Database - PostgreSQL (primary) and MongoDB (legacy)
+DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://iaskan_user:iaskan_secure_password_2024@localhost:5432/iaskan')
+USE_POSTGRES = os.environ.get('USE_POSTGRES', 'true').lower() == 'true'
 MONGO_URL = os.environ.get('MONGO_URL')
 DB_NAME = os.environ.get('DB_NAME', 'iaskan')
+
+# Supabase (for production)
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
+SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', '')
 
 # API Keys
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')

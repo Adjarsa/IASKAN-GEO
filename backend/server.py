@@ -42,13 +42,16 @@ from app.engines.influence import influence_engine
 from app.engines.gap import gap_engine
 from app.services.email_service import email_service
 
+# Import PostgreSQL database module
+from app.db import initialize_database, shutdown_database, USE_POSTGRES
+
 # Thread pool for LLM calls to avoid blocking the event loop
 llm_executor = ThreadPoolExecutor(max_workers=4)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
+# MongoDB connection (legacy - used alongside PostgreSQL during migration)
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
@@ -4399,10 +4402,25 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Start background tasks on application startup"""
+    # Initialize PostgreSQL database
+    if USE_POSTGRES:
+        try:
+            await initialize_database()
+            logger.info("PostgreSQL database initialized successfully")
+        except Exception as e:
+            logger.error(f"PostgreSQL initialization error: {e}")
+    
     # Start scheduled scans checker
     asyncio.create_task(check_scheduled_scans())
     logger.info("Scheduled scans background task started")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    """Cleanup on application shutdown"""
+    # Close MongoDB connection
     client.close()
+    
+    # Close PostgreSQL connections
+    if USE_POSTGRES:
+        await shutdown_database()
+        logger.info("PostgreSQL connections closed")

@@ -61,6 +61,15 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - [x] Scans programmés
 
 ### Phase 2 - Features Avancées (En cours - Mars 2026)
+
+- [x] **Migration PostgreSQL** (Nouveau!)
+  - Base de données PostgreSQL locale configurée
+  - 17 tables créées (users, projects, analyses, subscriptions, etc.)
+  - SQLAlchemy ORM avec modèles complets
+  - Services de base de données (UserService, ProjectService, etc.)
+  - Prêt pour migration vers Supabase en production
+  - Credentials Supabase sauvegardés
+
 - [x] **Optimiseur d'Article GEO** (Nouveau!)
   - Analyse d'URL ou contenu
   - Scores: Structure, Autorité, Citabilité, Fraîcheur
@@ -160,6 +169,12 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 
 ⚠️ **NE PAS UPGRADER REACT** - Version 18.2.0 verrouillée (bug `insertBefore`)
 
+✅ **PostgreSQL** - Base de données configurée
+  - PostgreSQL local fonctionnel pour le développement
+  - 17 tables créées : users, projects, analyses, subscriptions, notifications, schedules, organizations, etc.
+  - SQLAlchemy ORM avec services complets
+  - Prêt pour Supabase en production (credentials sauvegardés)
+
 ✅ **server.py** - Refactoring TERMINÉ
   - Réduit de 5875 à 4408 lignes (-25%, ~1467 lignes supprimées)
   - Tous les routers CRUD migrés : auth, projects, dashboard, notifications, schedules, subscriptions
@@ -171,11 +186,15 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 
 ```
 /app/backend/
-├── server.py                    # ~4408 lignes (réduit de 5875, -25%)
+├── server.py                    # ~4412 lignes (réduit de 5875, -25%)
 ├── app/
 │   ├── core/
-│   │   ├── config.py           # Configuration centralisée
-│   │   └── database.py         # Connexion MongoDB
+│   │   ├── config.py           # Configuration centralisée (PostgreSQL + MongoDB)
+│   │   └── database.py         # Connexion MongoDB (legacy)
+│   ├── db/                     # [NOUVEAU] PostgreSQL avec SQLAlchemy
+│   │   ├── database.py         # Connexion async PostgreSQL
+│   │   ├── models.py           # 17 modèles SQLAlchemy
+│   │   └── services.py         # Services CRUD (User, Project, Analysis, etc.)
 │   ├── routers/
 │   │   ├── auth.py             # ✅ Authentification complète (OAuth, Magic Link, etc.)
 │   │   ├── projects.py         # ✅ CRUD projets + stats
@@ -195,11 +214,22 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 │   │   └── optimizer/          # Article optimizer
 │   └── services/
 │       └── email_service.py    # Service emails (Resend)
+├── scripts/
+│   └── init_db.py              # Script d'initialisation PostgreSQL
 ```
 
 ## Changelog
 
 ### 2026-03-10 (Session actuelle)
+- **MIGRATION POSTGRESQL COMPLÉTÉE**
+  - ✅ PostgreSQL local installé et configuré
+  - ✅ 17 tables créées (users, projects, analyses, subscriptions, etc.)
+  - ✅ SQLAlchemy ORM avec modèles complets
+  - ✅ Services de base de données (UserService, ProjectService, AnalysisService, etc.)
+  - ✅ Initialisation automatique au démarrage du serveur
+  - ✅ Prêt pour migration vers Supabase en production
+  - ✅ Credentials Supabase sauvegardés dans .env
+
 - **REFACTORING BACKEND COMPLET**
   - ✅ Migré `auth.py` : Session, OAuth (Google/Microsoft/LinkedIn), Magic Link, Password Reset, Email Verification
   - ✅ Migré `projects.py` : CRUD projets complet + stats
