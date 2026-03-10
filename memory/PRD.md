@@ -160,10 +160,10 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 
 ⚠️ **NE PAS UPGRADER REACT** - Version 18.2.0 verrouillée (bug `insertBefore`)
 
-✅ **server.py** - Refactoring en cours
-  - Réduit de 5875 à 4870 lignes (-17%)
-  - Routers migrés : auth, projects, dashboard
-  - Routers à migrer : notifications, schedules, subscriptions, analysis
+✅ **server.py** - Refactoring TERMINÉ
+  - Réduit de 5875 à 4408 lignes (-25%, ~1467 lignes supprimées)
+  - Tous les routers CRUD migrés : auth, projects, dashboard, notifications, schedules, subscriptions
+  - Reste dans server.py : Analysis pipeline (logique complexe), Content generation, Visibility tracking
 
 ⚠️ **Tests en attente** - PDF download, URL truncation, timeout backend
 
@@ -171,22 +171,22 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 
 ```
 /app/backend/
-├── server.py                    # ~4870 lignes (réduit de 5875)
+├── server.py                    # ~4408 lignes (réduit de 5875, -25%)
 ├── app/
 │   ├── core/
 │   │   ├── config.py           # Configuration centralisée
 │   │   └── database.py         # Connexion MongoDB
 │   ├── routers/
-│   │   ├── auth.py             # [ACTIF] ✅ Authentification complète
-│   │   ├── projects.py         # [ACTIF] ✅ CRUD projets
-│   │   ├── dashboard.py        # [ACTIF] ✅ Stats dashboard
-│   │   ├── notifications.py    # [À MIGRER] Encore dans server.py
-│   │   ├── schedules.py        # [À MIGRER] Encore dans server.py
-│   │   ├── subscriptions.py    # [À MIGRER] Encore dans server.py
-│   │   ├── organizations.py    # [ACTIF] Gestion organisations
-│   │   ├── article_optimizer.py # [ACTIF] Optimiseur articles
-│   │   ├── admin.py            # [ACTIF] Admin backoffice
-│   │   └── onboarding.py       # [ACTIF] Onboarding utilisateur
+│   │   ├── auth.py             # ✅ Authentification complète (OAuth, Magic Link, etc.)
+│   │   ├── projects.py         # ✅ CRUD projets + stats
+│   │   ├── dashboard.py        # ✅ Stats, activité, quick-stats
+│   │   ├── notifications.py    # ✅ CRUD notifications
+│   │   ├── schedules.py        # ✅ Scans programmés
+│   │   ├── subscriptions.py    # ✅ Abonnements & paiements Stripe
+│   │   ├── organizations.py    # ✅ Gestion organisations
+│   │   ├── article_optimizer.py # ✅ Optimiseur articles
+│   │   ├── admin.py            # ✅ Admin backoffice
+│   │   └── onboarding.py       # ✅ Onboarding utilisateur
 │   ├── engines/
 │   │   ├── query/              # Query generation
 │   │   ├── semantic/           # Analyse sémantique
@@ -200,16 +200,19 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 ## Changelog
 
 ### 2026-03-10 (Session actuelle)
-- **REFACTORING BACKEND MAJEUR COMPLÉTÉ**
+- **REFACTORING BACKEND COMPLET**
   - ✅ Migré `auth.py` : Session, OAuth (Google/Microsoft/LinkedIn), Magic Link, Password Reset, Email Verification
-  - ✅ Migré `projects.py` : CRUD projets complet
+  - ✅ Migré `projects.py` : CRUD projets complet + stats
   - ✅ Migré `dashboard.py` : Stats, activité récente, quick stats
-  - ✅ Supprimé ~1000 lignes de code dupliqué de server.py
-  - ✅ server.py réduit de 5875 à 4870 lignes
-  - ✅ Tous les routers activés et testés
+  - ✅ Migré `notifications.py` : CRUD notifications
+  - ✅ Migré `schedules.py` : Scans programmés CRUD
+  - ✅ Migré `subscriptions.py` : Abonnements, checkout Stripe, cancel/reactivate
+  - ✅ Supprimé ~1467 lignes de code dupliqué de server.py
+  - ✅ server.py réduit de 5875 à 4408 lignes (-25%)
+  - ✅ Tous les 10 routers activés et testés
   
-- Routers actifs : auth, projects, dashboard, organizations, article_optimizer, admin, onboarding
-- Routers à migrer : notifications, schedules, subscriptions
+- **Routers actifs** : auth, projects, dashboard, notifications, schedules, subscriptions, organizations, article_optimizer, admin, onboarding
+- **Reste dans server.py** : Analysis pipeline (complexe), Content generation, Visibility tracking
 
 - Ajout Optimiseur d'Article GEO (frontend + backend)
 - Ajout système Organisations/Workspaces
