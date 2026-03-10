@@ -221,6 +221,18 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 ## Changelog
 
 ### 2026-03-10 (Session actuelle)
+- **CELERY + REDIS IMPLÉMENTÉ**
+  - ✅ Redis installé et fonctionnel (`redis://localhost:6379/0`)
+  - ✅ Celery configuré avec 4 queues : analysis, llm, processing, celery
+  - ✅ Worker démarré avec 2 processus concurrents
+  - ✅ 4 tâches Celery créées :
+    - `query_single_llm` : Query un LLM individuel
+    - `query_all_llms` : Query ChatGPT, Claude, Gemini en parallèle
+    - `run_full_analysis` : Pipeline d'analyse complet
+    - `check_scheduled_scans_task` : Vérification des scans programmés
+  - ✅ Router `/api/analysis` avec endpoints : start, status, results, history, cancel, quota
+  - ✅ Beat scheduler pour tâches périodiques
+
 - **MIGRATION ROUTERS VERS POSTGRESQL**
   - ✅ `auth.py` migré vers PostgreSQL (sessions, OAuth, Magic Link, Password Reset)
   - ✅ `projects.py` migré vers PostgreSQL (CRUD projets, stats)

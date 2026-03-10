@@ -35,6 +35,7 @@ from app.routers import (
     notifications as notifications_router,
     schedules as schedules_router,
     subscriptions as subscriptions_router,
+    analysis as analysis_router,
 )
 from app.engines.query import query_engine, variation_engine
 from app.engines.semantic import semantic_engine
@@ -4387,8 +4388,7 @@ app.include_router(organizations.router)       # Organizations/workspaces manage
 app.include_router(article_optimizer.router)   # Article optimization feature
 app.include_router(admin.router)               # Admin backoffice
 app.include_router(onboarding.router)          # User onboarding flow
-
-# Note: Analysis endpoints remain in server.py (complex multi-step pipeline)
+app.include_router(analysis_router.router)     # Celery-powered analysis pipeline
 
 # CORS middleware
 app.add_middleware(
