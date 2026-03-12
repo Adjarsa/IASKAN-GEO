@@ -216,7 +216,7 @@ class Analysis(Base):
     user_id = Column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
     status = Column(SQLEnum(AnalysisStatus), default=AnalysisStatus.PENDING)
     global_score = Column(Float)
-    grade = Column(String(2))  # A, B, C, D, F
+    grade = Column(String(10))  # A, B, C, D, F, or N/A
     ai_scores = Column(JSON, default=dict)  # {chatgpt: 85, claude: 78, ...}
     rate_scores = Column(JSON, default=dict)  # {relevance: 80, authority: 75, ...}
     query_scores = Column(JSON, default=list)
