@@ -220,7 +220,51 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 
 ## Changelog
 
-### 2026-03-10 (Session actuelle)
+### 2026-03-12 (Session actuelle - Refactoring Services)
+- **NOUVEAUX SERVICES BACKEND CRÉÉS**
+  - ✅ `LLMConnector` (`/app/backend/app/services/llm_connector.py`)
+    - Connexion centralisée à ChatGPT, Claude, Gemini, Perplexity
+    - Méthode `query_llm()` pour requêtes individuelles
+    - Méthode `query_all_llms()` pour requêtes parallèles
+    - Analyse automatique: présence, rôle, crédibilité, conversion
+    - Configuration LLM_CONFIG avec providers
+    
+  - ✅ `GEOScoringEngine` (`/app/backend/app/services/geo_scoring.py`)
+    - Calcul Stability Index (cohérence multi-run)
+    - Calcul Advanced Indices (dominance, trust gap, opportunity)
+    - Calcul R.A.T.E. Score (Relevance, Authority, Truthfulness, Endorsement)
+    - Génération de recommandations prioritisées
+    
+  - ✅ `CompetitiveIntelligenceEngine` (`/app/backend/app/services/competitive_intelligence.py`)
+    - Détection automatique de concurrents (KNOWN_BRANDS database)
+    - Extraction NLP de marques potentielles
+    - Analyse competitive gap
+    - Recommandations concurrentielles
+    
+- **TÂCHES CELERY AMÉLIORÉES** (`/app/backend/app/tasks/analysis_tasks.py`)
+  - ✅ `query_single_llm` : Query LLM avec retry automatique
+  - ✅ `query_all_llms_task` : Query parallèle multi-LLM
+  - ✅ `run_full_analysis` : Pipeline complet avec 8 phases
+    - Phase 1: Query Generation
+    - Phase 2: LLM Querying
+    - Phase 3: Scoring & Analysis
+    - Phase 4: Competitive Intelligence
+    - Phase 5: Semantic Analysis
+    - Phase 6: Content Gap Analysis
+    - Phase 7: Compile Results
+    - Phase 8: Notifications
+  - ✅ `check_scheduled_scans_task` : Exécution scans programmés
+  - ✅ `cleanup_old_analyses` : Nettoyage données anciennes
+  
+- **TESTS BACKEND** (`/app/backend/tests/test_new_services.py`)
+  - ✅ 38 tests passés (100%)
+  - Tests imports services et Celery
+  - Tests méthodes LLMConnector
+  - Tests GEOScoringEngine (stability, indices, R.A.T.E.)
+  - Tests CompetitiveIntelligenceEngine
+  - Tests API endpoints
+
+### 2026-03-10 (Session précédente)
 - **CELERY + REDIS IMPLÉMENTÉ**
   - ✅ Redis installé et fonctionnel (`redis://localhost:6379/0`)
   - ✅ Celery configuré avec 4 queues : analysis, llm, processing, celery
