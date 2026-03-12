@@ -811,7 +811,7 @@ async def send_verification_email(email: str, user_name: str, token: str) -> boo
         return False
     
     # Build verification URL
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://ai-visibility-29.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://optimization-nexus.preview.emergentagent.com')
     verification_url = f"{frontend_url}/verify-email?token={token}"
     
     try:
@@ -943,7 +943,7 @@ async def send_scan_complete_email(user_email: str, user_name: str, project_name
         logger.warning("RESEND_API_KEY not configured, skipping scan complete email")
         return False
     
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://ai-visibility-29.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://optimization-nexus.preview.emergentagent.com')
     analysis_url = f"{frontend_url}/analysis/{analysis_id}"
     
     # Score color
@@ -1080,7 +1080,7 @@ async def send_scheduled_report_email(
     
     try:
         score_color = "#10b981" if global_score >= 70 else "#f59e0b" if global_score >= 40 else "#ef4444"
-        frontend_url = os.environ.get("FRONTEND_URL", "https://ai-visibility-29.preview.emergentagent.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "https://optimization-nexus.preview.emergentagent.com")
         analysis_url = f"{frontend_url}/analysis/{analysis_id}"
         
         # Build recipient list

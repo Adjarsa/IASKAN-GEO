@@ -1,13 +1,18 @@
 """
 Analysis Tasks for Celery
 Distributed analysis pipeline for IAskan GEO Platform
+
+This module implements the complete GEO analysis pipeline using Celery
+for distributed task execution. It uses the modular services:
+- LLMConnector: For querying multiple LLM providers
+- GEOScoringEngine: For calculating GEO scores
+- CompetitiveIntelligenceEngine: For competitor analysis
+- QueryGenerationEngine: For generating analysis queries
 """
 import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
-from celery import shared_task, chain, group, chord
-from celery.exceptions import SoftTimeLimitExceeded
 
 from ..celery_config import celery_app
 from ..db.database import async_session_maker
@@ -17,6 +22,15 @@ from ..db.services import (
 )
 from ..db.models import AnalysisStatus
 from ..core.config import EMERGENT_LLM_KEY, SUBSCRIPTION_PLANS
+
+# Import modular engines and services
+from ..services.llm_connector import LLMConnector
+from ..services.geo_scoring import GEOScoringEngine
+from ..services.competitive_intelligence import CompetitiveIntelligenceEngine
+from ..engines.query.generator import QueryGenerationEngine
+from ..engines.query.variation import PromptVariationEngine
+from ..engines.semantic.analyzer import SemanticAnalysisEngine
+from ..engines.gap.finder import ContentGapEngine
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +45,28 @@ def run_async(coro):
         loop.close()
 
 
+# Initialize service instances
+llm_connector = LLMConnector(api_key=EMERGENT_LLM_KEY)
+geo_scoring = GEOScoringEngine()
+competitive_intel = CompetitiveIntelligenceEngine()
+query_generator = QueryGenerationEngine()
+variation_engine = PromptVariationEngine()
+semantic_analyzer = SemanticAnalysisEngine()
+gap_finder = ContentGapEngine()
+
+
 # ================== LLM QUERY TASKS ==================
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=30)
-def query_single_llm(self, llm_provider: str, query: str, brand_name: str, context: dict = None) -> dict:
+def query_single_llm(
+    self,
+    llm_provider: str,
+    query: str,
+    brand_name: str,
+    context: dict = None
+) -> dict:
     """
-    Query a single LLM and return the response with brand analysis
+    Query a single LLM and return the response with brand analysis.
     
     Args:
         llm_provider: 'chatgpt', 'claude', or 'gemini'
@@ -45,70 +75,27 @@ def query_single_llm(self, llm_provider: str, query: str, brand_name: str, conte
         context: Additional context (competitors, keywords, etc.)
     
     Returns:
-        dict with response, brand_mentioned, position, etc.
+        Dict with response, brand_mentioned, position, etc.
     """
+    context = context or {}
+    competitors = context.get('competitors', [])
+    
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        # Use async connector
+        async def _query():
+            return await llm_connector.query_llm(
+                query_text=query,
+                ai_type=llm_provider,
+                run_id=context.get('run_id', 1),
+                brand_name=brand_name,
+                competitors=competitors
+            )
         
-        # Map provider to model
-        model_map = {
-            'chatgpt': 'gpt-4o',
-            'claude': 'claude-sonnet-4-20250514',
-            'gemini': 'gemini-2.0-flash'
-        }
+        result = run_async(_query())
+        return result
         
-        model = model_map.get(llm_provider, 'gpt-4o')
-        
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            model=model,
-            suppress_print=True
-        )
-        
-        response = chat.send_message(UserMessage(content=query))
-        response_text = response.content if hasattr(response, 'content') else str(response)
-        
-        # Analyze response for brand mentions
-        brand_mentioned = brand_name.lower() in response_text.lower() if brand_name else False
-        
-        # Find position if mentioned
-        position = None
-        if brand_mentioned:
-            lines = response_text.split('\n')
-            for i, line in enumerate(lines):
-                if brand_name.lower() in line.lower():
-                    position = i + 1
-                    break
-        
-        # Check competitors if provided
-        competitors_mentioned = []
-        if context and context.get('competitors'):
-            for competitor in context['competitors']:
-                if competitor.lower() in response_text.lower():
-                    competitors_mentioned.append(competitor)
-        
-        return {
-            'provider': llm_provider,
-            'query': query,
-            'response': response_text[:2000],  # Truncate for storage
-            'brand_mentioned': brand_mentioned,
-            'position': position,
-            'competitors_mentioned': competitors_mentioned,
-            'response_length': len(response_text),
-            'timestamp': datetime.now(timezone.utc).isoformat()
-        }
-        
-    except SoftTimeLimitExceeded:
-        logger.warning(f"LLM query timeout for {llm_provider}: {query[:50]}...")
-        return {
-            'provider': llm_provider,
-            'query': query,
-            'error': 'timeout',
-            'brand_mentioned': False
-        }
     except Exception as e:
         logger.error(f"LLM query error for {llm_provider}: {e}")
-        # Retry on failure
         try:
             self.retry(exc=e)
         except self.MaxRetriesExceededError:
@@ -116,39 +103,52 @@ def query_single_llm(self, llm_provider: str, query: str, brand_name: str, conte
                 'provider': llm_provider,
                 'query': query,
                 'error': str(e),
-                'brand_mentioned': False
+                'brand_mentioned': False,
+                'role': 'error'
             }
 
 
 @celery_app.task(bind=True)
-def query_all_llms(self, query: str, brand_name: str, context: dict = None) -> List[dict]:
-    """Query all LLMs in parallel using Celery group"""
-    providers = ['chatgpt', 'claude', 'gemini']
+def query_all_llms_task(
+    self,
+    query: str,
+    brand_name: str,
+    context: dict = None
+) -> List[dict]:
+    """Query all LLMs in parallel for a single query"""
+    context = context or {}
+    competitors = context.get('competitors', [])
+    ai_types = context.get('ai_types', ['chatgpt', 'claude', 'gemini'])
+    run_id = context.get('run_id', 1)
     
-    # Create a group of tasks
-    job = group(
-        query_single_llm.s(provider, query, brand_name, context)
-        for provider in providers
-    )
+    async def _query_all():
+        return await llm_connector.query_all_llms(
+            query_text=query,
+            brand_name=brand_name,
+            competitors=competitors,
+            ai_types=ai_types,
+            run_id=run_id
+        )
     
-    # Execute and wait for results
-    result = job.apply_async()
-    results = result.get(timeout=120)  # Wait up to 2 minutes
-    
-    return results
+    return run_async(_query_all())
 
 
-# ================== ANALYSIS PIPELINE TASKS ==================
+# ================== MAIN ANALYSIS PIPELINE ==================
 
-@celery_app.task(bind=True, max_retries=2)
-def run_full_analysis(self, analysis_id: str, project_id: str, user_id: str) -> dict:
+@celery_app.task(bind=True, max_retries=2, soft_time_limit=600, time_limit=660)
+def run_full_analysis(
+    self,
+    analysis_id: str,
+    project_id: str,
+    user_id: str
+) -> dict:
     """
-    Run a complete GEO analysis for a project
+    Run a complete GEO analysis for a project.
     
     This is the main entry point for the analysis pipeline.
     It orchestrates the entire analysis process:
     1. Generate queries based on project keywords
-    2. Query all LLMs for each query
+    2. Query all LLMs for each query (with variations for stability)
     3. Analyze responses and calculate scores
     4. Store results and send notifications
     """
@@ -171,298 +171,242 @@ def run_full_analysis(self, analysis_id: str, project_id: str, user_id: str) -> 
             brand_name = project.brand_name or project.name
             keywords = project.keywords or []
             competitors = project.competitors or []
+            industry = project.industry
             
-            # Generate queries
-            queries = generate_analysis_queries(brand_name, keywords, project.industry)
+            # Get subscription for plan config
+            subscription = await SubscriptionService.get_by_user_id(db, user_id)
+            plan = subscription.plan.value if subscription else "free"
+            plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["free"])
             
-            # Context for LLM queries
-            context = {
-                'competitors': competitors,
-                'keywords': keywords,
-                'industry': project.industry
-            }
+            # Determine AI engines to use based on plan
+            ai_engines = plan_config.get("ai_engines", ["chatgpt"])
+            num_prompts = plan_config.get("num_prompts", 30)
+            runs_per_query = plan_config.get("runs_per_query", 3)
             
-            # Query LLMs for each query
-            all_results = []
-            for query in queries[:10]:  # Limit to 10 queries
-                try:
-                    results = query_all_llms.delay(query, brand_name, context).get(timeout=180)
-                    all_results.append({
-                        'query': query,
-                        'results': results
-                    })
-                except Exception as e:
-                    logger.error(f"Error querying LLMs for '{query}': {e}")
-                    all_results.append({
-                        'query': query,
-                        'results': [],
-                        'error': str(e)
-                    })
+            logger.info(f"Running analysis with {len(ai_engines)} AI engines, {num_prompts} prompts, {runs_per_query} runs")
             
-            # Calculate scores
-            scores = calculate_geo_scores(all_results, brand_name, competitors)
+            # ===== PHASE 1: QUERY GENERATION =====
+            await AnalysisService.update(db, analysis_id, current_phase="query_generation")
             
-            # Update analysis with results
+            queries = query_generator.generate_queries(
+                brand_name=brand_name,
+                keywords=keywords,
+                competitors=competitors,
+                num_queries=num_prompts,
+                industry=industry
+            )
+            
+            # Add variations for multi-run stability
+            if runs_per_query > 1:
+                queries = variation_engine.generate_variations(
+                    queries,
+                    max_variations_per_query=runs_per_query - 1
+                )
+            
+            logger.info(f"Generated {len(queries)} queries (with variations)")
+            
+            # ===== PHASE 2: LLM QUERYING =====
+            await AnalysisService.update(db, analysis_id, current_phase="ai_querying")
+            
+            all_responses = []
+            run_id = 1
+            
+            # Process queries in batches to avoid overwhelming LLMs
+            batch_size = 5
+            for i in range(0, min(len(queries), num_prompts), batch_size):
+                batch = queries[i:i + batch_size]
+                
+                for query_data in batch:
+                    query_text = query_data.get("text", "")
+                    
+                    try:
+                        # Query all configured AI engines
+                        responses = await llm_connector.query_all_llms(
+                            query_text=query_text,
+                            brand_name=brand_name,
+                            competitors=competitors,
+                            ai_types=ai_engines,
+                            run_id=run_id
+                        )
+                        
+                        for resp in responses:
+                            resp["query_data"] = {
+                                "text": query_text,
+                                "intent_type": query_data.get("intent_type", "informational"),
+                                "variation_type": query_data.get("variation_type", "original")
+                            }
+                            all_responses.append(resp)
+                        
+                        run_id += 1
+                        
+                    except Exception as e:
+                        logger.error(f"Error querying LLMs for '{query_text[:50]}...': {e}")
+                        # Add error response to track failures
+                        all_responses.append({
+                            "query_text": query_text,
+                            "error": str(e),
+                            "brand_mentioned": False,
+                            "role": "error"
+                        })
+                
+                # Small delay between batches to avoid rate limits
+                await asyncio.sleep(0.5)
+            
+            logger.info(f"Collected {len(all_responses)} LLM responses")
+            
+            # ===== PHASE 3: SCORING & ANALYSIS =====
+            await AnalysisService.update(db, analysis_id, current_phase="calculating_indices")
+            
+            # Calculate stability index
+            stability_data = geo_scoring.calculate_stability_index(all_responses)
+            
+            # Calculate advanced indices
+            indices = geo_scoring.calculate_advanced_indices(
+                all_responses, brand_name, competitors
+            )
+            indices["stability_index"] = stability_data.get("stability_score", 100)
+            
+            # Calculate R.A.T.E. score
+            rate_scores = geo_scoring.calculate_rate_score(all_responses, stability_data)
+            
+            # Calculate per-AI scores
+            ai_scores = geo_scoring.calculate_ai_scores(all_responses)
+            
+            # Generate recommendations
+            recommendations = geo_scoring.generate_recommendations(
+                rate_scores, ai_scores, indices, stability_data
+            )
+            
+            # ===== PHASE 4: COMPETITIVE INTELLIGENCE =====
+            discovered_competitors = competitive_intel.identify_competitors(
+                all_responses, brand_name, competitors
+            )
+            
+            competitive_gap = competitive_intel.calculate_competitive_gap(
+                all_responses, brand_name, competitors
+            )
+            
+            # ===== PHASE 5: SEMANTIC ANALYSIS =====
+            semantic_results = semantic_analyzer.analyze_batch(all_responses, brand_name)
+            
+            # ===== PHASE 6: CONTENT GAP ANALYSIS =====
+            gap_analysis = gap_finder.analyze_gaps(
+                queries,
+                all_responses,
+                brand_name,
+                competitors
+            )
+            
+            # ===== PHASE 7: COMPILE RESULTS =====
+            global_score = rate_scores.get("total", 0)
+            grade = rate_scores.get("grade", "F")
+            
+            # Build query scores summary
+            query_scores = []
+            for i, query in enumerate(queries[:num_prompts]):
+                query_responses = [r for r in all_responses if r.get("query_data", {}).get("text") == query.get("text")]
+                mentioned_count = sum(1 for r in query_responses if r.get("brand_mentioned", False))
+                avg_score = sum(r.get("role_score", 0) for r in query_responses) / max(len(query_responses), 1)
+                
+                query_scores.append({
+                    "query": query.get("text", "")[:100],
+                    "intent_type": query.get("intent_type", "informational"),
+                    "mentioned": mentioned_count > 0,
+                    "mention_rate": round((mentioned_count / max(len(query_responses), 1)) * 100, 1),
+                    "avg_score": round(avg_score * 100, 1)
+                })
+            
+            # Update analysis with complete results
             await AnalysisService.update(
                 db, analysis_id,
                 status=AnalysisStatus.COMPLETED,
                 completed_at=datetime.now(timezone.utc),
-                global_score=scores['global_score'],
-                grade=scores['grade'],
-                ai_scores=scores['ai_scores'],
-                rate_scores=scores['rate_scores'],
-                query_scores=scores['query_scores'],
-                competitor_analysis=scores['competitor_analysis'],
-                recommendations=scores['recommendations'],
+                global_score=global_score,
+                grade=grade,
+                ai_scores=ai_scores,
+                rate_scores=rate_scores,
+                query_scores=query_scores,
+                indices=indices,
+                stability_data=stability_data,
+                recommendations=recommendations,
+                competitor_analysis={
+                    "discovered": discovered_competitors,
+                    "gap_analysis": competitive_gap
+                },
+                semantic_analysis=semantic_results,
+                content_gaps=gap_analysis,
                 total_queries=len(queries),
-                queries_with_mention=scores['queries_with_mention'],
-                mention_rate=scores['mention_rate'],
-                average_position=scores['average_position'],
-                ai_engines_used=['chatgpt', 'claude', 'gemini']
+                queries_with_mention=sum(1 for r in all_responses if r.get("brand_mentioned", False)),
+                mention_rate=round(
+                    sum(1 for r in all_responses if r.get("brand_mentioned", False)) / max(len(all_responses), 1) * 100,
+                    1
+                ),
+                ai_engines_used=ai_engines,
+                current_phase="completed"
             )
             
+            # ===== PHASE 8: NOTIFICATIONS & CLEANUP =====
             # Create notification
             await NotificationService.create(
                 db, user_id,
                 type='analysis_complete',
-                title='Analyse terminée',
-                message=f"L'analyse de {project.name} est terminée. Score: {scores['global_score']}/100",
+                title='Analyse GEO terminée',
+                message=f"L'analyse de {project.name} est terminée. Score: {global_score}/100 (Grade {grade})",
                 data={
                     'analysis_id': analysis_id,
                     'project_id': project_id,
-                    'score': scores['global_score']
+                    'score': global_score,
+                    'grade': grade
                 }
             )
             
             # Update subscription usage
-            subscription = await SubscriptionService.get_by_user_id(db, user_id)
             if subscription:
                 await SubscriptionService.update(
                     db, user_id,
                     scans_used=(subscription.scans_used or 0) + 1
                 )
             
+            logger.info(f"Analysis {analysis_id} completed - Score: {global_score}, Grade: {grade}")
+            
             return {
                 'analysis_id': analysis_id,
                 'status': 'completed',
-                'global_score': scores['global_score'],
-                'grade': scores['grade']
+                'global_score': global_score,
+                'grade': grade,
+                'queries_processed': len(queries),
+                'responses_collected': len(all_responses)
             }
     
     try:
         result = run_async(_run_analysis())
-        logger.info(f"Analysis {analysis_id} completed with score {result.get('global_score')}")
         return result
         
-    except Exception as e:
-        logger.error(f"Analysis {analysis_id} failed: {e}")
+    except Exception as exc:
+        error_message = str(exc)
+        logger.error(f"Analysis {analysis_id} failed: {error_message}")
         
         # Update status to failed
-        async def _mark_failed():
+        async def _mark_failed(err_msg: str):
             async with async_session_maker() as db:
                 await AnalysisService.update(
                     db, analysis_id,
                     status=AnalysisStatus.FAILED,
-                    error_message=str(e),
-                    completed_at=datetime.now(timezone.utc)
+                    error_message=err_msg,
+                    completed_at=datetime.now(timezone.utc),
+                    current_phase="failed"
                 )
         
-        run_async(_mark_failed())
+        run_async(_mark_failed(error_message))
         
         return {
             'analysis_id': analysis_id,
             'status': 'failed',
-            'error': str(e)
+            'error': error_message
         }
 
 
-def generate_analysis_queries(brand_name: str, keywords: List[str], industry: str = None) -> List[str]:
-    """Generate analysis queries based on brand and keywords"""
-    queries = []
-    
-    # Base queries
-    base_templates = [
-        f"Quels sont les meilleurs {industry or 'services'} en France ?",
-        f"Recommandez-moi une solution de {industry or 'service'} fiable",
-        f"Quelle est la meilleure alternative à {brand_name} ?",
-        f"Comparatif des solutions de {industry or 'service'} en 2026",
-        f"Avis sur {brand_name}",
-    ]
-    queries.extend(base_templates)
-    
-    # Keyword-based queries
-    for keyword in keywords[:5]:
-        queries.append(f"Quelle est la meilleure solution pour {keyword} ?")
-        queries.append(f"{keyword} : quelles sont les meilleures options ?")
-    
-    return queries[:15]  # Limit total queries
-
-
-def calculate_geo_scores(results: List[dict], brand_name: str, competitors: List[str]) -> dict:
-    """Calculate GEO scores from LLM results"""
-    total_queries = len(results)
-    queries_with_mention = 0
-    positions = []
-    
-    ai_scores = {'chatgpt': 0, 'claude': 0, 'gemini': 0}
-    ai_mentions = {'chatgpt': 0, 'claude': 0, 'gemini': 0}
-    
-    competitor_mentions = {c: 0 for c in competitors}
-    query_scores = []
-    
-    for query_result in results:
-        query = query_result.get('query', '')
-        llm_results = query_result.get('results', [])
-        
-        query_mentioned = False
-        query_positions = []
-        
-        for result in llm_results:
-            provider = result.get('provider', '')
-            mentioned = result.get('brand_mentioned', False)
-            position = result.get('position')
-            
-            if provider in ai_mentions:
-                if mentioned:
-                    ai_mentions[provider] += 1
-                    query_mentioned = True
-                    if position:
-                        query_positions.append(position)
-                
-                # Check competitor mentions
-                for comp in result.get('competitors_mentioned', []):
-                    if comp in competitor_mentions:
-                        competitor_mentions[comp] += 1
-        
-        if query_mentioned:
-            queries_with_mention += 1
-            if query_positions:
-                positions.extend(query_positions)
-        
-        # Calculate query score
-        query_score = len([r for r in llm_results if r.get('brand_mentioned')]) / max(len(llm_results), 1) * 100
-        query_scores.append({
-            'query': query,
-            'score': round(query_score, 1),
-            'mentioned': query_mentioned,
-            'position': min(query_positions) if query_positions else None
-        })
-    
-    # Calculate AI scores
-    for provider in ai_scores:
-        if total_queries > 0:
-            ai_scores[provider] = round(ai_mentions[provider] / total_queries * 100, 1)
-    
-    # Calculate mention rate
-    mention_rate = queries_with_mention / max(total_queries, 1) * 100
-    
-    # Calculate average position
-    avg_position = sum(positions) / len(positions) if positions else None
-    
-    # Calculate global score (weighted average)
-    global_score = round(
-        (ai_scores['chatgpt'] * 0.4 + ai_scores['claude'] * 0.35 + ai_scores['gemini'] * 0.25),
-        1
-    )
-    
-    # Determine grade
-    if global_score >= 80:
-        grade = 'A'
-    elif global_score >= 60:
-        grade = 'B'
-    elif global_score >= 40:
-        grade = 'C'
-    elif global_score >= 20:
-        grade = 'D'
-    else:
-        grade = 'F'
-    
-    # Generate recommendations
-    recommendations = generate_recommendations(global_score, ai_scores, mention_rate, competitor_mentions)
-    
-    return {
-        'global_score': global_score,
-        'grade': grade,
-        'ai_scores': ai_scores,
-        'rate_scores': {
-            'relevance': round(mention_rate, 1),
-            'authority': round(global_score * 0.9, 1),
-            'trust': round(global_score * 0.85, 1),
-            'engagement': round(mention_rate * 0.8, 1)
-        },
-        'query_scores': query_scores,
-        'competitor_analysis': competitor_mentions,
-        'recommendations': recommendations,
-        'queries_with_mention': queries_with_mention,
-        'mention_rate': round(mention_rate, 1),
-        'average_position': round(avg_position, 1) if avg_position else None
-    }
-
-
-def generate_recommendations(score: float, ai_scores: dict, mention_rate: float, competitors: dict) -> List[dict]:
-    """Generate actionable recommendations based on scores"""
-    recommendations = []
-    
-    if score < 50:
-        recommendations.append({
-            'priority': 'high',
-            'category': 'visibility',
-            'title': 'Améliorer la visibilité IA',
-            'description': 'Votre marque a une faible visibilité dans les réponses IA. Concentrez-vous sur la création de contenu autoritaire.',
-            'actions': [
-                'Créer des articles de blog optimisés pour les requêtes courantes',
-                'Obtenir des mentions sur des sites autoritaires',
-                'Développer une présence sur les plateformes de reviews'
-            ]
-        })
-    
-    # Check individual AI scores
-    for provider, provider_score in ai_scores.items():
-        if provider_score < 30:
-            recommendations.append({
-                'priority': 'medium',
-                'category': 'ai_optimization',
-                'title': f'Optimiser pour {provider.title()}',
-                'description': f'Score faible sur {provider.title()} ({provider_score}%). Adaptez votre contenu.',
-                'actions': [
-                    f'Analyser les sources préférées de {provider.title()}',
-                    'Structurer le contenu avec des listes et tableaux',
-                    'Ajouter des données chiffrées et citations'
-                ]
-            })
-    
-    if mention_rate < 40:
-        recommendations.append({
-            'priority': 'high',
-            'category': 'content',
-            'title': 'Augmenter le taux de mention',
-            'description': f'Taux de mention de {mention_rate}%. Diversifiez vos mots-clés et contenus.',
-            'actions': [
-                'Identifier les requêtes où vous n\'apparaissez pas',
-                'Créer du contenu ciblé pour ces requêtes',
-                'Optimiser les balises et métadonnées'
-            ]
-        })
-    
-    # Competitor analysis
-    top_competitor = max(competitors.items(), key=lambda x: x[1], default=(None, 0))
-    if top_competitor[0] and top_competitor[1] > 0:
-        recommendations.append({
-            'priority': 'medium',
-            'category': 'competitive',
-            'title': f'Analyser {top_competitor[0]}',
-            'description': f'{top_competitor[0]} apparaît fréquemment. Analysez leur stratégie.',
-            'actions': [
-                f'Étudier le contenu de {top_competitor[0]}',
-                'Identifier leurs sources de citations',
-                'Développer des différenciateurs clairs'
-            ]
-        })
-    
-    return recommendations
-
-
-# ================== SCHEDULED SCANS TASK ==================
+# ================== SCHEDULED SCANS ==================
 
 @celery_app.task
 def check_scheduled_scans_task():
@@ -480,7 +424,7 @@ def check_scheduled_scans_task():
             result = await db.execute(
                 select(ScanSchedule).where(
                     and_(
-                        ScanSchedule.enabled == True,
+                        ScanSchedule.enabled.is_(True),
                         ScanSchedule.next_run <= now
                     )
                 )
@@ -503,7 +447,12 @@ def check_scheduled_scans_task():
                 )
                 
                 # Update next run time
-                next_run = calculate_next_run(schedule.frequency, schedule.hour, schedule.minute, schedule.day_of_week)
+                next_run = calculate_next_run(
+                    schedule.frequency,
+                    schedule.hour,
+                    schedule.minute,
+                    schedule.day_of_week
+                )
                 await ScheduleService.update(
                     db, schedule.schedule_id,
                     last_run=now,
@@ -517,7 +466,12 @@ def check_scheduled_scans_task():
     return count
 
 
-def calculate_next_run(frequency: str, hour: int, minute: int, day_of_week: int = None) -> datetime:
+def calculate_next_run(
+    frequency: str,
+    hour: int,
+    minute: int,
+    day_of_week: int = None
+) -> datetime:
     """Calculate next run time based on frequency"""
     now = datetime.now(timezone.utc)
     
@@ -543,3 +497,39 @@ def calculate_next_run(frequency: str, hour: int, minute: int, day_of_week: int 
         next_run = now + timedelta(days=7)  # Default to weekly
     
     return next_run
+
+
+# ================== UTILITY TASKS ==================
+
+@celery_app.task
+def cleanup_old_analyses(days_old: int = 90):
+    """Clean up old analysis data to save storage"""
+    logger.info(f"Cleaning up analyses older than {days_old} days")
+    
+    async def _cleanup():
+        async with async_session_maker() as db:
+            from sqlalchemy import delete
+            from ..db.models import Analysis
+            
+            cutoff = datetime.now(timezone.utc) - timedelta(days=days_old)
+            
+            result = await db.execute(
+                delete(Analysis).where(Analysis.created_at < cutoff)
+            )
+            await db.commit()
+            
+            return result.rowcount
+    
+    deleted = run_async(_cleanup())
+    logger.info(f"Deleted {deleted} old analyses")
+    return deleted
+
+
+@celery_app.task
+def health_check():
+    """Simple health check task for monitoring"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "worker": "celery"
+    }

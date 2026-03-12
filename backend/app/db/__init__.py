@@ -10,7 +10,9 @@ from contextlib import asynccontextmanager
 # Check which database to use
 USE_POSTGRES = os.environ.get("USE_POSTGRES", "true").lower() == "true"
 
-if USE_POSTGRES:
+# Always import PostgreSQL components (they may be used by routers)
+# The imports will work but connections will fail if USE_POSTGRES is False
+try:
     from .database import async_session_maker, init_db, close_db, engine
     from .services import (
         UserService, SessionService, SubscriptionService,
@@ -19,8 +21,13 @@ if USE_POSTGRES:
     )
     from .models import (
         User, UserSession, Subscription, Project, Analysis,
-        Notification, ScanSchedule, Organization
+        Notification, ScanSchedule, Organization, AnalysisStatus
     )
+except ImportError as e:
+    print(f"Warning: Could not import PostgreSQL modules: {e}")
+    async_session_maker = None
+    init_db = None
+    close_db = None
 
 
 @asynccontextmanager
@@ -58,17 +65,14 @@ __all__ = [
     'initialize_database', 
     'shutdown_database',
     'USE_POSTGRES',
+    'async_session_maker',
+    'UserService',
+    'SessionService', 
+    'SubscriptionService',
+    'ProjectService',
+    'AnalysisService',
+    'NotificationService',
+    'ScheduleService',
+    'OrganizationService',
+    'AnalysisStatus',
 ]
-
-if USE_POSTGRES:
-    __all__.extend([
-        'UserService',
-        'SessionService', 
-        'SubscriptionService',
-        'ProjectService',
-        'AnalysisService',
-        'NotificationService',
-        'ScheduleService',
-        'OrganizationService',
-        'async_session_maker',
-    ])

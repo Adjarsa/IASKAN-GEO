@@ -1,0 +1,93 @@
+{
+  "summary": "Backend refactoring testing complete. All new services (LLMConnector, GEOScoringEngine, CompetitiveIntelligenceEngine) and Celery tasks (query_single_llm, run_full_analysis) import and function correctly. Health endpoint works. Auth endpoints correctly return 401 for unauthenticated requests. PostgreSQL is not available but MongoDB fallback is working.",
+  "mode": "generate",
+  "baseline_commit": "015252e31fe8cb677007b29b5b8c67c29892921f",
+  "head_commit": "b58d261aa0d58c293a2a5953bab127cdc496083b",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "PostgreSQL",
+        "issue": "PostgreSQL not available - using MongoDB fallback (expected behavior per task description)"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "regression_results": {
+    "total_specs": 0,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  "backend_test_results": {
+    "total": 38,
+    "passed": 38,
+    "failed": 0,
+    "skipped": 0
+  },
+  "specs_created": [
+    "/app/backend/tests/test_new_services.py"
+  ],
+  "specs_updated": [],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/backend/tests/test_new_services.py",
+    "/app/test_reports/pytest/pytest_new_services.xml"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/backend/tests/test_new_services.py"
+  ],
+  "success_rate": {
+    "backend": "100% (38/38 passed)",
+    "frontend": "N/A (backend-only testing)"
+  },
+  "seed_data_creation": "No seed data required - tested unit functionality and public API endpoints",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend refactoring verified. New services tested: 1) LLMConnector - handles multi-LLM querying with chatgpt, claude, gemini, perplexity providers 2) GEOScoringEngine - calculates stability index, advanced indices, R.A.T.E. scores, generates recommendations 3) CompetitiveIntelligenceEngine - identifies competitors from known brands and NLP extraction, calculates competitive gaps. Celery tasks (query_single_llm, run_full_analysis, check_scheduled_scans_task) all import correctly with proper Celery decorators. API endpoints tested: /api/health (200 OK), /api/auth/me (401 unauth), /api/analysis/quota (401 unauth), /api/subscription/plans (200 OK with all plan tiers).",
+  "verified_features": {
+    "service_imports": {
+      "llm_connector": "OK - LLMConnector and llm_connector singleton import correctly",
+      "geo_scoring": "OK - GEOScoringEngine and geo_scoring_engine singleton import correctly",
+      "competitive_intelligence": "OK - CompetitiveIntelligenceEngine and competitive_intelligence_engine singleton import correctly"
+    },
+    "celery_task_imports": {
+      "query_single_llm": "OK - imports with delay/apply_async methods",
+      "run_full_analysis": "OK - imports with delay/apply_async methods",
+      "check_scheduled_scans_task": "OK - imports with delay method"
+    },
+    "llm_connector_functionality": {
+      "LLM_CONFIG": "Contains chatgpt, claude, gemini, perplexity with provider/model/display_name",
+      "initialization": "Works with default and custom api_key/system_message",
+      "methods": "_analyze_response, _analyze_role exist"
+    },
+    "geo_scoring_functionality": {
+      "stability_index": "Handles empty/single/multiple results correctly",
+      "advanced_indices": "Returns stability_index, dominance_index, trust_gap, opportunity_score",
+      "rate_score": "Calculates relevance, authority, truthfulness, endorsement with grade",
+      "ai_scores": "Per-AI scoring with proper aggregation",
+      "recommendations": "Generates prioritized recommendations based on scores"
+    },
+    "competitive_intelligence_functionality": {
+      "identify_competitors": "Detects known brands, excludes own brand, tracks user-defined competitors",
+      "extract_potential_brands": "NLP-based extraction of capitalized proper nouns",
+      "competitive_gap": "Calculates brand_stats, competitor_stats, competitive_position",
+      "recommendations": "Generates competitor-specific recommendations"
+    },
+    "api_endpoints": {
+      "health": "GET /api/health returns {status: 'healthy', timestamp: ...}",
+      "auth_me": "GET /api/auth/me returns 401 with French message 'Non authentifié'",
+      "analysis_quota": "GET /api/analysis/quota returns 401 without auth",
+      "subscription_plans": "GET /api/subscription/plans returns free, starter, pro, business plans"
+    },
+    "database": {
+      "USE_POSTGRES": "Boolean flag from env (true but connection fails - expected)",
+      "mongodb_fallback": "Working as expected per task description"
+    }
+  }
+}
