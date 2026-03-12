@@ -4,10 +4,10 @@ Distributed analysis pipeline for IAskan GEO Platform
 
 This module implements the complete GEO analysis pipeline using Celery
 for distributed task execution. It uses the modular services:
+- AnalysisPipelineService: Main orchestrator for GEO analysis
 - LLMConnector: For querying multiple LLM providers
 - GEOScoringEngine: For calculating GEO scores
 - CompetitiveIntelligenceEngine: For competitor analysis
-- QueryGenerationEngine: For generating analysis queries
 """
 import asyncio
 import logging
@@ -23,14 +23,11 @@ from ..db.services import (
 from ..db.models import AnalysisStatus
 from ..core.config import EMERGENT_LLM_KEY, SUBSCRIPTION_PLANS
 
-# Import modular engines and services
+# Import modular services
+from ..services.analysis_pipeline import AnalysisPipelineService, analysis_pipeline
 from ..services.llm_connector import LLMConnector
 from ..services.geo_scoring import GEOScoringEngine
 from ..services.competitive_intelligence import CompetitiveIntelligenceEngine
-from ..engines.query.generator import QueryGenerationEngine
-from ..engines.query.variation import PromptVariationEngine
-from ..engines.semantic.analyzer import SemanticAnalysisEngine
-from ..engines.gap.finder import ContentGapEngine
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +46,6 @@ def run_async(coro):
 llm_connector = LLMConnector(api_key=EMERGENT_LLM_KEY)
 geo_scoring = GEOScoringEngine()
 competitive_intel = CompetitiveIntelligenceEngine()
-query_generator = QueryGenerationEngine()
-variation_engine = PromptVariationEngine()
-semantic_analyzer = SemanticAnalysisEngine()
-gap_finder = ContentGapEngine()
 
 
 # ================== LLM QUERY TASKS ==================
@@ -143,14 +136,16 @@ def run_full_analysis(
     user_id: str
 ) -> dict:
     """
-    Run a complete GEO analysis for a project.
+    Run a complete GEO analysis for a project using AnalysisPipelineService.
     
     This is the main entry point for the analysis pipeline.
-    It orchestrates the entire analysis process:
-    1. Generate queries based on project keywords
-    2. Query all LLMs for each query (with variations for stability)
-    3. Analyze responses and calculate scores
-    4. Store results and send notifications
+    It delegates to the AnalysisPipelineService which orchestrates:
+    1. Query generation with multi-dimension distribution
+    2. Multi-run AI querying for stability
+    3. GEO scoring and indices calculation
+    4. Competitive intelligence analysis
+    5. Semantic and content gap analysis
+    6. Results compilation and notifications
     """
     logger.info(f"Starting analysis {analysis_id} for project {project_id}")
     
@@ -168,185 +163,67 @@ def run_full_analysis(
             if not project:
                 raise Exception(f"Project {project_id} not found")
             
-            brand_name = project.brand_name or project.name
-            keywords = project.keywords or []
-            competitors = project.competitors or []
-            industry = project.industry
+            # Build project dict for pipeline
+            project_data = {
+                "project_id": project_id,
+                "user_id": user_id,
+                "brand_name": project.brand_name or project.name,
+                "name": project.name,
+                "keywords": project.keywords or [],
+                "competitors": project.competitors or [],
+                "website_url": project.website_url or "",
+                "products": getattr(project, 'products', []) or [],
+                "industry": project.industry
+            }
             
             # Get subscription for plan config
             subscription = await SubscriptionService.get_by_user_id(db, user_id)
             plan = subscription.plan.value if subscription else "free"
             plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["free"])
             
-            # Determine AI engines to use based on plan
-            ai_engines = plan_config.get("ai_engines", ["chatgpt"])
-            num_prompts = plan_config.get("num_prompts", 30)
-            runs_per_query = plan_config.get("runs_per_query", 3)
+            logger.info(f"Running analysis with plan: {plan}")
             
-            logger.info(f"Running analysis with {len(ai_engines)} AI engines, {num_prompts} prompts, {runs_per_query} runs")
+            # Define update callback for progress tracking
+            async def update_progress(aid: str, data: dict):
+                await AnalysisService.update(db, aid, **data)
             
-            # ===== PHASE 1: QUERY GENERATION =====
-            await AnalysisService.update(db, analysis_id, current_phase="query_generation")
-            
-            queries = query_generator.generate_queries(
-                brand_name=brand_name,
-                keywords=keywords,
-                competitors=competitors,
-                num_queries=num_prompts,
-                industry=industry
+            # Run the full analysis pipeline
+            results = await analysis_pipeline.run_full_analysis(
+                analysis_id=analysis_id,
+                project=project_data,
+                plan_config=plan_config,
+                update_callback=update_progress
             )
-            
-            # Add variations for multi-run stability
-            if runs_per_query > 1:
-                queries = variation_engine.generate_variations(
-                    queries,
-                    max_variations_per_query=runs_per_query - 1
-                )
-            
-            logger.info(f"Generated {len(queries)} queries (with variations)")
-            
-            # ===== PHASE 2: LLM QUERYING =====
-            await AnalysisService.update(db, analysis_id, current_phase="ai_querying")
-            
-            all_responses = []
-            run_id = 1
-            
-            # Process queries in batches to avoid overwhelming LLMs
-            batch_size = 5
-            for i in range(0, min(len(queries), num_prompts), batch_size):
-                batch = queries[i:i + batch_size]
-                
-                for query_data in batch:
-                    query_text = query_data.get("text", "")
-                    
-                    try:
-                        # Query all configured AI engines
-                        responses = await llm_connector.query_all_llms(
-                            query_text=query_text,
-                            brand_name=brand_name,
-                            competitors=competitors,
-                            ai_types=ai_engines,
-                            run_id=run_id
-                        )
-                        
-                        for resp in responses:
-                            resp["query_data"] = {
-                                "text": query_text,
-                                "intent_type": query_data.get("intent_type", "informational"),
-                                "variation_type": query_data.get("variation_type", "original")
-                            }
-                            all_responses.append(resp)
-                        
-                        run_id += 1
-                        
-                    except Exception as e:
-                        logger.error(f"Error querying LLMs for '{query_text[:50]}...': {e}")
-                        # Add error response to track failures
-                        all_responses.append({
-                            "query_text": query_text,
-                            "error": str(e),
-                            "brand_mentioned": False,
-                            "role": "error"
-                        })
-                
-                # Small delay between batches to avoid rate limits
-                await asyncio.sleep(0.5)
-            
-            logger.info(f"Collected {len(all_responses)} LLM responses")
-            
-            # ===== PHASE 3: SCORING & ANALYSIS =====
-            await AnalysisService.update(db, analysis_id, current_phase="calculating_indices")
-            
-            # Calculate stability index
-            stability_data = geo_scoring.calculate_stability_index(all_responses)
-            
-            # Calculate advanced indices
-            indices = geo_scoring.calculate_advanced_indices(
-                all_responses, brand_name, competitors
-            )
-            indices["stability_index"] = stability_data.get("stability_score", 100)
-            
-            # Calculate R.A.T.E. score
-            rate_scores = geo_scoring.calculate_rate_score(all_responses, stability_data)
-            
-            # Calculate per-AI scores
-            ai_scores = geo_scoring.calculate_ai_scores(all_responses)
-            
-            # Generate recommendations
-            recommendations = geo_scoring.generate_recommendations(
-                rate_scores, ai_scores, indices, stability_data
-            )
-            
-            # ===== PHASE 4: COMPETITIVE INTELLIGENCE =====
-            discovered_competitors = competitive_intel.identify_competitors(
-                all_responses, brand_name, competitors
-            )
-            
-            competitive_gap = competitive_intel.calculate_competitive_gap(
-                all_responses, brand_name, competitors
-            )
-            
-            # ===== PHASE 5: SEMANTIC ANALYSIS =====
-            semantic_results = semantic_analyzer.analyze_batch(all_responses, brand_name)
-            
-            # ===== PHASE 6: CONTENT GAP ANALYSIS =====
-            gap_analysis = gap_finder.analyze_gaps(
-                queries,
-                all_responses,
-                brand_name,
-                competitors
-            )
-            
-            # ===== PHASE 7: COMPILE RESULTS =====
-            global_score = rate_scores.get("total", 0)
-            grade = rate_scores.get("grade", "F")
-            
-            # Build query scores summary
-            query_scores = []
-            for i, query in enumerate(queries[:num_prompts]):
-                query_responses = [r for r in all_responses if r.get("query_data", {}).get("text") == query.get("text")]
-                mentioned_count = sum(1 for r in query_responses if r.get("brand_mentioned", False))
-                avg_score = sum(r.get("role_score", 0) for r in query_responses) / max(len(query_responses), 1)
-                
-                query_scores.append({
-                    "query": query.get("text", "")[:100],
-                    "intent_type": query.get("intent_type", "informational"),
-                    "mentioned": mentioned_count > 0,
-                    "mention_rate": round((mentioned_count / max(len(query_responses), 1)) * 100, 1),
-                    "avg_score": round(avg_score * 100, 1)
-                })
             
             # Update analysis with complete results
             await AnalysisService.update(
                 db, analysis_id,
                 status=AnalysisStatus.COMPLETED,
                 completed_at=datetime.now(timezone.utc),
-                global_score=global_score,
-                grade=grade,
-                ai_scores=ai_scores,
-                rate_scores=rate_scores,
-                query_scores=query_scores,
-                indices=indices,
-                stability_data=stability_data,
-                recommendations=recommendations,
+                global_score=results.get("global_score", 0),
+                grade=results.get("grade", "F"),
+                ai_scores=results.get("ai_scores", {}),
+                rate_scores=results.get("rate_score", {}),
+                query_scores=results.get("query_scores", []),
+                indices=results.get("indices", {}),
+                stability_data=results.get("stability_data", {}),
+                recommendations=results.get("recommendations", []),
                 competitor_analysis={
-                    "discovered": discovered_competitors,
-                    "gap_analysis": competitive_gap
+                    "discovered": results.get("competitor_comparison", []),
+                    "gap_analysis": results.get("competitive_gap", {})
                 },
-                semantic_analysis=semantic_results,
-                content_gaps=gap_analysis,
-                total_queries=len(queries),
-                queries_with_mention=sum(1 for r in all_responses if r.get("brand_mentioned", False)),
-                mention_rate=round(
-                    sum(1 for r in all_responses if r.get("brand_mentioned", False)) / max(len(all_responses), 1) * 100,
-                    1
-                ),
-                ai_engines_used=ai_engines,
+                semantic_analysis=results.get("semantic_analysis"),
+                content_gaps=results.get("content_gaps"),
+                analysis_summary=results.get("analysis_summary", {}),
+                site_enrichment=results.get("site_enrichment", {}),
+                brand_analysis=results.get("brand_analysis", {}),
                 current_phase="completed"
             )
             
-            # ===== PHASE 8: NOTIFICATIONS & CLEANUP =====
             # Create notification
+            global_score = results.get("global_score", 0)
+            grade = results.get("grade", "F")
+            
             await NotificationService.create(
                 db, user_id,
                 type='analysis_complete',
@@ -374,8 +251,8 @@ def run_full_analysis(
                 'status': 'completed',
                 'global_score': global_score,
                 'grade': grade,
-                'queries_processed': len(queries),
-                'responses_collected': len(all_responses)
+                'queries_processed': len(results.get("query_scores", [])),
+                'responses_collected': results.get("analysis_summary", {}).get("total_responses", 0)
             }
     
     try:
