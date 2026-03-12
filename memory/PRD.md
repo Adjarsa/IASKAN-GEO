@@ -8,7 +8,8 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 ### Stack
 - **Frontend**: React 18.2.0 (version verrouillée), Tailwind CSS, Shadcn/UI
 - **Backend**: FastAPI, Python 3.11
-- **Database**: MongoDB
+- **Database**: PostgreSQL 15.16 (local, 17 tables), MongoDB (legacy fallback)
+- **Task Queue**: Celery + Redis
 - **AI Integration**: emergentintegrations (OpenAI, Claude, Gemini, Perplexity)
 - **Paiements**: Stripe
 - **Email**: Resend
@@ -221,6 +222,30 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 ## Changelog
 
 ### 2026-03-12 (Session actuelle - Refactoring Services)
+- **POSTGRESQL INSTALLÉ ET FONCTIONNEL**
+  - ✅ PostgreSQL 15.16 installé localement
+  - ✅ Base de données `iaskan_db` créée avec 17 tables
+  - ✅ Connexion vérifiée et fonctionnelle
+  - ✅ Prêt pour migration vers Supabase en production
+
+- **NOUVEAU SERVICE ANALYSIS PIPELINE** (`/app/backend/app/services/analysis_pipeline.py`)
+  - ✅ `AnalysisPipelineService` - Orchestrateur principal d'analyse GEO
+  - ✅ Implémente IAskan Verified GEO Protocol™ v2.1
+  - ✅ 13 phases d'analyse intégrées :
+    - Génération de variantes de marque
+    - Enrichissement de site web
+    - Génération de requêtes multi-dimension
+    - Querying LLM multi-run (stabilité)
+    - Calcul Stability Index
+    - Calcul Advanced Indices
+    - Calcul R.A.T.E. Score
+    - Analyse par type de requête
+    - Intelligence compétitive
+    - Analyse sémantique
+    - Analyse content gaps
+    - Résumé mentions de marque
+    - Recommandations enrichies
+
 - **NOUVEAUX SERVICES BACKEND CRÉÉS**
   - ✅ `LLMConnector` (`/app/backend/app/services/llm_connector.py`)
     - Connexion centralisée à ChatGPT, Claude, Gemini, Perplexity
@@ -256,13 +281,10 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
   - ✅ `check_scheduled_scans_task` : Exécution scans programmés
   - ✅ `cleanup_old_analyses` : Nettoyage données anciennes
   
-- **TESTS BACKEND** (`/app/backend/tests/test_new_services.py`)
-  - ✅ 38 tests passés (100%)
-  - Tests imports services et Celery
-  - Tests méthodes LLMConnector
-  - Tests GEOScoringEngine (stability, indices, R.A.T.E.)
-  - Tests CompetitiveIntelligenceEngine
-  - Tests API endpoints
+- **TESTS BACKEND** 
+  - ✅ `/app/backend/tests/test_new_services.py` - 38 tests
+  - ✅ `/app/backend/tests/test_postgresql_migration.py` - 38 tests  
+  - ✅ Total: 76 tests passés (100%)
 
 ### 2026-03-10 (Session précédente)
 - **CELERY + REDIS IMPLÉMENTÉ**
