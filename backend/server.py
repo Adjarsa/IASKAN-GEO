@@ -4395,6 +4395,19 @@ async def root():
 async def health():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
+@api_router.post("/init-database")
+async def init_database_endpoint():
+    """Force database initialization - creates all tables"""
+    if USE_POSTGRES:
+        try:
+            await initialize_database()
+            return {"status": "success", "message": "Database tables created successfully"}
+        except Exception as e:
+            logger.error(f"Database initialization error: {e}")
+            raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(e)}")
+    else:
+        return {"status": "skipped", "message": "PostgreSQL not enabled"}
+
 # Include router
 app.include_router(api_router)
 
