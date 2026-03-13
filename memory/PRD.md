@@ -101,6 +101,14 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
   - Système de tracking d'implémentation
   - **Objectifs Automatiques** - Plan d'amélioration pour atteindre la note supérieure
 
+- [x] **Recherche Sémantique pgvector** (Mars 2026)
+  - Service d'embedding OpenAI (text-embedding-3-small)
+  - Modèles vectoriels : QueryEmbedding, ContentEmbedding, ResponseEmbedding
+  - Recherche de requêtes/contenus similaires
+  - Identification des lacunes de contenu
+  - Clustering sémantique des requêtes
+  - Interface frontend SemanticSearchPanel intégrée
+
 - [x] **Onboarding Guidé** (Nouveau!)
   - Tutoriel interactif en 6 étapes
   - Illustrations animées
@@ -146,6 +154,18 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 | Business | 349€ | 150 | ∞ | ∞ |
 
 ## APIs Clés
+
+### Semantic Search (Nouveau - pgvector)
+- `GET /api/semantic/status` - Statut du service d'embedding
+- `GET /api/semantic/stats/{project_id}` - Statistiques des embeddings
+- `POST /api/semantic/search/queries` - Recherche de requêtes similaires
+- `POST /api/semantic/search/content` - Recherche de contenus similaires
+- `GET /api/semantic/gaps/{project_id}` - Identification des lacunes de contenu
+- `GET /api/semantic/clusters/{project_id}` - Clusters sémantiques de requêtes
+- `POST /api/semantic/index/query` - Indexer une requête
+- `POST /api/semantic/index/content` - Indexer un contenu
+- `POST /api/semantic/index/bulk` - Indexation en masse
+- `DELETE /api/semantic/index/{embedding_id}` - Supprimer un embedding
 
 ### Article Optimizer
 - `POST /api/article-optimizer/analyze` - Analyse basique

@@ -38,6 +38,7 @@ from app.routers import (
     analysis as analysis_router,
     analyses as analyses_router,
     strategy as strategy_router,
+    semantic as semantic_router,
 )
 from app.engines.query import query_engine, variation_engine
 from app.engines.semantic import semantic_engine
@@ -4429,6 +4430,7 @@ app.include_router(onboarding.router)          # User onboarding flow
 app.include_router(analysis_router.router)     # Celery-powered analysis pipeline
 app.include_router(analyses_router.router)     # Analyses listing (frontend compatibility)
 app.include_router(strategy_router.router)     # GEO Strategy Engine
+app.include_router(semantic_router.router)     # Semantic Search with pgvector
 
 # CORS middleware
 # When using credentials, origin cannot be '*', must be specific origins

@@ -138,3 +138,4 @@ SQLAlchemy==2.0.48
 asyncpg==0.31.0
 psycopg2-binary==2.9.11
 greenlet==3.3.2
+pgvector==0.4.2

@@ -27,7 +27,8 @@ import {
   Eye,
   AlertCircle,
   Globe,
-  Sparkles
+  Sparkles,
+  Search
 } from "lucide-react";
 import { generatePDFReport } from "@/services/pdfReportGenerator";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
@@ -35,6 +36,7 @@ import { useFingerprint } from "@/hooks/useFingerprint";
 import { ScanDiffCard, SiteEnrichmentCard, BrandAnalysisCard } from "@/components/AdvancedScanCards";
 import CompetitorAnalysisCard from "@/components/CompetitorAnalysisCard";
 import { StrategyPanel } from "@/components/StrategyPanel";
+import { SemanticSearchPanel } from "@/components/SemanticSearchPanel";
 
 // Utility function to format and shorten URLs
 const formatUrl = (url, maxLength = 35) => {
@@ -64,6 +66,7 @@ const AnalysisPage = () => {
   const [error, setError] = useState(null);
   const [eligibilityError, setEligibilityError] = useState(null);
   const [showStrategy, setShowStrategy] = useState(false);
+  const [showSemanticSearch, setShowSemanticSearch] = useState(false);
 
   useEffect(() => {
     if (analysisId) {
@@ -458,6 +461,15 @@ const AnalysisPage = () => {
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
                   Stratégie GEO
+                </Button>
+                <Button
+                  onClick={() => setShowSemanticSearch(true)}
+                  variant="outline"
+                  className="border-cyan-200 text-cyan-700 hover:bg-cyan-50"
+                  data-testid="semantic-search-btn"
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  Recherche Sémantique
                 </Button>
               </div>
             )}
@@ -1274,6 +1286,18 @@ const AnalysisPage = () => {
                   onClose={() => setShowStrategy(false)}
                 />
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Semantic Search Modal */}
+        {showSemanticSearch && analysis && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="max-w-3xl w-full">
+              <SemanticSearchPanel
+                projectId={analysis.project_id}
+                onClose={() => setShowSemanticSearch(false)}
+              />
             </div>
           </div>
         )}
