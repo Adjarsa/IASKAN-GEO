@@ -311,6 +311,17 @@ class AnalysisService:
         return list(result.scalars().all())
     
     @staticmethod
+    async def get_by_user(db: AsyncSession, user_id: str, limit: int = 50) -> List[Analysis]:
+        """Get analyses for a user"""
+        result = await db.execute(
+            select(Analysis)
+            .where(Analysis.user_id == user_id)
+            .order_by(Analysis.created_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+    
+    @staticmethod
     async def get_latest_by_project(db: AsyncSession, project_id: str) -> Optional[Analysis]:
         """Get latest analysis for a project"""
         result = await db.execute(

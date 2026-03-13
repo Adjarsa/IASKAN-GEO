@@ -36,6 +36,7 @@ from app.routers import (
     schedules as schedules_router,
     subscriptions as subscriptions_router,
     analysis as analysis_router,
+    analyses as analyses_router,
 )
 from app.engines.query import query_engine, variation_engine
 from app.engines.semantic import semantic_engine
@@ -4389,6 +4390,7 @@ app.include_router(article_optimizer.router)   # Article optimization feature
 app.include_router(admin.router)               # Admin backoffice
 app.include_router(onboarding.router)          # User onboarding flow
 app.include_router(analysis_router.router)     # Celery-powered analysis pipeline
+app.include_router(analyses_router.router)     # Analyses listing (frontend compatibility)
 
 # CORS middleware
 app.add_middleware(

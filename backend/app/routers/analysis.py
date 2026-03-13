@@ -227,3 +227,54 @@ async def get_analysis_quota(user: dict = Depends(get_current_user)):
             "free_scans_remaining": free_remaining,
             "unlimited": scans_limit == -1
         }
+
+
+# ================== FRONTEND COMPATIBILITY ENDPOINTS ==================
+# These endpoints match the frontend's expected API structure
+
+@router.get("/{analysis_id}", name="get_analysis_detail")
+async def get_analysis_detail(analysis_id: str, user: dict = Depends(get_current_user)):
+    """
+    Get full analysis details by ID
+    Frontend compatibility endpoint for: GET /api/analysis/{analysis_id}
+    """
+    async with async_session_maker() as db:
+        analysis = await AnalysisService.get_by_id(db, analysis_id)
+        
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analyse non trouvée")
+        
+        if analysis.user_id != user["user_id"]:
+            raise HTTPException(status_code=403, detail="Accès non autorisé")
+        
+        # Return full analysis data matching frontend expectations
+        return {
+            "analysis": {
+                "analysis_id": analysis.analysis_id,
+                "project_id": analysis.project_id,
+                "user_id": analysis.user_id,
+                "status": analysis.status.value,
+                "global_score": analysis.global_score,
+                "grade": analysis.grade,
+                "ai_scores": analysis.ai_scores or {},
+                "rate_score": analysis.rate_scores or {},
+                "query_scores": analysis.query_scores or [],
+                "competitor_comparison": analysis.competitor_analysis.get("discovered", []) if analysis.competitor_analysis else [],
+                "recommendations": analysis.recommendations or [],
+                "indices": analysis.indices or {},
+                "stability_data": analysis.stability_data or {},
+                "total_queries": analysis.total_queries,
+                "queries_with_mention": analysis.queries_with_mention,
+                "mention_rate": analysis.mention_rate,
+                "ai_engines_used": analysis.ai_engines_used or [],
+                "analysis_summary": analysis.analysis_summary or {},
+                "semantic_analysis": analysis.semantic_analysis,
+                "content_gaps": analysis.content_gaps,
+                "site_enrichment": analysis.site_enrichment or {},
+                "brand_analysis": analysis.brand_analysis or {},
+                "error_message": analysis.error_message,
+                "started_at": analysis.started_at.isoformat() if analysis.started_at else None,
+                "completed_at": analysis.completed_at.isoformat() if analysis.completed_at else None,
+                "created_at": analysis.created_at.isoformat() if analysis.created_at else None
+            }
+        }
