@@ -26,13 +26,15 @@ import {
   FileDown,
   Eye,
   AlertCircle,
-  Globe
+  Globe,
+  Sparkles
 } from "lucide-react";
 import { generatePDFReport } from "@/services/pdfReportGenerator";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
 import { useFingerprint } from "@/hooks/useFingerprint";
 import { ScanDiffCard, SiteEnrichmentCard, BrandAnalysisCard } from "@/components/AdvancedScanCards";
 import CompetitorAnalysisCard from "@/components/CompetitorAnalysisCard";
+import { StrategyPanel } from "@/components/StrategyPanel";
 
 // Utility function to format and shorten URLs
 const formatUrl = (url, maxLength = 35) => {
@@ -61,6 +63,7 @@ const AnalysisPage = () => {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(null);
   const [eligibilityError, setEligibilityError] = useState(null);
+  const [showStrategy, setShowStrategy] = useState(false);
 
   useEffect(() => {
     if (analysisId) {
@@ -446,6 +449,15 @@ const AnalysisPage = () => {
                       Exporter PDF
                     </span>
                   )}
+                </Button>
+                <Button
+                  onClick={() => setShowStrategy(true)}
+                  variant="outline"
+                  className="border-violet-200 text-violet-700 hover:bg-violet-50"
+                  data-testid="strategy-btn"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Stratégie GEO
                 </Button>
               </div>
             )}
@@ -1233,6 +1245,36 @@ const AnalysisPage = () => {
               </Button>
             </div>
           </Card>
+        )}
+
+        {/* Strategy Panel Modal */}
+        {showStrategy && analysis && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-violet-400" />
+                  Stratégie d'Optimisation GEO
+                </h2>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowStrategy(false)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <XCircle className="w-5 h-5" />
+                </Button>
+              </div>
+              <div className="p-6">
+                <StrategyPanel
+                  analysisId={analysis.analysis_id}
+                  globalScore={analysis.global_score}
+                  rateScores={analysis.rate_scores}
+                  diagnostics={analysis.diagnostics}
+                  onClose={() => setShowStrategy(false)}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </DashboardLayout>
