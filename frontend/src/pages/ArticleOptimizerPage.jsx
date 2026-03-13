@@ -18,8 +18,10 @@ import {
   BookOpen,
   ExternalLink,
   Copy,
-  Check
+  Check,
+  PlayCircle
 } from 'lucide-react';
+import { ImpactSimulator } from '@/components/ImpactSimulator';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -414,7 +416,8 @@ export default function ArticleOptimizerPage() {
                   { id: 'overview', label: 'Vue d\'ensemble', icon: BarChart3 },
                   { id: 'diagnostics', label: 'Diagnostics', icon: AlertTriangle },
                   { id: 'actions', label: 'Plan d\'action', icon: Target },
-                  { id: 'distribution', label: 'Distribution', icon: Zap }
+                  { id: 'distribution', label: 'Distribution', icon: Zap },
+                  { id: 'simulator', label: 'Simulateur', icon: PlayCircle }
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -592,6 +595,17 @@ export default function ArticleOptimizerPage() {
                     </div>
                   ))}
                 </div>
+              )}
+
+              {/* Simulator tab */}
+              {activeTab === 'simulator' && (
+                <ImpactSimulator
+                  currentScore={result.scores?.overall || 50}
+                  optimizationId={result.optimization_id}
+                  onSimulationComplete={(simulation) => {
+                    console.log('Simulation completed:', simulation);
+                  }}
+                />
               )}
             </div>
           </div>

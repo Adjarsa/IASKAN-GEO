@@ -18,229 +18,145 @@ Following an initial setup, the user provided a comprehensive **23-section produ
 **User's preferred language**: French
 
 **what currently exists?**
-The application is fully functional within the Emergent environment, running on a local PostgreSQL database with a Celery/Redis task queue. The backend has a modular, service-oriented architecture. The previous session was entirely dedicated to preparing the application for deployment on the **Railway** platform. This involved:
-1.  Creating Railway-specific configuration files (, , ).
-2.  Refactoring the code to remove the hard dependency on the proprietary  package. An abstraction layer was created that uses native usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
-              [-o ORGANIZATION] [-t {openai,azure}]
-              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
-              [--azure-ad-token AZURE_AD_TOKEN] [-V]
-              {api,tools,migrate,grit} ...
-
-positional arguments:
-  {api,tools,migrate,grit}
-    api                 Direct API calls
-    tools               Client side tools for convenience
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set verbosity.
-  -b API_BASE, --api-base API_BASE
-                        What API base url to use.
-  -k API_KEY, --api-key API_KEY
-                        What API key to use.
-  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
-                        What proxy to use.
-  -o ORGANIZATION, --organization ORGANIZATION
-                        Which organization to run as (will use your default
-                        organization if not specified)
-  -t {openai,azure}, --api-type {openai,azure}
-                        The backend API to call, must be `openai` or `azure`
-  --api-version API_VERSION
-                        The Azure API version, e.g.
-                        'https://learn.microsoft.com/en-us/azure/ai-
-                        services/openai/reference#rest-api-versioning'
-  --azure-endpoint AZURE_ENDPOINT
-                        The Azure endpoint, e.g.
-                        'https://endpoint.openai.azure.com'
-  --azure-ad-token AZURE_AD_TOKEN
-                        A token from Azure Active Directory,
-                        https://www.microsoft.com/en-
-                        us/security/business/identity-access/microsoft-entra-
-                        id
-  -V, --version         show program's version number and exit and  SDKs when  is not available, allowing the code to be portable.
-3.  Fixing missing dependencies in  to resolve deployment errors.
+The application is now fully deployed and operational on a production-like infrastructure.
+- **Hosting:** The frontend and backend are deployed as separate services on **Railway**.
+- **Domains:** The application is accessible via custom domains:  for the frontend and  for the backend, with DNS and redirects correctly configured.
+- **Database:** The application is connected to a **Supabase PostgreSQL** database, where the  extension has been enabled and all necessary tables have been created.
+- **Authentication:** Native **Google OAuth 2.0** has been implemented for the Railway deployment, allowing users to sign up and log in. The legacy MongoDB code and Emergent-specific auth have been fully removed or made conditional to ensure portability.
+- **Features:** A significant number of features have been implemented, including a complete Admin Backoffice backend, a GEO Strategy Engine, implementation tracking, and an Article Optimizer simulator. The corresponding frontend pages (, ) have been connected to the new backend endpoints.
 
 **Last working item**:
-    - Last item agent was working: Resolving a  during a Railway deployment attempt. The agent identified that  and its related dependencies (, , ) were missing from  and added them.
-    - Status: USER VERIFICATION PENDING
-    - Agent Testing Done: Y
-    - Which testing method agent to use? Manual deployment on Railway by user. The agent has confirmed the fix with a local import check (), but the final verification must happen on the Railway platform, which the user has to trigger by saving the code to GitHub.
+    - Last item agent was working: Implementing Automatic Objectives which suggest a plan to improve a GEO score (e.g., 5 actions to get from B to A). The agent created the backend logic in the , added an API endpoint, and created a new frontend component .
+    - Status: IN PROGRESS
+    - Agent Testing Done: N
+    - Which testing method agent to use? manual testing by curl
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Finalize Railway Deployment (Priority: P0)
-  - Issue 2: Resolve  Installation (Priority: P1)
-  - Issue 3: External Database Connectivity (Priority: P2)
-  - Issue 4: Older Unverified UI/UX Fixes (Priority: P3)
-  - Issue 5: Microsoft/LinkedIn SSO Failure (Priority: P4)
+  - Issue 1:  endpoint fails with 500 error (Priority: P0)
+  - Issue 2: Finish Automatic Objectives Feature (Priority: P1)
+  - Issue 3: Microsoft/LinkedIn SSO Failure (Priority: P2)
 
   Issues Detail:
   - Issue 1: 
-     - Description: The application is not yet successfully deployed on Railway. The agent has fixed several  issues (, ), and the next step is for the user to trigger a new deployment.
+     - Description: The endpoint  which is critical for creating the first super-administrator account, is consistently returning a 500 Internal Server Error. This blocks all access to the admin panel.
+     - Attempted fixes: The agent confirmed the code seemed correct but did not add further logging or fully diagnose the root cause before moving on. The error could be in the database query () or due to the user not existing.
      - Next debug checklist: 
-       1. Ask the user to Save to Github to trigger the Railway deployment.
-       2. Ask the user to provide the new deployment logs from Railway if it fails again.
-     - Why fix this issue and what will be achieved with the fix? This will provide a live, production-like environment for the application, which was the user's primary goal for the session.
-     - Status:  USER VERIFICATION PENDING
+       1. Add detailed logging to the  function in .
+       2. Check the Railway deployment logs immediately after calling the endpoint to capture the specific Python exception.
+       3. Verify that the user's email exists in the  table in the Supabase database *before* calling the endpoint.
+       4. Refactor the function to provide a more descriptive error message if the user is not found.
+     - Why fix this issue and what will be achieved with the fix? This is a critical blocker. Fixing it will allow the user to gain admin privileges and test all the newly created Admin Backoffice features.
+     - Status:  IN PROGRESS
      - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? Backend
   - Issue 2: 
-     - Description: The  extension, critical for semantic search, is not installed. This was the top priority before the focus shifted to deployment.
+     - Description: The Automatic Objectives feature has backend and frontend components created but is not yet integrated into the main UI.
      - Next debug checklist: 
-       1. Attempt to install  and other build dependencies.
-       2. Connect to the local  and run .
-       3. Verify with  in .
-     - Why fix this issue and what will be achieved with the fix? Unblocks all semantic analysis and similarity search features, which are core to the IAskan product.
+       1. Add a button or section in the  or  to trigger fetching and displaying the  component.
+       2. Test the full flow: run an analysis, open the strategy panel, and view the automatic objectives.
+     - Why fix this issue and what will be achieved with the fix? Completes a user-requested feature enhancement.
      - Status:  NOT STARTED
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix? Backend
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Both
   - Issue 3: 
-     - Description: The app runs on a local PostgreSQL instance as the environment cannot resolve DNS for the user's cloud databases (Supabase/Railway).
-     - Status:  BLOCKED
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix? Backend
-     - Blocked on other issue: Environment networking limitations.
-  - Issue 4: 
-     - Description: Several UI/UX fixes from previous sessions (URL truncation,  error, backend timeout) have not been explicitly verified by the user.
-     - Status:  USER VERIFICATION PENDING
-     - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? Frontend
-  - Issue 5: 
-     - Description: Microsoft/LinkedIn SSO login fails with a  error.
+     - Description: Microsoft/LinkedIn SSO login fails with a  error. This was a low-priority issue from a previous session.
      - Status:  BLOCKED
      - Is recurring issue? N
      - Should Test frontend/backend/both after fix? Backend
-     - Blocked on other issue: Awaiting user credentials/testing.
+     - Blocked on other issue: Awaiting user credentials/testing and prioritization.
 
 **In progress Task List**:
   - None.
 
 **Upcoming and Future Tasks**
-*   **Phase 1 — MVP intelligent (Remaining Tasks):**
-    *   **P1 - Implement Admin Backoffice Backend:** Create API endpoints to fetch data for the admin dashboard (user lists, project stats, API costs).
-    *   **P2 - Connect  and :** Wire up the remaining frontend pages to their respective backend APIs.
-
-*   **Phase 2 — Qualité des résultats:**
-    *   **P1 - Implement GEO Strategy Engine:** Build the logic to generate actionable recommendations.
-    *   **P2 - Implement Advanced Scoring:** Add logic for multi-run stability and other advanced metrics.
-    *   **P2 - Implement Full Exports:** Create backend logic for CSV/JSON exports.
-
-*   **Phase 3 & 4 — Differentiation & Competitive Advantage:**
-    *   **P1 - Implement Article Optimizer/Simulator:** Build the core backend logic for this key feature.
-    *   **P2 - Implement Remaining Engines:** Build out the logic for , , and .
-    *   **P2 - Stripe Integration:** Implement the full billing, subscription, and quota management system.
+*   **P0 - Implement Semantic Search:** Use the now-enabled  extension to build the core semantic search functionality for finding similar queries and analyzing content gaps. This is a core product feature.
+*   **P1 - Integrate Article Optimizer Frontend:** The  component has been created but needs to be integrated into a new or existing page in the UI.
+*   **P2 - Connect  Analytics:** The  was added to  but the data fetching logic for the charts needs to be fully implemented and tested.
+*   **P2 - Implement Full Exports:** Create backend logic for CSV/JSON exports of analysis data.
+*   **P3 - Stripe Integration:** Implement the full billing, subscription, and quota management system.
 
 **Completed work in this session**
-- **Railway Deployment Preparation:** Created all necessary configuration files for deploying the monorepo on Railway (, , ).
-- **Code Portability Refactoring:** Created an abstraction layer (, ) to remove the hard dependency on the  package. The application now gracefully falls back to using the native usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
-              [-o ORGANIZATION] [-t {openai,azure}]
-              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
-              [--azure-ad-token AZURE_AD_TOKEN] [-V]
-              {api,tools,migrate,grit} ...
-
-positional arguments:
-  {api,tools,migrate,grit}
-    api                 Direct API calls
-    tools               Client side tools for convenience
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set verbosity.
-  -b API_BASE, --api-base API_BASE
-                        What API base url to use.
-  -k API_KEY, --api-key API_KEY
-                        What API key to use.
-  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
-                        What proxy to use.
-  -o ORGANIZATION, --organization ORGANIZATION
-                        Which organization to run as (will use your default
-                        organization if not specified)
-  -t {openai,azure}, --api-type {openai,azure}
-                        The backend API to call, must be `openai` or `azure`
-  --api-version API_VERSION
-                        The Azure API version, e.g.
-                        'https://learn.microsoft.com/en-us/azure/ai-
-                        services/openai/reference#rest-api-versioning'
-  --azure-endpoint AZURE_ENDPOINT
-                        The Azure endpoint, e.g.
-                        'https://endpoint.openai.azure.com'
-  --azure-ad-token AZURE_AD_TOKEN
-                        A token from Azure Active Directory,
-                        https://www.microsoft.com/en-
-                        us/security/business/identity-access/microsoft-entra-
-                        id
-  -V, --version         show program's version number and exit and  SDKs when deployed outside the Emergent environment.
-- **Dependency Fixes:** Identified and added missing packages (, , , ) to  to fix deployment errors.
-- **Deployment Guidance:** Provided the user with a comprehensive, step-by-step guide () for setting up the project, services (PostgreSQL, Redis), and environment variables on Railway.
+- **Full Railway Deployment:** Deployed both the FastAPI backend and React frontend as separate services on Railway, resolving all build and runtime issues.
+- **Custom Domain & DNS Configuration:** Successfully configured  (frontend) and  (backend), including DNS (CNAME) setup and domain root redirection.
+- **Database Migration to Supabase:** Switched the database from Railway's internal PostgreSQL to Supabase to leverage the pre-installed  extension. Fixed all connection issues, including using the correct connection pooler URL.
+- **Native Google OAuth Implementation:** Implemented a complete, stateless Google OAuth 2.0 flow for the Railway deployment, including backend routes (, ) and frontend logic to handle authentication outside the Emergent environment.
+- **Production Readiness & Code Portability:** Systematically removed all legacy MongoDB code and hard dependencies on , making the server fully portable and fixing startup crashes ().
+- **CORS Resolution:** Fixed critical CORS errors that occurred when using credentials by correctly configuring the FastAPI  to use specific origins instead of a wildcard.
+- **Feature: Admin Backoffice Backend:** Implemented 12 API endpoints for user management, statistics, and system administration by refactoring the legacy  router to use PostgreSQL.
+- **Feature: GEO Strategy Engine:** Created the backend engine, API router, and a  frontend component to generate and display GEO recommendations.
+- **Feature: Implementation Score:** Added a system to track completed recommendations, including a new DB model, API endpoints, and UI elements (progress bar, track buttons) in the .
+- **Feature: Article Optimizer Simulator:** Enhanced the  with an impact simulation method and created an  component.
+- **Feature: Admin Dashboard Charts:** Added a new Analytics tab with chart components () to the .
 
 **Earlier issues found/mentioned but not fixed**
-   - The agent's container environment cannot resolve external DNS names, which prevents connection to the user's Supabase or Railway PostgreSQL databases. This is a known, persistent blocker for production parity.
+   - Issue 1:  endpoint fails with 500 error. This was encountered during this session and is now the highest priority pending issue.
 
 **Known issue recurrence from previous fork**
   - **Issue recurrence in previous fork:** React DOM .
-  - **Recurrence count:** High.
-  - **Status:** RESOLVED (in a past session). **Critical Constraint: DO NOT upgrade React from v18.2.0.**
+  - **Status:** RESOLVED. **Critical Constraint: DO NOT upgrade React from v18.2.0.**
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend:** React  (locked), Tailwind CSS, Shadcn/UI, 
-- **Backend:** FastAPI, PostgreSQL, SQLAlchemy, Celery, Redis
-- **Deployment:** Configuration for Railway (using Nixpacks)
+- **Frontend:** React  (locked), Tailwind CSS, Shadcn/UI, , 
+- **Backend:** FastAPI, PostgreSQL (Supabase), SQLAlchemy, Celery, Redis, 
+- **Deployment:** Railway (dual services for frontend/backend), Nixpacks, Custom Domains
+- **Authentication:** Native Google OAuth 2.0 (stateless)
 
 **key DB schema**
-  - Defined in . Includes , , , , , etc. (17 tables total).
+  - All tables are now in the Supabase PostgreSQL database, defined in .
+  - **New tables:** .
 
 **changes in tech stack**
-- No change in the core stack. Added an abstraction layer in the code to support deployment portability between the Emergent environment and Railway.
+- **Database:** Migrated from Railway PostgreSQL to **Supabase PostgreSQL**.
+- **Authentication:** Replaced Emergent-managed Google Auth with a native **Google OAuth 2.0** implementation using .
 
 **All files of reference**
-- **Newly Created:** , , , , , , 
-- **Modified:** , , , , and other files that previously imported .
+- **Newly Created:** , , , , , , .
+- **Heavily Modified:** , , , , , , , .
 
 **Areas that need refactoring**:
-- ****: Still contains a significant amount of dead code from the pre-refactor era (old MongoDB routes, analysis logic). This should be cleaned up.
-- **MongoDB Fallback Code**: The codebase contains logic to fall back to MongoDB if  is false. This can be removed to simplify the data layer.
+- The  endpoint in  needs better error handling and logging to be debuggable.
 
 **key api endpoints**
-- , , 
--  (Triggers Celery task)
+-  (NEEDS FIXING)
+- , , etc. (12 new admin endpoints)
+- ,  (Native Google Auth)
+- , ,  (New Strategy endpoints)
 
 **Critical Info for New Agent**
 - **Vous DEVEZ répondre en français.**
-- The user's immediate goal is to get the application deployed on **Railway**. The last session fixed several blockers, but final success is unconfirmed. Your first action should be to check the status of this deployment with the user.
-- The code now has an **abstraction layer** for . This is a key architectural change for portability. It uses native SDKs for OpenAI and Stripe when not on Emergent.
-- After resolving the deployment, the next most critical task is to **install the  extension**, which is a blocker for core product features.
-- The external database connection issue (DNS) persists. Continue development on the local PostgreSQL instance for now.
+- The application is **live** on Railway with custom domains. Do not use localhost for testing public-facing features like OAuth.
+- **The #1 priority is to fix the  endpoint.** The user cannot access any admin functionality until this is resolved. Debug this by checking Railway logs and adding more detailed logging in the code.
+- After fixing the admin setup, the next priority is to fully implement the core product feature: **semantic search using **. The database is ready for this.
 
 **documents and test reports created in this job**
-  - /app/README.railway.md
-  - /app/railway.json
-  - /app/nixpacks.toml
-  - /app/backend/nixpacks.toml
-  - /app/backend/start.sh
+  - /app/GOOGLE_OAUTH_SETUP.md
+  - /app/DEPLOY_FRONTEND_RAILWAY.md
 
-**Last 10 User Messages and any pending HUMAN messages** 
- -  **User:** Asks if frontend and backend can be hosted on Emergent. (Status: Completed, agent confirmed it's already active).
- -  **User:** Provides error log from Railway showing  could not be found. (Status: Completed, agent implemented abstraction layer).
- -  **User:** Provides another error log from Railway showing . (Status: Completed, part of the same fix).
- -  **User:** Provides a new error log from Railway showing . (Status: Completed, agent added missing dependencies to ).
- -  **User:** Asks clarifying questions about environment variables for Railway (e.g., , , meaning of replace with Railway URL). (Status: Completed, agent provided detailed explanations).
- -  **User:** Asks for the real URLs and keys for the environment variables. (Status: Completed, agent provided the values, clarifying which ones are generated by Railway).
- -  **User:** Redige les étapes configuration railway un à un (Write down the railway configuration steps one by one). (Status: Completed, agent provided a detailed guide).
+**Last 10 User Messages and any pending HUMAN messages**
+- **User:** Asks to continue with feature development. (Status: Completed)
+- **User:** Selects P4 - GEO Strategy Engine as the next task. (Status: Completed)
+- **User:** Agrees to add an implementation score feature and then work on the Article Optimizer. (Status: Completed)
+- **User:** Agrees to add automatic objectives and then work on pgvector semantic search. (Status: Completed, but pgvector was not started)
+- **User:** Asks to continue with feature development after the implementation score is done. (Status: Completed)
+- **User:** Asks to continue with evolutions. (Status: Completed)
+- **User:** Asks to continue evolutions after Admin page is connected. (Status: Completed)
+- **User:** Wants to add a real-time dashboard with charts to the Admin page, then configure the super_admin account. (Status: In Progress)
+- **User:** Asks what the  curl command does and which email to use. (Status: Completed, agent explained)
+- **User:** fait (done) - indicating they have run a command or deployed. (Status: Actioned by agent)
 
 **Project Health Check:**
 - **Broken**:
-    - **Railway Deployment:** The deployment is unverified and was failing before the last set of fixes.
-    - ** extension:** Not installed, blocking semantic search features.
-    - **Cloud DB Connection:** Connection to Supabase/Railway is non-functional due to environment DNS limitations.
+    - **Admin Access:** The  endpoint is broken, preventing any user from gaining admin rights. This is a critical blocker.
 - **Mocked**:
-    - Admin-related frontend pages (, ) are UI shells awaiting backend data.
+    - The  and  components are created but not yet integrated into the UI.
 
 **3rd Party Integrations**
-- **Active**: Emergent-managed Google Auth, Resend, **PostgreSQL**, **Celery**, **Redis**.
-- **LLMs/Payments**: Uses  on Emergent platform. Has a fallback abstraction to use native usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+- **Active**: Google OAuth 2.0 (native ), Supabase (PostgreSQL + pgvector), Resend, Railway.
+- **LLMs/Payments**: Uses an abstraction layer that falls back to native usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
               [-o ORGANIZATION] [-t {openai,azure}]
               [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
               [--azure-ad-token AZURE_AD_TOKEN] [-V]
@@ -277,9 +193,8 @@ options:
                         https://www.microsoft.com/en-
                         us/security/business/identity-access/microsoft-entra-
                         id
-  -V, --version         show program's version number and exit and  SDKs on external platforms like Railway.
-- **Planned/Required**: Stripe (full implementation), **pgvector**.
-- **Decommissioned**: MongoDB, .
+  -V, --version         show program's version number and exit and  SDKs. Stripe is not fully integrated yet.
+- **Decommissioned**: Emergent-managed Google Auth (on Railway), MongoDB.
 
 **Testing status**
   - Testing agent used after significant changes: NO
@@ -288,7 +203,7 @@ options:
   - Known regressions: None.
 
 **Credentials to test flow:**
-Use Google SSO for authentication.
+Use the live frontend at  and authenticate via the Continuer avec Google button. The backend is at .
 
 **What agent forgot to execute**
-The agent correctly prioritized the user's immediate request to debug the Railway deployment. As a result, it did not work on any of the previously planned tasks from the handoff summary, such as installing  or building the Admin Backoffice. This was a reasonable trade-off to address the user's active problem.</analysis>
+The agent did not fully resolve the 500 error on the  endpoint. After an initial failed attempt to fix it, the user prompted to move on to other features, and the agent did. This critical bug was left unresolved and should have been prioritized over new features.</analysis>

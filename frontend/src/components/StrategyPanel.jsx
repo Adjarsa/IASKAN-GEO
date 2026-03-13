@@ -21,8 +21,10 @@ import {
   Check,
   PlayCircle,
   Circle,
-  BarChart3
+  BarChart3,
+  Flag
 } from 'lucide-react';
+import { AutomaticObjectives } from './AutomaticObjectives';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -73,6 +75,7 @@ export function StrategyPanel({ analysisId, globalScore, rateScores, diagnostics
   const [expandedRecs, setExpandedRecs] = useState({});
   const [progress, setProgress] = useState(null);
   const [trackingRec, setTrackingRec] = useState(null);
+  const [activeTab, setActiveTab] = useState('recommendations'); // 'recommendations' or 'objectives'
 
   useEffect(() => {
     generateStrategy();
@@ -347,7 +350,7 @@ export function StrategyPanel({ analysisId, globalScore, rateScores, diagnostics
       )}
 
       {/* Quick Wins */}
-      {quick_wins && quick_wins.length > 0 && (
+      {activeTab === 'recommendations' && quick_wins && quick_wins.length > 0 && (
         <div className="bg-gradient-to-r from-violet-500/10 to-cyan-500/10 rounded-xl p-6 border border-violet-500/20">
           <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
             <Zap className="w-5 h-5 text-yellow-400" />
@@ -372,7 +375,47 @@ export function StrategyPanel({ analysisId, globalScore, rateScores, diagnostics
         </div>
       )}
 
-      {/* Category Filter */}
+      {/* Tab Switcher */}
+      <div className="flex gap-2 border-b border-slate-700 pb-1">
+        <button
+          onClick={() => setActiveTab('recommendations')}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-2 ${
+            activeTab === 'recommendations'
+              ? 'bg-violet-500/20 text-violet-400 border-b-2 border-violet-400'
+              : 'text-slate-400 hover:text-white'
+          }`}
+          data-testid="tab-recommendations"
+        >
+          <Lightbulb className="w-4 h-4" />
+          Recommandations ({recommendations?.length || 0})
+        </button>
+        <button
+          onClick={() => setActiveTab('objectives')}
+          className={`px-4 py-2 rounded-t-lg font-medium transition-colors flex items-center gap-2 ${
+            activeTab === 'objectives'
+              ? 'bg-violet-500/20 text-violet-400 border-b-2 border-violet-400'
+              : 'text-slate-400 hover:text-white'
+          }`}
+          data-testid="tab-objectives"
+        >
+          <Flag className="w-4 h-4" />
+          Objectifs Automatiques
+        </button>
+      </div>
+
+      {/* Automatic Objectives Tab */}
+      {activeTab === 'objectives' && (
+        <AutomaticObjectives
+          analysisId={analysisId}
+          currentScore={summary?.global_score || globalScore || 50}
+          showAllPaths={true}
+        />
+      )}
+
+      {/* Recommendations Tab */}
+      {activeTab === 'recommendations' && (
+        <>
+          {/* Category Filter */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-2">
           <button
@@ -602,6 +645,8 @@ export function StrategyPanel({ analysisId, globalScore, rateScores, diagnostics
             ))}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

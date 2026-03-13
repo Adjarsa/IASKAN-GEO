@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260313_000536/results.json' }],
   ],
   use: {
-    baseURL: 'https://optimize-visibility.preview.emergentagent.com',
+    baseURL: 'https://iaskan-preview-1.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,

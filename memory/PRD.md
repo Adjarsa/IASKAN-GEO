@@ -78,6 +78,7 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
   - Plan d'action 30/60/90 jours
   - Stratégie de distribution
   - Export Markdown
+  - **Simulateur d'Impact intégré** (Mars 2026)
   
 - [x] **Organisations/Workspaces** (Nouveau!)
   - Création d'organisations
@@ -91,6 +92,14 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
   - Mise à jour plans
   - Reset quotas
   - Logs admin
+  - Tableau de bord avec graphiques (recharts)
+
+- [x] **GEO Strategy Engine** (Mars 2026)
+  - Génération de recommandations par catégorie (content, authority, technical, engagement)
+  - Plan d'action en 3 phases
+  - Quick wins identifiés
+  - Système de tracking d'implémentation
+  - **Objectifs Automatiques** - Plan d'amélioration pour atteindre la note supérieure
 
 - [x] **Onboarding Guidé** (Nouveau!)
   - Tutoriel interactif en 6 étapes
@@ -143,6 +152,19 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - `POST /api/article-optimizer/analyze-with-llm` - Analyse enrichie IA
 - `GET /api/article-optimizer/quota` - Vérifier quota
 - `GET /api/article-optimizer/history` - Historique
+- `GET /api/article-optimizer/improvement-options` - Options d'amélioration pour simulateur
+- `POST /api/article-optimizer/simulate` - Simulation d'impact
+
+### Strategy
+- `POST /api/strategy/generate` - Générer stratégie depuis scores
+- `POST /api/strategy/from-analysis` - Générer depuis analyse existante
+- `GET /api/strategy/recommendations/{category}` - Recommandations par catégorie
+- `GET /api/strategy/objective/{score}` - Objectif automatique depuis score
+- `GET /api/strategy/objective/from-analysis/{id}` - Objectif depuis analyse
+- `GET /api/strategy/paths/{score}` - Tous les chemins d'amélioration
+- `POST /api/strategy/progress/{project_id}/track` - Tracker recommandation
+- `PUT /api/strategy/progress/{id}/status` - Mettre à jour status
+- `GET /api/strategy/progress/{project_id}` - Progression projet
 
 ### Organizations
 - `POST /api/organizations` - Créer organisation
