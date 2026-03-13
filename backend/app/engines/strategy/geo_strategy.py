@@ -605,3 +605,202 @@ class GEOStrategyEngine:
         }
         
         return self.generate_strategy(analysis_result)
+
+
+    def generate_grade_objective(
+        self,
+        current_score: float,
+        target_grade: str = None,
+        recommendations: List[Dict] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate an automatic objective to reach the next grade.
+        
+        Args:
+            current_score: Current global score
+            target_grade: Target grade (A, B, C, D) or None for next grade
+            recommendations: Available recommendations
+            
+        Returns:
+            Objective with required actions and projected timeline
+        """
+        # Define grade thresholds
+        GRADE_THRESHOLDS = {
+            "A": 80,
+            "B": 60,
+            "C": 40,
+            "D": 0
+        }
+        
+        GRADE_NAMES = {
+            "A": "Excellent",
+            "B": "Bon",
+            "C": "Moyen",
+            "D": "Faible"
+        }
+        
+        # Determine current grade
+        if current_score >= 80:
+            current_grade = "A"
+        elif current_score >= 60:
+            current_grade = "B"
+        elif current_score >= 40:
+            current_grade = "C"
+        else:
+            current_grade = "D"
+        
+        # Determine target grade
+        if target_grade is None:
+            # Aim for next grade up
+            grade_order = ["D", "C", "B", "A"]
+            current_idx = grade_order.index(current_grade)
+            if current_idx < len(grade_order) - 1:
+                target_grade = grade_order[current_idx + 1]
+            else:
+                target_grade = "A"  # Already at A, maintain
+        
+        target_threshold = GRADE_THRESHOLDS.get(target_grade, 80)
+        points_needed = max(0, target_threshold - current_score)
+        
+        # If already at or above target
+        if points_needed <= 0:
+            return {
+                "objective": {
+                    "current_grade": current_grade,
+                    "current_score": current_score,
+                    "target_grade": target_grade,
+                    "target_score": target_threshold,
+                    "points_needed": 0,
+                    "status": "achieved",
+                    "message": f"Félicitations ! Vous avez déjà atteint la note {target_grade} ({GRADE_NAMES[target_grade]})"
+                },
+                "actions": [],
+                "timeline": "Aucune action requise"
+            }
+        
+        # Select best actions to reach target
+        if recommendations is None:
+            # Generate default recommendations
+            result = self.generate_from_scores(current_score)
+            recommendations = result.get("strategy", {}).get("recommendations", [])
+        
+        # Impact estimation per recommendation
+        IMPACT_MAP = {
+            "critical": 8,
+            "high": 6,
+            "medium": 4,
+            "low": 2
+        }
+        
+        selected_actions = []
+        cumulative_points = 0
+        
+        for rec in recommendations:
+            if cumulative_points >= points_needed:
+                break
+                
+            impact = IMPACT_MAP.get(rec.get("priority", "medium"), 4)
+            
+            # Adjust impact based on effort
+            effort = rec.get("effort", "medium")
+            if effort == "low":
+                impact *= 1.2
+            elif effort == "high":
+                impact *= 0.8
+            
+            selected_actions.append({
+                "title": rec.get("title"),
+                "category": rec.get("category"),
+                "priority": rec.get("priority"),
+                "estimated_impact": round(impact, 1),
+                "effort": rec.get("effort", "medium"),
+                "timeline": rec.get("timeline", "1-2 semaines")
+            })
+            
+            cumulative_points += impact
+        
+        # Calculate timeline
+        total_effort = sum(
+            1 if a.get("effort") == "low" else 
+            2 if a.get("effort") == "medium" else 3
+            for a in selected_actions
+        )
+        
+        if total_effort <= 3:
+            timeline = "1-2 semaines"
+        elif total_effort <= 6:
+            timeline = "2-4 semaines"
+        else:
+            timeline = "1-2 mois"
+        
+        # Determine probability of success
+        if cumulative_points >= points_needed * 1.5:
+            probability = "high"
+            probability_pct = 90
+        elif cumulative_points >= points_needed:
+            probability = "medium"
+            probability_pct = 75
+        else:
+            probability = "low"
+            probability_pct = 50
+        
+        return {
+            "objective": {
+                "current_grade": current_grade,
+                "current_grade_name": GRADE_NAMES[current_grade],
+                "current_score": current_score,
+                "target_grade": target_grade,
+                "target_grade_name": GRADE_NAMES[target_grade],
+                "target_score": target_threshold,
+                "points_needed": round(points_needed, 1),
+                "projected_points": round(cumulative_points, 1),
+                "status": "in_progress",
+                "message": f"{len(selected_actions)} actions pour passer de {current_grade} à {target_grade}"
+            },
+            "actions": selected_actions,
+            "timeline": timeline,
+            "probability": {
+                "level": probability,
+                "percentage": probability_pct,
+                "note": "Basé sur l'impact estimé des actions sélectionnées"
+            },
+            "milestones": self._generate_milestones(current_score, target_threshold, selected_actions)
+        }
+    
+    def _generate_milestones(
+        self, 
+        current_score: float, 
+        target_score: float, 
+        actions: List[Dict]
+    ) -> List[Dict]:
+        """Generate milestones for tracking progress."""
+        milestones = []
+        score_increment = (target_score - current_score) / min(len(actions), 4)
+        
+        milestone_score = current_score
+        for i, action in enumerate(actions[:4]):
+            milestone_score += score_increment
+            milestones.append({
+                "number": i + 1,
+                "target_score": round(milestone_score, 1),
+                "action": action.get("title"),
+                "status": "pending"
+            })
+        
+        return milestones
+    
+    def get_all_grade_paths(self, current_score: float) -> Dict[str, Any]:
+        """
+        Get objectives for all possible grade improvements.
+        """
+        paths = {}
+        
+        for target_grade in ["A", "B", "C"]:
+            objective = self.generate_grade_objective(current_score, target_grade)
+            if objective["objective"]["points_needed"] > 0:
+                paths[target_grade] = objective
+        
+        return {
+            "current_score": current_score,
+            "available_paths": paths
+        }

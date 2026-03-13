@@ -237,6 +237,88 @@ async def get_strategy_templates(
     }
 
 
+# ================== AUTOMATIC OBJECTIVES ==================
+
+@router.get("/objective/{score}")
+async def get_automatic_objective(
+    score: int,
+    target_grade: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get automatic objective to reach the next grade.
+    """
+    if score < 0 or score > 100:
+        raise HTTPException(status_code=400, detail="Score doit être entre 0 et 100")
+    
+    if target_grade and target_grade not in ["A", "B", "C", "D"]:
+        raise HTTPException(status_code=400, detail="Grade invalide (A, B, C ou D)")
+    
+    objective = strategy_engine.generate_grade_objective(
+        current_score=score,
+        target_grade=target_grade
+    )
+    
+    return objective
+
+
+@router.get("/objective/from-analysis/{analysis_id}")
+async def get_objective_from_analysis(
+    analysis_id: str,
+    target_grade: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get automatic objective based on an existing analysis.
+    """
+    async with async_session_maker() as db:
+        analysis = await AnalysisService.get_by_id(db, analysis_id)
+        
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analyse non trouvée")
+        
+        if analysis.user_id != user["user_id"]:
+            raise HTTPException(status_code=403, detail="Accès non autorisé")
+        
+        current_score = analysis.global_score or 50
+        
+        # Generate recommendations first
+        analysis_result = {
+            "global_score": current_score,
+            "grade": analysis.grade,
+            "rate_scores": analysis.rate_scores or {},
+            "diagnostics": analysis.diagnostics or {}
+        }
+        
+        strategy_result = strategy_engine.generate_strategy(analysis_result)
+        recommendations = strategy_result.get("strategy", {}).get("recommendations", [])
+        
+        # Generate objective
+        objective = strategy_engine.generate_grade_objective(
+            current_score=current_score,
+            target_grade=target_grade,
+            recommendations=recommendations
+        )
+        
+        return {
+            "analysis_id": analysis_id,
+            **objective
+        }
+
+
+@router.get("/paths/{score}")
+async def get_all_improvement_paths(
+    score: int,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get all possible improvement paths to different grades.
+    """
+    if score < 0 or score > 100:
+        raise HTTPException(status_code=400, detail="Score doit être entre 0 et 100")
+    
+    return strategy_engine.get_all_grade_paths(score)
+
 
 # ================== IMPLEMENTATION TRACKING ==================
 
