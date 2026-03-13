@@ -355,6 +355,30 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - Service EmailService avec templates HTML responsives
 - Mise à jour plans d'abonnement avec nouvelles features
 
+### Session 13 Mars 2026 - Déploiement Railway & Production
+
+#### Déploiement Production ✅
+- **Frontend**: https://www.iaskan.com (Railway)
+- **Backend**: https://api.iaskan.com (Railway)
+- **Base de données**: Supabase PostgreSQL avec pgvector
+
+#### Accomplissements
+- ✅ Déploiement monorepo sur Railway (backend + frontend)
+- ✅ Configuration domaine personnalisé (iaskan.com, api.iaskan.com)
+- ✅ Google OAuth natif (sans dépendance Emergent Auth)
+- ✅ Migration vers Supabase PostgreSQL avec pgvector
+- ✅ Abstraction layer pour portabilité (emergentintegrations → native SDKs)
+- ✅ Admin Backoffice PostgreSQL (12 endpoints)
+- ✅ Onglet Analyses dans Admin avec erreurs
+- ✅ CORS configuré pour credentials
+
+#### Variables d'environnement Railway (Backend)
+- `DATABASE_URL` - Supabase pooler connection
+- `USE_POSTGRES=true`
+- `FRONTEND_URL=https://www.iaskan.com`
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+- `SESSION_SECRET_KEY`
+
 ### Sessions précédentes
 - Logo et branding IAskan
 - Analyse concurrentielle améliorée

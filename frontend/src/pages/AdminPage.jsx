@@ -394,11 +394,161 @@ export default function AdminPage() {
 
         {/* Analyses Tab */}
         {activeTab === 'analyses' && (
-          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
-            <p className="text-slate-400">Liste des analyses à venir...</p>
-          </div>
+          <AnalysesTab />
         )}
       </div>
+    </div>
+  );
+}
+
+// Separate component for Analyses tab
+function AnalysesTab() {
+  const [analyses, setAnalyses] = useState([]);
+  const [errors, setErrors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeSubTab, setActiveSubTab] = useState('all');
+
+  useEffect(() => {
+    fetchAnalyses();
+  }, []);
+
+  const fetchAnalyses = async () => {
+    setLoading(true);
+    try {
+      const [analysesRes, errorsRes] = await Promise.all([
+        axios.get(`${BACKEND_URL}/api/admin/analyses?limit=50`, { withCredentials: true }),
+        axios.get(`${BACKEND_URL}/api/admin/errors?limit=20`, { withCredentials: true })
+      ]);
+      setAnalyses(analysesRes.data.analyses || []);
+      setErrors(errorsRes.data.errors || []);
+    } catch (err) {
+      console.error('Fetch analyses error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Sub-tabs */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveSubTab('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeSubTab === 'all' 
+              ? 'bg-violet-500 text-white' 
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          Toutes ({analyses.length})
+        </button>
+        <button
+          onClick={() => setActiveSubTab('errors')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeSubTab === 'errors' 
+              ? 'bg-red-500 text-white' 
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          <AlertTriangle className="w-4 h-4 inline mr-1" />
+          Erreurs ({errors.length})
+        </button>
+      </div>
+
+      {/* All Analyses */}
+      {activeSubTab === 'all' && (
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-slate-800">
+              <tr>
+                <th className="text-left px-4 py-3 text-sm font-semibold text-slate-300">ID</th>
+                <th className="text-left px-4 py-3 text-sm font-semibold text-slate-300">Status</th>
+                <th className="text-left px-4 py-3 text-sm font-semibold text-slate-300">Score</th>
+                <th className="text-left px-4 py-3 text-sm font-semibold text-slate-300">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700">
+              {analyses.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="px-4 py-8 text-center text-slate-400">
+                    Aucune analyse pour le moment
+                  </td>
+                </tr>
+              ) : (
+                analyses.map((analysis) => (
+                  <tr key={analysis.analysis_id} className="hover:bg-slate-800/50">
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-mono text-slate-300">
+                        {analysis.analysis_id?.slice(0, 12)}...
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        analysis.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                        analysis.status === 'failed' ? 'bg-red-500/20 text-red-400' :
+                        analysis.status === 'running' ? 'bg-cyan-500/20 text-cyan-400' :
+                        'bg-slate-600 text-slate-300'
+                      }`}>
+                        {analysis.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {analysis.global_score ? (
+                        <span className="font-semibold text-white">
+                          {analysis.global_score}/100
+                          {analysis.grade && <span className="ml-2 text-violet-400">{analysis.grade}</span>}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-400">
+                      {analysis.created_at ? new Date(analysis.created_at).toLocaleString('fr-FR') : '-'}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Errors */}
+      {activeSubTab === 'errors' && (
+        <div className="space-y-4">
+          {errors.length === 0 ? (
+            <div className="bg-slate-800/50 rounded-xl p-8 border border-slate-700 text-center">
+              <AlertTriangle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+              <p className="text-slate-300">Aucune erreur récente</p>
+            </div>
+          ) : (
+            errors.map((error) => (
+              <div key={error.analysis_id} className="bg-slate-800/50 rounded-xl p-4 border border-red-500/30">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-mono text-slate-400 mb-1">
+                      {error.analysis_id}
+                    </p>
+                    <p className="text-red-300">{error.error_message || 'Erreur inconnue'}</p>
+                    <p className="text-xs text-slate-500 mt-2">
+                      {error.created_at ? new Date(error.created_at).toLocaleString('fr-FR') : ''}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
