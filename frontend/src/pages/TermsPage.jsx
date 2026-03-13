@@ -52,11 +52,10 @@ const TermsPage = () => {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">Article 3 - Offres et tarifs</h2>
             
-            <h3 className="text-lg font-medium text-slate-800 mb-2">3.1 Essai gratuit</h3>
+            <h3 className="text-lg font-medium text-slate-800 mb-2">3.1 Plan Gratuit</h3>
             <p className="text-slate-700 mb-4">
-              Un essai gratuit unique est proposé aux nouveaux utilisateurs. Cet essai est limité à un 
-              scan par utilisateur, domaine, adresse IP et appareil. Toute tentative de contournement 
-              entraînera la suspension du compte.
+              Un plan gratuit est proposé à tous les utilisateurs, incluant 1 audit GEO par mois. 
+              Ce plan est limité à un scan par mois et par compte utilisateur.
             </p>
 
             <h3 className="text-lg font-medium text-slate-800 mb-2">3.2 Abonnements payants</h3>
@@ -71,6 +70,12 @@ const TermsPage = () => {
                   </tr>
                 </thead>
                 <tbody>
+                  <tr className="border-t border-slate-200">
+                    <td className="px-4 py-2">Gratuit</td>
+                    <td className="px-4 py-2">0 €</td>
+                    <td className="px-4 py-2">1/mois</td>
+                    <td className="px-4 py-2">1</td>
+                  </tr>
                   <tr className="border-t border-slate-200">
                     <td className="px-4 py-2">Starter</td>
                     <td className="px-4 py-2">79 €</td>

@@ -139,10 +139,10 @@ const SettingsPage = () => {
                 <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50">
                   <div>
                     <p className="text-slate-900 font-medium">
-                      Plan {subscription?.plan?.charAt(0).toUpperCase() + subscription?.plan?.slice(1) || "Starter"}
+                      Plan {subscription?.plan?.charAt(0).toUpperCase() + subscription?.plan?.slice(1) || "Gratuit"}
                     </p>
                     <p className="text-sm text-slate-600">
-                      {subscription?.status === "trial" ? "Essai gratuit" : "Actif"}
+                      {subscription?.status === "active" ? "Actif" : "Gratuit"}
                     </p>
                   </div>
                   <Button variant="outline" onClick={() => navigate("/pricing")} data-testid="change-plan-btn">
@@ -154,25 +154,24 @@ const SettingsPage = () => {
                   <div className="p-4 rounded-lg bg-slate-50">
                     <p className="text-slate-600 text-sm">Requêtes utilisées</p>
                     <p className="text-2xl font-bold text-slate-900">
-                      {subscription?.queries_used || 0} / {subscription?.queries_limit || 300}
+                      {subscription?.queries_used || 0} / {subscription?.queries_limit || 90}
                     </p>
                   </div>
                   
                   <div className="p-4 rounded-lg bg-slate-50">
                     <p className="text-slate-600 text-sm">Prochaine facturation</p>
                     <p className="text-2xl font-bold text-slate-900">
-                      {subscription?.current_period_end 
+                      {subscription?.plan !== "free" && subscription?.current_period_end 
                         ? new Date(subscription.current_period_end).toLocaleDateString("fr-FR")
                         : "-"}
                     </p>
                   </div>
                 </div>
 
-                {subscription?.trial_ends_at && (
-                  <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
-                    <p className="text-amber-700">
-                      Votre essai gratuit se termine le{" "}
-                      {new Date(subscription.trial_ends_at).toLocaleDateString("fr-FR")}
+                {subscription?.plan === "free" && (
+                  <div className="p-4 rounded-lg bg-violet-50 border border-violet-200">
+                    <p className="text-violet-700">
+                      Profitez de votre audit GEO gratuit mensuel ! Passez à un plan supérieur pour plus de fonctionnalités.
                     </p>
                   </div>
                 )}

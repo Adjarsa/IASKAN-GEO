@@ -74,7 +74,7 @@ const PrivacyPage = () => {
               <li>Fournir et améliorer nos services d'analyse GEO</li>
               <li>Gérer votre compte et abonnement</li>
               <li>Vous envoyer des notifications relatives à vos analyses</li>
-              <li>Prévenir les fraudes et abus (notamment pour l'essai gratuit)</li>
+              <li>Prévenir les fraudes et abus</li>
               <li>Générer des statistiques anonymisées d'utilisation</li>
               <li>Respecter nos obligations légales</li>
             </ul>

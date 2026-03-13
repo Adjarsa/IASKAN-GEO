@@ -97,7 +97,7 @@ const VerifyEmailPage = () => {
             )}
             <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200 mb-6">
               <p className="text-sm text-emerald-800">
-                🎉 Vous pouvez maintenant utiliser votre <strong>essai gratuit</strong> pour analyser votre site !
+                🎉 Vous pouvez maintenant utiliser votre compte pour analyser votre site !
               </p>
             </div>
             <Button

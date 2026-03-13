@@ -134,7 +134,7 @@ const GDPRPage = () => {
                 <h3 className="font-semibold text-slate-900 mb-2">Données techniques</h3>
                 <ul className="list-disc pl-6 text-slate-700 space-y-1">
                   <li>Adresse IP (pour la sécurité et la prévention de la fraude)</li>
-                  <li>Empreinte navigateur (pour la protection anti-abus de l'essai gratuit)</li>
+                  <li>Empreinte navigateur (pour la protection anti-abus)</li>
                   <li>Cookies de session (strictement nécessaires)</li>
                 </ul>
               </div>

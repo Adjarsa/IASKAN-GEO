@@ -391,10 +391,10 @@ const DashboardPage = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-slate-900">
-                  Plan {subscription?.plan?.charAt(0).toUpperCase() + subscription?.plan?.slice(1) || "Starter"}
+                  Plan {subscription?.plan?.charAt(0).toUpperCase() + subscription?.plan?.slice(1) || "Gratuit"}
                 </h3>
                 <p className="text-xs text-slate-600">
-                  {subscription?.status === "trial" ? "Essai gratuit" : "Actif"}
+                  {subscription?.status === "active" ? "Actif" : "Gratuit"}
                 </p>
               </div>
             </div>
@@ -408,12 +408,12 @@ const DashboardPage = () => {
                 <Progress value={queriesPercent} className="h-2" />
               </div>
 
-              {subscription?.trial_ends_at && (
-                <div className="flex items-center gap-2 text-sm text-amber-600">
+              {subscription?.current_period_end && subscription?.plan !== "free" && (
+                <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Clock className="w-4 h-4" />
                   <span>
-                    Essai expire le{" "}
-                    {new Date(subscription.trial_ends_at).toLocaleDateString("fr-FR")}
+                    Renouvellement le{" "}
+                    {new Date(subscription.current_period_end).toLocaleDateString("fr-FR")}
                   </span>
                 </div>
               )}

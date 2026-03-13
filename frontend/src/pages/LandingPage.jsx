@@ -56,6 +56,20 @@ const LandingPage = () => {
 
   const plans = [
     {
+      name: "Gratuit",
+      price: "0",
+      queries: "1 audit/mois",
+      features: [
+        "1 audit GEO gratuit/mois",
+        "30 prompts",
+        "ChatGPT uniquement",
+        "Rapport standard",
+        "1 projet"
+      ],
+      popular: false,
+      isFree: true
+    },
+    {
       name: "Starter",
       price: "79",
       queries: "1 500",
@@ -311,10 +325,10 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">Tarifs simples et transparents</h2>
-            <p className="text-xl text-slate-700">7 jours d'essai gratuit sur tous les plans</p>
+            <p className="text-xl text-slate-700">Choisissez le plan adapté à vos besoins</p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {plans.map((plan, index) => (
               <motion.div
                 key={index}
@@ -331,7 +345,7 @@ const LandingPage = () => {
                     <span className="text-5xl font-bold text-slate-900">{plan.price}€</span>
                     <span className="text-slate-600">/mois</span>
                   </div>
-                  <p className="text-slate-600 mb-6">{plan.queries} requêtes/mois</p>
+                  <p className="text-slate-600 mb-6">{plan.queries} {plan.isFree ? '' : 'requêtes/mois'}</p>
                   
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, fIndex) => (
@@ -348,7 +362,7 @@ const LandingPage = () => {
                       variant={plan.popular ? 'default' : 'outline'}
                       data-testid={`pricing-${plan.name.toLowerCase()}-cta`}
                     >
-                      Commencer l'essai gratuit
+                      {plan.isFree ? "S'inscrire gratuitement" : "Choisir ce plan"}
                     </Button>
                   </Link>
                 </div>
