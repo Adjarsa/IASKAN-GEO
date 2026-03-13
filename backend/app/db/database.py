@@ -21,11 +21,23 @@ elif DATABASE_URL.startswith("postgres://"):
 else:
     ASYNC_DATABASE_URL = DATABASE_URL
 
-# Create async engine
+# Check if using Supabase (pgbouncer) - requires statement_cache_size=0
+is_supabase = "supabase" in DATABASE_URL or "pooler" in DATABASE_URL
+
+# Create async engine with pgbouncer compatibility
+connect_args = {}
+if is_supabase:
+    # Disable prepared statements for pgbouncer compatibility
+    connect_args = {
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+    }
+
 engine = create_async_engine(
     ASYNC_DATABASE_URL,
     echo=False,  # Set to True for SQL debugging
     poolclass=NullPool,  # Disable connection pooling for serverless compatibility
+    connect_args=connect_args,
 )
 
 # Create async session factory
