@@ -120,18 +120,33 @@ const LoginPage = () => {
       const errorMessages = {
         "microsoft_auth_failed": "Échec de l'authentification Microsoft",
         "linkedin_auth_failed": "Échec de l'authentification LinkedIn",
+        "google_auth_failed": "Échec de l'authentification Google",
         "invalid_state": "Session de connexion invalide. Veuillez réessayer.",
         "token_exchange_failed": "Erreur lors de l'échange de token",
-        "user_info_failed": "Impossible de récupérer les informations utilisateur"
+        "userinfo_failed": "Impossible de récupérer les informations utilisateur",
+        "user_info_failed": "Impossible de récupérer les informations utilisateur",
+        "temporary_email_blocked": "Les adresses email temporaires ne sont pas autorisées.",
+        "no_email": "Impossible de récupérer votre email. Veuillez réessayer.",
+        "timeout": "La connexion a pris trop de temps. Veuillez réessayer."
       };
       toast.error(errorMessages[error] || "Erreur de connexion");
     }
   }, [searchParams]);
 
   const handleGoogleLogin = () => {
-    // Redirect to login page with session_id in hash after Emergent auth
-    const redirectUrl = window.location.origin + '/login';
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+    // Check if we're on Emergent platform or external deployment (Railway)
+    const isEmergentPlatform = window.location.hostname.includes('emergentagent.com') || 
+                               window.location.hostname.includes('localhost');
+    
+    if (isEmergentPlatform) {
+      // Use Emergent Auth on Emergent platform
+      // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+      const redirectUrl = window.location.origin + '/login';
+      window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+    } else {
+      // Use native Google OAuth on external deployments (Railway, etc.)
+      window.location.href = `${API}/auth/google/login`;
+    }
   };
 
   const handleMicrosoftLogin = () => {

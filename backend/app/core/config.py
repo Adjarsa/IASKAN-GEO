@@ -25,6 +25,8 @@ STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 
 # OAuth
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 MICROSOFT_CLIENT_ID = os.environ.get('MICROSOFT_CLIENT_ID', '')
 MICROSOFT_CLIENT_SECRET = os.environ.get('MICROSOFT_CLIENT_SECRET', '')
 LINKEDIN_CLIENT_ID = os.environ.get('LINKEDIN_CLIENT_ID', '')

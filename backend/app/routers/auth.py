@@ -28,6 +28,8 @@ from ..core.config import (
     BLOCKED_EMAIL_DOMAINS, 
     SUBSCRIPTION_PLANS,
     FRONTEND_URL,
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
     MICROSOFT_CLIENT_ID,
     MICROSOFT_CLIENT_SECRET,
     LINKEDIN_CLIENT_ID,
@@ -365,12 +367,158 @@ async def get_auth_providers():
     """Get available authentication providers"""
     return {
         "providers": {
-            "google": True,  # Always available via Emergent Auth
+            "google": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
             "microsoft": bool(MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET),
             "linkedin": bool(LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET),
             "magic_link": True
         }
     }
+
+
+# ================== ROUTES - GOOGLE OAUTH ==================
+
+@router.get("/google/login")
+async def google_login(request: Request):
+    """Initiate Google OAuth2 login"""
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(status_code=501, detail="Google OAuth non configuré. Veuillez configurer GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET.")
+    
+    referer = request.headers.get("referer", "")
+    frontend_url = referer.split("/login")[0] if "/login" in referer else request.headers.get("origin", FRONTEND_URL)
+    
+    state = secrets.token_urlsafe(32)
+    request.session["oauth_state"] = state
+    request.session["frontend_url"] = frontend_url
+    
+    redirect_uri = str(request.base_url) + "api/auth/google/callback"
+    
+    auth_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?"
+        f"client_id={GOOGLE_CLIENT_ID}&"
+        f"response_type=code&"
+        f"redirect_uri={redirect_uri}&"
+        f"scope=openid profile email&"
+        f"state={state}&"
+        f"access_type=offline&"
+        f"prompt=consent"
+    )
+    
+    return RedirectResponse(url=auth_url)
+
+
+@router.get("/google/callback")
+async def google_callback(request: Request, response: Response, code: str = None, state: str = None, error: str = None):
+    """Handle Google OAuth2 callback"""
+    frontend_url = request.session.get("frontend_url", FRONTEND_URL)
+    
+    if error:
+        logger.error(f"Google OAuth error: {error}")
+        return RedirectResponse(url=f"{frontend_url}/login?error=google_auth_failed&detail={error}")
+    
+    stored_state = request.session.get("oauth_state")
+    if not stored_state or stored_state != state:
+        logger.error("Invalid OAuth state")
+        return RedirectResponse(url=f"{frontend_url}/login?error=invalid_state")
+    
+    redirect_uri = str(request.base_url) + "api/auth/google/callback"
+    
+    try:
+        # Exchange code for tokens
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            token_response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": code,
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code"
+                }
+            )
+            
+            if token_response.status_code != 200:
+                logger.error(f"Google token exchange failed: {token_response.text}")
+                return RedirectResponse(url=f"{frontend_url}/login?error=token_exchange_failed")
+            
+            tokens = token_response.json()
+            access_token = tokens.get("access_token")
+            
+            # Get user info
+            userinfo_response = await client.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"}
+            )
+            
+            if userinfo_response.status_code != 200:
+                logger.error(f"Google userinfo failed: {userinfo_response.text}")
+                return RedirectResponse(url=f"{frontend_url}/login?error=userinfo_failed")
+            
+            user_info = userinfo_response.json()
+            
+        email = user_info.get("email")
+        name = user_info.get("name", email.split("@")[0])
+        picture = user_info.get("picture", "")
+        
+        if not email:
+            return RedirectResponse(url=f"{frontend_url}/login?error=no_email")
+        
+        # Check for temporary email
+        if is_temporary_email(email):
+            return RedirectResponse(url=f"{frontend_url}/login?error=temporary_email_blocked")
+        
+        client_ip = get_client_ip(request)
+        session_token = secrets.token_urlsafe(32)
+        
+        async with async_session_maker() as db:
+            existing_user = await UserService.get_by_email(db, email)
+            
+            if existing_user:
+                user_id = existing_user.user_id
+                user = existing_user
+            else:
+                # Create new user
+                user = await UserService.create(
+                    db,
+                    email=email,
+                    name=name,
+                    picture=picture,
+                    auth_provider="google",
+                    registration_ip=client_ip,
+                    registration_fingerprint="google_oauth"
+                )
+                user_id = user.user_id
+                
+                # Create free subscription
+                await SubscriptionService.create_free(db, user_id)
+                
+                # Send welcome email
+                await email_service.send_welcome_email(email, name)
+                logger.info(f"New user registered via Google: email={email}")
+            
+            # Create session
+            await SessionService.create(db, user_id, session_token)
+        
+        # Set cookie
+        response = RedirectResponse(url=f"{frontend_url}/dashboard")
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=True,
+            samesite="none",
+            path="/",
+            max_age=7 * 24 * 60 * 60
+        )
+        
+        logger.info(f"Google OAuth success: email={email}")
+        return response
+        
+    except httpx.TimeoutException:
+        logger.error("Google OAuth timeout")
+        return RedirectResponse(url=f"{frontend_url}/login?error=timeout")
+    except Exception as e:
+        logger.error(f"Google OAuth error: {e}")
+        return RedirectResponse(url=f"{frontend_url}/login?error=google_auth_failed")
 
 
 # ================== ROUTES - MICROSOFT OAUTH ==================
