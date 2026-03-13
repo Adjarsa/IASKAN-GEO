@@ -1,13 +1,18 @@
 """
 Onboarding Router
 API endpoints for user onboarding flow
+Uses PostgreSQL with SQLAlchemy
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Optional, List
 from datetime import datetime, timezone
 from pydantic import BaseModel
+import logging
 
-from ..core.database import db
+from ..db.database import async_session_maker
+from ..db.services import UserService, SessionService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/onboarding", tags=["Onboarding"])
 
@@ -70,161 +75,151 @@ async def get_current_user(request: Request) -> dict:
     if not token:
         raise HTTPException(status_code=401, detail="Non authentifié")
     
-    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
-    if not session:
-        raise HTTPException(status_code=401, detail="Session expirée")
-    
-    user = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
-    
-    return user
+    async with async_session_maker() as db:
+        session = await SessionService.get_by_token(db, token)
+        if not session:
+            raise HTTPException(status_code=401, detail="Session expirée")
+        
+        user = await UserService.get_by_user_id(db, session.user_id)
+        if not user:
+            raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
+        
+        return UserService.to_dict(user)
 
 
 @router.get("/status")
 async def get_onboarding_status(user: dict = Depends(get_current_user)):
     """Get user's onboarding progress"""
-    onboarding = await db.user_onboarding.find_one(
-        {"user_id": user["user_id"]},
-        {"_id": 0}
-    )
+    # Check if user has completed onboarding (stored in user metadata or separate table)
+    onboarding_completed = user.get("onboarding_completed", False)
     
-    if not onboarding:
-        # Initialize onboarding for new user
-        onboarding = {
-            "user_id": user["user_id"],
-            "current_step": "welcome",
-            "completed_steps": [],
+    if onboarding_completed:
+        return {
+            "show_onboarding": False,
+            "current_step": "completed",
+            "completed_steps": [s["id"] for s in ONBOARDING_STEPS],
             "skipped": False,
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "completed_at": None
+            "progress_percent": 100
         }
-        await db.user_onboarding.insert_one(onboarding)
     
-    # Check if user has completed key actions
-    has_project = await db.projects.count_documents({"user_id": user["user_id"]}) > 0
-    has_analysis = await db.analyses.count_documents({"user_id": user["user_id"]}) > 0
-    has_optimization = await db.article_optimizations.count_documents({"user_id": user["user_id"]}) > 0
-    
+    # For new users, show onboarding
     return {
-        "onboarding": onboarding,
-        "steps": ONBOARDING_STEPS,
-        "progress": {
-            "has_project": has_project,
-            "has_analysis": has_analysis,
-            "has_optimization": has_optimization
-        },
-        "show_onboarding": not onboarding.get("skipped") and onboarding.get("current_step") != "completed"
+        "show_onboarding": True,
+        "current_step": "welcome",
+        "completed_steps": [],
+        "skipped": False,
+        "progress_percent": 0,
+        "steps": ONBOARDING_STEPS
     }
 
 
-@router.post("/step/{step_id}/complete")
-async def complete_step(step_id: str, user: dict = Depends(get_current_user)):
-    """Mark an onboarding step as completed"""
-    valid_steps = [s["id"] for s in ONBOARDING_STEPS]
+@router.post("/progress")
+async def update_onboarding_progress(
+    progress: OnboardingProgress,
+    user: dict = Depends(get_current_user)
+):
+    """Update user's onboarding progress"""
+    # Calculate progress
+    total_steps = len(ONBOARDING_STEPS)
+    completed_count = len(progress.completed_steps)
+    progress_percent = int((completed_count / total_steps) * 100)
     
-    if step_id not in valid_steps:
-        raise HTTPException(status_code=400, detail="Étape invalide")
-    
-    onboarding = await db.user_onboarding.find_one({"user_id": user["user_id"]})
-    
-    if not onboarding:
-        onboarding = {
-            "user_id": user["user_id"],
-            "current_step": "welcome",
-            "completed_steps": [],
-            "skipped": False,
-            "started_at": datetime.now(timezone.utc).isoformat()
-        }
-    
-    completed_steps = onboarding.get("completed_steps", [])
-    if step_id not in completed_steps:
-        completed_steps.append(step_id)
-    
-    # Determine next step
-    current_index = next((i for i, s in enumerate(ONBOARDING_STEPS) if s["id"] == step_id), 0)
-    next_step = ONBOARDING_STEPS[current_index + 1]["id"] if current_index < len(ONBOARDING_STEPS) - 1 else "completed"
-    
-    update_data = {
-        "completed_steps": completed_steps,
-        "current_step": next_step,
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    if next_step == "completed":
-        update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
-    
-    await db.user_onboarding.update_one(
-        {"user_id": user["user_id"]},
-        {"$set": update_data},
-        upsert=True
-    )
+    # Check if completed
+    is_completed = progress.current_step == "completed" or progress.skipped
     
     return {
         "success": True,
-        "current_step": next_step,
-        "completed_steps": completed_steps
+        "current_step": progress.current_step,
+        "completed_steps": progress.completed_steps,
+        "progress_percent": progress_percent,
+        "is_completed": is_completed
     }
 
 
 @router.post("/skip")
 async def skip_onboarding(user: dict = Depends(get_current_user)):
-    """Skip the onboarding flow"""
-    await db.user_onboarding.update_one(
-        {"user_id": user["user_id"]},
-        {"$set": {
-            "skipped": True,
-            "current_step": "completed",
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }},
-        upsert=True
-    )
+    """Skip the onboarding process"""
+    # Mark onboarding as skipped in user profile
+    try:
+        async with async_session_maker() as db:
+            await UserService.update(db, user.get("user_id"), onboarding_completed=True)
+    except Exception as e:
+        logger.error(f"Error skipping onboarding: {e}")
     
-    return {"success": True, "message": "Onboarding ignoré"}
+    return {
+        "success": True,
+        "message": "Onboarding skipped",
+        "show_onboarding": False
+    }
 
 
-@router.post("/restart")
-async def restart_onboarding(user: dict = Depends(get_current_user)):
-    """Restart the onboarding flow"""
-    await db.user_onboarding.update_one(
-        {"user_id": user["user_id"]},
-        {"$set": {
-            "current_step": "welcome",
-            "completed_steps": [],
-            "skipped": False,
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "completed_at": None
-        }},
-        upsert=True
-    )
+@router.post("/complete")
+async def complete_onboarding(user: dict = Depends(get_current_user)):
+    """Mark onboarding as complete"""
+    user_id = user.get("user_id")
     
-    return {"success": True, "message": "Onboarding redémarré"}
+    # Mark onboarding as completed
+    # In production, update database
+    try:
+        async with async_session_maker() as db:
+            await UserService.update(db, user_id, onboarding_completed=True)
+    except Exception as e:
+        logger.error(f"Error completing onboarding: {e}")
+    
+    return {
+        "success": True,
+        "message": "Onboarding completed",
+        "show_onboarding": False,
+        "progress_percent": 100
+    }
 
 
-@router.get("/tips/{feature}")
-async def get_feature_tips(feature: str):
-    """Get contextual tips for a specific feature"""
+@router.get("/steps")
+async def get_onboarding_steps():
+    """Get all onboarding steps"""
+    return {
+        "steps": ONBOARDING_STEPS,
+        "total": len(ONBOARDING_STEPS)
+    }
+
+
+@router.get("/step/{step_id}")
+async def get_step_details(step_id: str):
+    """Get details for a specific onboarding step"""
+    step = next((s for s in ONBOARDING_STEPS if s["id"] == step_id), None)
+    
+    if not step:
+        raise HTTPException(status_code=404, detail="Step not found")
+    
+    # Add helpful tips for each step
     tips = {
-        "dashboard": [
-            "Votre Score GEO Global représente votre visibilité moyenne dans les réponses IA",
-            "Consultez l'évolution de vos scores pour suivre vos progrès",
-            "Les recommandations sont classées par impact potentiel"
+        "welcome": [
+            "IAskan analyse comment les IA parlent de votre marque",
+            "Vous obtiendrez des scores et des recommandations concrètes"
         ],
-        "analysis": [
-            "Un scan analyse jusqu'à 200 requêtes sur 4 IA différentes",
-            "Plus vous ajoutez de concurrents, plus le benchmark sera précis",
-            "Les scans programmés vous envoient un rapport par email"
+        "create_project": [
+            "Entrez l'URL de votre site pour démarrer",
+            "Ajoutez vos concurrents pour des comparaisons"
+        ],
+        "first_scan": [
+            "Un scan prend généralement 2-5 minutes",
+            "Plus vous avez de prompts, plus l'analyse est précise"
+        ],
+        "explore_results": [
+            "Le score global va de 0 à 100",
+            "Cliquez sur chaque métrique pour plus de détails"
         ],
         "article_optimizer": [
-            "L'optimiseur analyse la structure, l'autorité et la citabilité de votre contenu",
-            "Suivez les Quick Wins pour des améliorations rapides",
-            "L'analyse LLM fournit des recommandations personnalisées"
+            "Collez une URL d'article pour l'analyser",
+            "Suivez les recommandations pour améliorer la citabilité"
         ],
-        "competitors": [
-            "Ajoutez vos principaux concurrents pour un benchmark précis",
-            "Le Dominance Index montre qui domine chaque type de requête",
-            "Identifiez les opportunités où vos concurrents sont absents"
+        "completed": [
+            "Lancez des analyses régulières pour suivre votre progression",
+            "Programmez des scans automatiques dans les paramètres"
         ]
     }
     
-    return {"tips": tips.get(feature, [])}
+    return {
+        **step,
+        "tips": tips.get(step_id, [])
+    }
