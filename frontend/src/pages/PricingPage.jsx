@@ -42,10 +42,11 @@ const PricingPage = () => {
     setLoading(plan);
     try {
       const response = await axios.post(
-        `${API}/checkout/create`,
+        `${API}/checkout/session`,
         {
           plan,
-          origin_url: window.location.origin
+          success_url: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/pricing?payment=cancelled`
         },
         { withCredentials: true }
       );

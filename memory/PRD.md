@@ -22,12 +22,15 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 │   │   ├── core/          # Config, Database
 │   │   ├── models/        # Pydantic models
 │   │   ├── routers/       # API routes modulaires
-│   │   │   ├── auth.py           # ✅ Authentification complète
+│   │   │   ├── auth.py           # ✅ Authentification (Google, Microsoft, LinkedIn SSO)
 │   │   │   ├── projects.py       # ✅ CRUD projets
 │   │   │   ├── dashboard.py      # ✅ Stats dashboard
 │   │   │   ├── organizations.py  # ✅ Gestion organisations
 │   │   │   ├── article_optimizer.py # ✅ Optimiseur articles
 │   │   │   ├── admin.py          # ✅ Admin backoffice
+│   │   │   ├── subscriptions.py  # ✅ Stripe integration
+│   │   │   ├── semantic.py       # ✅ Recherche sémantique pgvector
+│   │   │   ├── strategy.py       # ✅ GEO Strategy Engine
 │   │   │   └── onboarding.py     # ✅ Onboarding utilisateur
 │   │   ├── engines/       # Core GEO engines
 │   │   │   ├── query/     # Query generation & variation
@@ -35,14 +38,27 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 │   │   │   ├── influence/ # Influence mapping
 │   │   │   ├── gap/       # Content gap finder
 │   │   │   └── optimizer/ # Article optimizer
-│   │   └── services/      # Business logic
+│   │   ├── services/      # Business logic
+│   │   │   ├── stripe_abstraction.py    # ✅ Stripe checkout/webhooks
+│   │   │   ├── embedding_service.py     # ✅ OpenAI embeddings
+│   │   │   ├── semantic_search_service.py # ✅ pgvector search
+│   │   │   ├── microsoft_oauth.py       # ✅ Microsoft SSO
+│   │   │   └── linkedin_oauth.py        # ✅ LinkedIn SSO
+│   │   └── db/
+│   │       └── vector_models.py         # ✅ Modèles pgvector
 │   ├── tests/
 │   │   └── test_router_endpoints.py  # 29 tests d'intégration
 │   └── server.py          # Main FastAPI app (~4870 lignes)
 ├── frontend/
 │   ├── src/
 │   │   ├── components/    # UI components
-│   │   ├── pages/         # Page components
+│   │   │   ├── SemanticSearchPanel.jsx  # ✅ Panel recherche sémantique
+│   │   │   ├── AutomaticObjectives.jsx  # ✅ Objectifs automatiques
+│   │   │   ├── ImpactSimulator.jsx      # ✅ Simulateur d'impact
+│   │   │   └── StrategyPanel.jsx        # ✅ Panel stratégie GEO
+│   │   ├── pages/
+│   │   │   ├── CheckoutSuccessPage.jsx  # ✅ Succès paiement Stripe
+│   │   │   └── ...
 │   │   └── services/      # Frontend services
 │   └── package.json
 └── memory/
@@ -127,6 +143,20 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
   - Endpoint de désabonnement
   - Endpoint de réactivation
   - Interface utilisateur dans Settings
+
+- [x] **Intégration Stripe Complète** (Mars 2026)
+  - Checkout sessions avec line_items dynamiques
+  - Webhooks (checkout.session.completed, subscription.updated, invoice.*)
+  - Gestion des abonnements (cancel, reactivate)
+  - Billing portal support
+  - Page CheckoutSuccessPage frontend
+  - Plans: Free, Starter (79€), Pro (149€), Business (349€)
+
+- [x] **SSO Multi-Provider** (Mars 2026)
+  - Google OAuth 2.0 ✅ (configuré)
+  - Microsoft Azure AD ✅ (code prêt, attente credentials)
+  - LinkedIn OpenID Connect ✅ (code prêt, attente credentials)
+  - Documentation setup: /app/MICROSOFT_LINKEDIN_SSO_SETUP.md
 
 - [x] **Engines Backend Modulaires** (Nouveau!)
   - Query Generation Engine

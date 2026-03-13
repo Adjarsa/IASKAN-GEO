@@ -22,6 +22,7 @@ SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', '')
 # API Keys
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 
 # OAuth

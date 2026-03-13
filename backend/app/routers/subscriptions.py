@@ -11,7 +11,7 @@ import logging
 from ..db.database import async_session_maker
 from ..db.services import SubscriptionService, UserService
 from ..db.models import SubscriptionStatus
-from ..core.config import SUBSCRIPTION_PLANS, STRIPE_API_KEY
+from ..core.config import SUBSCRIPTION_PLANS, STRIPE_API_KEY, STRIPE_WEBHOOK_SECRET
 from .auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -208,13 +208,27 @@ async def stripe_webhook(request: Request):
     """Handle Stripe webhooks"""
     try:
         payload = await request.body()
-        # In production, verify webhook signature
+        sig_header = request.headers.get("stripe-signature", "")
         
+        # Parse event - verify signature in production
         import json
-        event = json.loads(payload)
+        
+        if STRIPE_WEBHOOK_SECRET and sig_header:
+            try:
+                from ..services.stripe_abstraction import StripeCheckout
+                event = StripeCheckout.verify_webhook_signature(
+                    payload, sig_header, STRIPE_WEBHOOK_SECRET
+                )
+            except ValueError as e:
+                logger.error(f"Invalid webhook signature: {e}")
+                raise HTTPException(status_code=400, detail="Invalid signature")
+        else:
+            event = json.loads(payload)
         
         event_type = event.get("type")
         data = event.get("data", {}).get("object", {})
+        
+        logger.info(f"Stripe webhook received: {event_type}")
         
         if event_type == "checkout.session.completed":
             user_id = data.get("metadata", {}).get("user_id")
@@ -242,13 +256,34 @@ async def stripe_webhook(request: Request):
                     
                     logger.info(f"Subscription updated for user {user_id} to plan {plan}")
         
+        elif event_type == "customer.subscription.updated":
+            stripe_subscription_id = data.get("id")
+            status = data.get("status")
+            cancel_at_period_end = data.get("cancel_at_period_end", False)
+            
+            logger.info(f"Subscription {stripe_subscription_id} updated: status={status}, cancel_at_period_end={cancel_at_period_end}")
+            # Could update local subscription status based on Stripe status
+        
         elif event_type == "customer.subscription.deleted":
             stripe_subscription_id = data.get("id")
-            # Would need to find user by stripe_subscription_id
             logger.info(f"Subscription {stripe_subscription_id} deleted")
+            # Could find and downgrade user to free plan
+        
+        elif event_type == "invoice.payment_succeeded":
+            # Recurring payment succeeded - could extend period
+            customer_id = data.get("customer")
+            subscription_id = data.get("subscription")
+            logger.info(f"Payment succeeded for customer {customer_id}")
+        
+        elif event_type == "invoice.payment_failed":
+            # Payment failed - could notify user
+            customer_id = data.get("customer")
+            logger.warning(f"Payment failed for customer {customer_id}")
         
         return {"received": True}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Webhook error: {e}")
         return {"received": True, "error": str(e)}

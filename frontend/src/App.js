@@ -47,6 +47,7 @@ import ContactPage from "@/pages/ContactPage";
 import FAQPage from "@/pages/FAQPage";
 import AboutPage from "@/pages/AboutPage";
 import GDPRPage from "@/pages/GDPRPage";
+import CheckoutSuccessPage from "@/pages/CheckoutSuccessPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -315,6 +316,7 @@ const AppRouter = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
       <Route
         path="/projects"
         element={
