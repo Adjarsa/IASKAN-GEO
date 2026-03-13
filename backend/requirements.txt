@@ -134,3 +134,7 @@ lxml==6.0.2
 celery==5.6.2
 flower==2.0.1
 redis==7.3.0
+SQLAlchemy==2.0.48
+asyncpg==0.31.0
+psycopg2-binary==2.9.11
+greenlet==3.3.2
