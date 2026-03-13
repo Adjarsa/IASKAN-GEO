@@ -7,10 +7,11 @@ nixPkgs = ["nodejs_20", "yarn"]
 cmds = ["yarn install"]
 
 [phases.build]
-cmds = ["yarn build"]
+cmds = ["CI=false yarn build"]
 
 [start]
 cmd = "npx serve -s build -l ${PORT:-3000}"
 
 [variables]
 NODE_VERSION = "20"
+CI = "false"
