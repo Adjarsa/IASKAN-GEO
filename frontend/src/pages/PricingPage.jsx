@@ -12,7 +12,8 @@ import {
   Loader2,
   Sparkles,
   Zap,
-  Crown
+  Crown,
+  Gift
 } from "lucide-react";
 
 const PricingPage = () => {
@@ -31,6 +32,13 @@ const PricingPage = () => {
   const handleCheckout = async (plan) => {
     if (!user) {
       navigate("/login");
+      return;
+    }
+
+    // Plan gratuit - pas de checkout nécessaire
+    if (plan === "free") {
+      toast.success("Vous avez le plan Gratuit ! Profitez de votre audit mensuel.");
+      navigate("/dashboard");
       return;
     }
 
@@ -60,6 +68,21 @@ const PricingPage = () => {
   };
 
   const plans = [
+    {
+      id: "free",
+      name: "Gratuit",
+      price: 0,
+      icon: Gift,
+      queries: "1 audit GEO/mois",
+      features: [
+        "1 audit GEO gratuit/mois",
+        "30 prompts",
+        "ChatGPT uniquement",
+        "Rapport standard",
+        "1 projet"
+      ],
+      popular: false
+    },
     {
       id: "starter",
       name: "Starter",
@@ -174,7 +197,7 @@ const PricingPage = () => {
         )}
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
           {plans.map((plan) => {
             const isCurrentPlan = subscription?.plan === plan.id;
             const Icon = plan.icon;
@@ -240,6 +263,8 @@ const PricingPage = () => {
                       </>
                     ) : isCurrentPlan ? (
                       "Plan actuel"
+                    ) : plan.price === 0 ? (
+                      user ? "Commencer gratuitement" : "S'inscrire gratuitement"
                     ) : (
                       "Choisir ce plan"
                     )}

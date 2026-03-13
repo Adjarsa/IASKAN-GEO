@@ -43,7 +43,7 @@ CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*').split(',')
 # Subscription Plans Configuration
 SUBSCRIPTION_PLANS = {
     "free": {
-        "name": "Essai Gratuit",
+        "name": "Gratuit",
         "price": 0,
         "queries_limit": 90,
         "scans_limit": 1,
@@ -51,9 +51,10 @@ SUBSCRIPTION_PLANS = {
         "num_prompts": 30,
         "runs_per_query": 3,
         "ai_engines": ["chatgpt"],
-        "features": ["1 scan offert", "30 prompts", "ChatGPT uniquement", "Rapport standard", "1 projet"],
+        "features": ["1 audit GEO/mois", "30 prompts", "ChatGPT uniquement", "Rapport standard", "1 projet"],
         "article_optimizer": False,
-        "article_optimizer_limit": 0
+        "article_optimizer_limit": 0,
+        "monthly_reset": True
     },
     "starter": {
         "name": "Starter",
