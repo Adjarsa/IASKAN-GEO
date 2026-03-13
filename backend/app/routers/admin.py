@@ -593,35 +593,44 @@ async def make_user_admin(email: str, admin: dict = Depends(get_admin_user)):
 @router.post("/setup-first-admin")
 async def setup_first_admin(request: Request):
     """Setup the first super_admin - only works if no admin exists"""
-    body = await request.json()
-    email = body.get("email")
-    secret = body.get("secret")
-    
-    # Security: require a secret key
-    import os
-    expected_secret = os.environ.get("ADMIN_SETUP_SECRET", "iaskan_admin_setup_2024")
-    if secret != expected_secret:
-        raise HTTPException(status_code=403, detail="Secret invalide")
-    
-    async with async_session_maker() as db:
-        # Check if any admin already exists
-        existing_admin = await db.execute(
-            select(User).where(User.role.in_(["admin", "super_admin"]))
-        )
-        if existing_admin.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Un admin existe déjà")
+    try:
+        body = await request.json()
+        email = body.get("email")
+        secret = body.get("secret")
         
-        # Find user by email
-        user = await UserService.get_by_email(db, email)
-        if not user:
-            raise HTTPException(status_code=404, detail="Utilisateur non trouvé. Connectez-vous d'abord avec Google.")
+        if not email:
+            raise HTTPException(status_code=400, detail="Email requis")
         
-        # Make super_admin
-        await db.execute(
-            update(User)
-            .where(User.email == email)
-            .values(role="super_admin")
-        )
-        await db.commit()
+        # Security: require a secret key
+        import os
+        expected_secret = os.environ.get("ADMIN_SETUP_SECRET", "iaskan_admin_setup_2024")
+        if secret != expected_secret:
+            raise HTTPException(status_code=403, detail="Secret invalide")
         
-        return {"success": True, "message": f"{email} est maintenant super_admin"}
+        async with async_session_maker() as db:
+            # Check if any admin already exists
+            existing_admin = await db.execute(
+                select(User).where(User.role.in_(["admin", "super_admin"]))
+            )
+            if existing_admin.scalar_one_or_none():
+                raise HTTPException(status_code=400, detail="Un admin existe déjà")
+            
+            # Find user by email
+            user = await UserService.get_by_email(db, email)
+            if not user:
+                raise HTTPException(status_code=404, detail=f"Utilisateur '{email}' non trouvé. Connectez-vous d'abord avec Google sur www.iaskan.com")
+            
+            # Make super_admin
+            await db.execute(
+                update(User)
+                .where(User.email == email)
+                .values(role="super_admin")
+            )
+            await db.commit()
+            
+            return {"success": True, "message": f"{email} est maintenant super_admin"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Setup first admin error: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")

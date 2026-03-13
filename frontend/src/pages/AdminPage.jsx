@@ -13,8 +13,25 @@ import {
   FileText,
   Sparkles,
   Shield,
-  RefreshCw
+  RefreshCw,
+  LineChart as LineChartIcon
 } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -162,6 +179,7 @@ export default function AdminPage() {
           <div className="flex gap-4">
             {[
               { id: 'overview', label: 'Vue d\'ensemble', icon: BarChart3 },
+              { id: 'analytics', label: 'Analytics', icon: LineChartIcon },
               { id: 'users', label: 'Utilisateurs', icon: Users },
               { id: 'analyses', label: 'Analyses', icon: FileText }
             ].map(tab => (
@@ -180,6 +198,11 @@ export default function AdminPage() {
             ))}
           </div>
         </div>
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <AnalyticsTab stats={stats} />
+        )}
 
         {/* Overview Tab */}
         {activeTab === 'overview' && stats && (
@@ -549,6 +572,291 @@ function AnalysesTab() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Analytics Tab Component with Charts
+function AnalyticsTab({ stats }) {
+  const [apiUsage, setApiUsage] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchApiUsage();
+  }, []);
+
+  const fetchApiUsage = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/admin/api-usage?days=30`, { 
+        withCredentials: true 
+      });
+      setApiUsage(res.data.daily_usage || []);
+    } catch (err) {
+      console.error('API usage error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Prepare data for subscription pie chart
+  const subscriptionData = stats?.subscriptions?.distribution 
+    ? Object.entries(stats.subscriptions.distribution).map(([name, value]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value
+      }))
+    : [];
+
+  const COLORS = ['#8b5cf6', '#06b6d4', '#22c55e', '#f97316'];
+
+  // Generate mock trend data if no real data
+  const trendData = apiUsage.length > 0 ? apiUsage : [
+    { date: 'Lun', count: 0, completed: 0, failed: 0 },
+    { date: 'Mar', count: 0, completed: 0, failed: 0 },
+    { date: 'Mer', count: 0, completed: 0, failed: 0 },
+    { date: 'Jeu', count: 0, completed: 0, failed: 0 },
+    { date: 'Ven', count: 0, completed: 0, failed: 0 },
+    { date: 'Sam', count: 0, completed: 0, failed: 0 },
+    { date: 'Dim', count: 0, completed: 0, failed: 0 }
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Top KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-violet-500/20 to-violet-600/20 rounded-xl p-4 border border-violet-500/30">
+          <p className="text-sm text-violet-300 mb-1">Utilisateurs actifs</p>
+          <p className="text-3xl font-bold text-white">{stats?.users?.total || 0}</p>
+          <p className="text-xs text-violet-400 mt-1">+{stats?.users?.this_month || 0} ce mois</p>
+        </div>
+        <div className="bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 rounded-xl p-4 border border-cyan-500/30">
+          <p className="text-sm text-cyan-300 mb-1">Analyses totales</p>
+          <p className="text-3xl font-bold text-white">{stats?.analyses?.total || 0}</p>
+          <p className="text-xs text-cyan-400 mt-1">{stats?.analyses?.success_rate || 0}% succès</p>
+        </div>
+        <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl p-4 border border-green-500/30">
+          <p className="text-sm text-green-300 mb-1">MRR Estimé</p>
+          <p className="text-3xl font-bold text-white">{stats?.revenue?.estimated_mrr || 0}€</p>
+          <p className="text-xs text-green-400 mt-1">{stats?.subscriptions?.paid_users || 0} payants</p>
+        </div>
+        <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-xl p-4 border border-orange-500/30">
+          <p className="text-sm text-orange-300 mb-1">Taux conversion</p>
+          <p className="text-3xl font-bold text-white">{stats?.subscriptions?.conversion_rate || 0}%</p>
+          <p className="text-xs text-orange-400 mt-1">Free → Payant</p>
+        </div>
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Analyses Trend */}
+        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-violet-400" />
+            Évolution des Analyses (30 jours)
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trendData}>
+                <defs>
+                  <linearGradient id="colorAnalyses" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#94a3b8" 
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
+                  tickFormatter={(value) => value.slice(5)}
+                />
+                <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1e293b', 
+                    border: '1px solid #334155',
+                    borderRadius: '8px'
+                  }}
+                  labelStyle={{ color: '#f8fafc' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#8b5cf6" 
+                  fillOpacity={1} 
+                  fill="url(#colorAnalyses)"
+                  name="Analyses"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="completed" 
+                  stroke="#22c55e" 
+                  strokeWidth={2}
+                  dot={false}
+                  name="Réussies"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="failed" 
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  dot={false}
+                  name="Échouées"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Subscription Distribution */}
+        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-cyan-400" />
+            Répartition des Abonnements
+          </h3>
+          <div className="h-64 flex items-center justify-center">
+            {subscriptionData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={subscriptionData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}`}
+                    labelLine={{ stroke: '#64748b' }}
+                  >
+                    {subscriptionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1e293b', 
+                      border: '1px solid #334155',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-slate-400">Aucune donnée d'abonnement</p>
+            )}
+          </div>
+          <div className="flex flex-wrap justify-center gap-4 mt-4">
+            {subscriptionData.map((entry, index) => (
+              <div key={entry.name} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                />
+                <span className="text-sm text-slate-300">{entry.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Activity Bar */}
+        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-green-400" />
+            Activité par Jour
+          </h3>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trendData.slice(-7)}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#94a3b8" 
+                  tick={{ fill: '#94a3b8', fontSize: 10 }}
+                  tickFormatter={(value) => value.slice(8)}
+                />
+                <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1e293b', 
+                    border: '1px solid #334155',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Bar dataKey="count" fill="#22c55e" radius={[4, 4, 0, 0]} name="Analyses" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Success Rate Gauge */}
+        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-violet-400" />
+            Taux de Succès
+          </h3>
+          <div className="flex items-center justify-center h-40">
+            <div className="relative">
+              <svg className="w-32 h-32" viewBox="0 0 36 36">
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#334155"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="3"
+                  strokeDasharray={`${stats?.analyses?.success_rate || 0}, 100`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">
+                  {stats?.analyses?.success_rate || 0}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Users className="w-5 h-5 text-orange-400" />
+            Métriques Clés
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Projets</span>
+              <span className="font-bold text-white">{stats?.projects?.total || 0}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Organisations</span>
+              <span className="font-bold text-white">{stats?.organizations?.total || 0}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Optimisations</span>
+              <span className="font-bold text-white">{stats?.article_optimizer?.total || 0}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Vérification email</span>
+              <span className="font-bold text-white">{stats?.users?.verification_rate || 0}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
