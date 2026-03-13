@@ -4429,10 +4429,24 @@ app.include_router(analysis_router.router)     # Celery-powered analysis pipelin
 app.include_router(analyses_router.router)     # Analyses listing (frontend compatibility)
 
 # CORS middleware
+# When using credentials, origin cannot be '*', must be specific origins
+cors_origins_env = os.environ.get('CORS_ORIGINS', '')
+if cors_origins_env and cors_origins_env != '*':
+    cors_origins = cors_origins_env.split(',')
+else:
+    # Default origins for IAskan
+    cors_origins = [
+        "https://www.iaskan.com",
+        "https://iaskan.com",
+        "https://api.iaskan.com",
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
