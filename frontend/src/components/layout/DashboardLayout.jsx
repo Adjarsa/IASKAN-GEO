@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Logo from "@/components/Logo";
 import NotificationBell from "@/components/NotificationBell";
+import { usePendingPaymentCheck } from "@/components/PaymentGuard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +39,9 @@ const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Check for pending payment and redirect if needed
+  usePendingPaymentCheck();
 
   const handleLogout = async () => {
     await logout();

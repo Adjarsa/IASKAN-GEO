@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Logo from "@/components/Logo";
 import OnboardingModal from "@/components/OnboardingModal";
+import { usePendingPaymentCheck } from "@/components/PaymentGuard";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +50,9 @@ const ProjectSelectorPage = () => {
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  
+  // Check for pending payment and redirect to checkout if needed
+  usePendingPaymentCheck();
   
   const [formData, setFormData] = useState({
     name: "",
