@@ -390,7 +390,11 @@ async def google_login(request: Request):
     request.session["oauth_state"] = state
     request.session["frontend_url"] = frontend_url
     
-    redirect_uri = str(request.base_url) + "api/auth/google/callback"
+    # Build redirect URI - force HTTPS for production
+    base_url = str(request.base_url)
+    if base_url.startswith("http://") and "localhost" not in base_url and "127.0.0.1" not in base_url:
+        base_url = base_url.replace("http://", "https://", 1)
+    redirect_uri = base_url + "api/auth/google/callback"
     
     auth_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth?"
@@ -420,7 +424,11 @@ async def google_callback(request: Request, response: Response, code: str = None
         logger.error("Invalid OAuth state")
         return RedirectResponse(url=f"{frontend_url}/login?error=invalid_state")
     
-    redirect_uri = str(request.base_url) + "api/auth/google/callback"
+    # Build redirect URI - force HTTPS for production (must match login endpoint)
+    base_url = str(request.base_url)
+    if base_url.startswith("http://") and "localhost" not in base_url and "127.0.0.1" not in base_url:
+        base_url = base_url.replace("http://", "https://", 1)
+    redirect_uri = base_url + "api/auth/google/callback"
     
     try:
         # Exchange code for tokens
