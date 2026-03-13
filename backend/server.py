@@ -81,7 +81,9 @@ if RESEND_API_KEY:
 app = FastAPI(title="IAskan API", version="1.0.0")
 
 # Add session middleware for OAuth state management
-app.add_middleware(SessionMiddleware, secret_key=secrets.token_hex(32))
+# Use a fixed secret key from environment to persist sessions across restarts
+SESSION_SECRET_KEY = os.environ.get('SESSION_SECRET_KEY', secrets.token_hex(32))
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
 
 # Create router with /api prefix
 api_router = APIRouter(prefix="/api")

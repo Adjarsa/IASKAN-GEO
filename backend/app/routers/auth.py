@@ -386,9 +386,10 @@ async def google_login(request: Request):
     referer = request.headers.get("referer", "")
     frontend_url = referer.split("/login")[0] if "/login" in referer else request.headers.get("origin", FRONTEND_URL)
     
-    state = secrets.token_urlsafe(32)
-    request.session["oauth_state"] = state
-    request.session["frontend_url"] = frontend_url
+    # Encode frontend_url in state to make OAuth stateless (works across multiple instances)
+    import base64
+    state_data = f"{secrets.token_urlsafe(16)}|{frontend_url}"
+    state = base64.urlsafe_b64encode(state_data.encode()).decode()
     
     # Build redirect URI - force HTTPS for production
     base_url = str(request.base_url)
@@ -413,16 +414,22 @@ async def google_login(request: Request):
 @router.get("/google/callback")
 async def google_callback(request: Request, response: Response, code: str = None, state: str = None, error: str = None):
     """Handle Google OAuth2 callback"""
-    frontend_url = request.session.get("frontend_url", FRONTEND_URL)
+    import base64
+    
+    # Decode frontend_url from state (stateless OAuth)
+    try:
+        state_data = base64.urlsafe_b64decode(state.encode()).decode()
+        _, frontend_url = state_data.split("|", 1)
+    except Exception:
+        frontend_url = FRONTEND_URL
     
     if error:
         logger.error(f"Google OAuth error: {error}")
         return RedirectResponse(url=f"{frontend_url}/login?error=google_auth_failed&detail={error}")
     
-    stored_state = request.session.get("oauth_state")
-    if not stored_state or stored_state != state:
-        logger.error("Invalid OAuth state")
-        return RedirectResponse(url=f"{frontend_url}/login?error=invalid_state")
+    if not code:
+        logger.error("No authorization code received")
+        return RedirectResponse(url=f"{frontend_url}/login?error=google_auth_failed&detail=no_code")
     
     # Build redirect URI - force HTTPS for production (must match login endpoint)
     base_url = str(request.base_url)
