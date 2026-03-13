@@ -1270,6 +1270,7 @@ const AnalysisPage = () => {
                   globalScore={analysis.global_score}
                   rateScores={analysis.rate_scores}
                   diagnostics={analysis.diagnostics}
+                  projectId={analysis.project_id}
                   onClose={() => setShowStrategy(false)}
                 />
               </div>

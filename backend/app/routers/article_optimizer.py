@@ -454,3 +454,102 @@ async def export_optimization(
     
     else:
         raise HTTPException(status_code=400, detail="Format non supporté (json ou markdown)")
+
+
+
+# Simulation endpoint
+class SimulateImpactRequest(BaseModel):
+    optimization_id: Optional[str] = None
+    current_scores: Optional[dict] = None
+    overall_score: Optional[float] = None
+    improvements: List[str]
+
+
+@router.post("/simulate")
+async def simulate_optimization_impact(
+    request_data: SimulateImpactRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Simulate the impact of implementing specific improvements.
+    Returns projected score changes and implementation recommendations.
+    """
+    try:
+        # Build current analysis from request or fetch from DB
+        if request_data.optimization_id:
+            # Fetch from database
+            optimization = await db.article_optimizations.find_one(
+                {"optimization_id": request_data.optimization_id},
+                {"_id": 0}
+            )
+            if not optimization:
+                raise HTTPException(status_code=404, detail="Optimisation non trouvée")
+            
+            current_analysis = optimization.get("result", {})
+        else:
+            # Use provided scores
+            current_analysis = {
+                "overall_score": request_data.overall_score or 50,
+                "scores": request_data.current_scores or {}
+            }
+        
+        # Run simulation
+        result = optimizer_engine.simulate_impact(
+            current_analysis=current_analysis,
+            improvements=request_data.improvements
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/improvement-options")
+async def get_improvement_options(user: dict = Depends(get_current_user)):
+    """
+    Get all available improvement options for the simulator.
+    """
+    return {
+        "categories": {
+            "content": {
+                "name": "Contenu",
+                "improvements": [
+                    {"id": "add_faq", "name": "Ajouter une section FAQ", "impact": "high", "effort": "easy"},
+                    {"id": "improve_structure", "name": "Améliorer la structure (H2/H3)", "impact": "high", "effort": "easy"},
+                    {"id": "add_definitions", "name": "Ajouter des définitions claires", "impact": "medium", "effort": "easy"},
+                    {"id": "expand_content", "name": "Enrichir le contenu (+1000 mots)", "impact": "high", "effort": "medium"},
+                    {"id": "add_introduction", "name": "Renforcer l'introduction", "impact": "medium", "effort": "easy"},
+                ]
+            },
+            "authority": {
+                "name": "Autorité",
+                "improvements": [
+                    {"id": "add_author", "name": "Ajouter les infos auteur", "impact": "high", "effort": "easy"},
+                    {"id": "add_sources", "name": "Citer des sources fiables", "impact": "high", "effort": "medium"},
+                    {"id": "add_credentials", "name": "Afficher les credentials", "impact": "medium", "effort": "easy"},
+                    {"id": "update_date", "name": "Mettre à jour la date", "impact": "medium", "effort": "easy"},
+                    {"id": "add_expert_review", "name": "Ajouter une review d'expert", "impact": "high", "effort": "medium"},
+                ]
+            },
+            "technical": {
+                "name": "Technique",
+                "improvements": [
+                    {"id": "add_schema", "name": "Ajouter Schema.org", "impact": "high", "effort": "medium"},
+                    {"id": "improve_meta", "name": "Optimiser les meta tags", "impact": "medium", "effort": "easy"},
+                    {"id": "add_structured_data", "name": "Ajouter données structurées", "impact": "high", "effort": "medium"},
+                    {"id": "optimize_headings", "name": "Optimiser les titres H1/H2", "impact": "medium", "effort": "easy"},
+                ]
+            },
+            "engagement": {
+                "name": "Engagement",
+                "improvements": [
+                    {"id": "add_media", "name": "Ajouter images/vidéos", "impact": "medium", "effort": "medium"},
+                    {"id": "add_internal_links", "name": "Ajouter liens internes", "impact": "medium", "effort": "easy"},
+                    {"id": "add_cta", "name": "Ajouter des CTAs", "impact": "low", "effort": "easy"},
+                ]
+            }
+        }
+    }

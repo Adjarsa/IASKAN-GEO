@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
 import { 
   Sparkles, 
   FileText, 
@@ -15,7 +16,12 @@ import {
   TrendingUp,
   Loader2,
   ArrowRight,
-  Lightbulb
+  Lightbulb,
+  Plus,
+  Check,
+  PlayCircle,
+  Circle,
+  BarChart3
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -59,16 +65,107 @@ const PRIORITY_CONFIG = {
   low: { color: 'slate', label: 'Faible', icon: Clock }
 };
 
-export function StrategyPanel({ analysisId, globalScore, rateScores, diagnostics, onClose }) {
+export function StrategyPanel({ analysisId, globalScore, rateScores, diagnostics, onClose, projectId }) {
   const [strategy, setStrategy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const [expandedRecs, setExpandedRecs] = useState({});
+  const [progress, setProgress] = useState(null);
+  const [trackingRec, setTrackingRec] = useState(null);
 
   useEffect(() => {
     generateStrategy();
-  }, [analysisId, globalScore]);
+    if (projectId) {
+      fetchProgress();
+    }
+  }, [analysisId, globalScore, projectId]);
+
+  const fetchProgress = async () => {
+    if (!projectId) return;
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/strategy/progress/${projectId}`, {
+        withCredentials: true
+      });
+      setProgress(res.data);
+    } catch (err) {
+      console.error('Progress fetch error:', err);
+    }
+  };
+
+  const trackRecommendation = async (rec) => {
+    if (!projectId) {
+      toast.error("Projet non identifié");
+      return;
+    }
+    
+    setTrackingRec(rec.title);
+    try {
+      await axios.post(`${BACKEND_URL}/api/strategy/progress/${projectId}/track`, {
+        recommendation_id: `${rec.category}_${rec.title.toLowerCase().replace(/\s+/g, '_')}`,
+        category: rec.category,
+        title: rec.title,
+        priority: rec.priority,
+        initial_score: rec.current_score || globalScore
+      }, { withCredentials: true });
+      
+      toast.success("Recommandation ajoutée au suivi");
+      fetchProgress();
+    } catch (err) {
+      if (err.response?.status === 400) {
+        toast.info("Déjà dans le suivi");
+      } else {
+        toast.error("Erreur lors de l'ajout");
+      }
+    } finally {
+      setTrackingRec(null);
+    }
+  };
+
+  const updateStatus = async (progressId, newStatus) => {
+    try {
+      await axios.put(`${BACKEND_URL}/api/strategy/progress/${progressId}/status`, {
+        status: newStatus
+      }, { withCredentials: true });
+      
+      toast.success(`Status mis à jour: ${newStatus}`);
+      fetchProgress();
+    } catch (err) {
+      toast.error("Erreur lors de la mise à jour");
+    }
+  };
+
+  const trackAllRecommendations = async () => {
+    if (!projectId || !strategy?.recommendations) return;
+    
+    try {
+      const res = await axios.post(`${BACKEND_URL}/api/strategy/progress/${projectId}/bulk-track`, {
+        recommendations: strategy.recommendations.map(rec => ({
+          recommendation_id: `${rec.category}_${rec.title.toLowerCase().replace(/\s+/g, '_')}`,
+          category: rec.category,
+          title: rec.title,
+          priority: rec.priority,
+          current_score: rec.current_score || globalScore
+        }))
+      }, { withCredentials: true });
+      
+      toast.success(`${res.data.added} recommandations ajoutées au suivi`);
+      fetchProgress();
+    } catch (err) {
+      toast.error("Erreur lors de l'ajout en masse");
+    }
+  };
+
+  const isTracked = (recTitle) => {
+    if (!progress?.items) return false;
+    return progress.items.some(i => i.title === recTitle);
+  };
+
+  const getTrackedStatus = (recTitle) => {
+    if (!progress?.items) return null;
+    const item = progress.items.find(i => i.title === recTitle);
+    return item?.status;
+  };
 
   const generateStrategy = async () => {
     setLoading(true);
@@ -201,6 +298,54 @@ export function StrategyPanel({ analysisId, globalScore, rateScores, diagnostics
         </div>
       </div>
 
+      {/* Implementation Progress */}
+      {progress && progress.stats.total > 0 && (
+        <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl p-6 border border-green-500/20">
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-green-400" />
+            Progression d'Implémentation
+          </h3>
+          
+          {/* Progress Bar */}
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-slate-400">
+                {progress.stats.completed} / {progress.stats.total} recommandations
+              </span>
+              <span className="text-green-400 font-semibold">
+                {progress.stats.completion_rate}%
+              </span>
+            </div>
+            <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-green-500 to-emerald-400 h-full rounded-full transition-all duration-500"
+                style={{ width: `${progress.stats.completion_rate}%` }}
+              />
+            </div>
+          </div>
+          
+          {/* Stats Row */}
+          <div className="grid grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-xl font-bold text-green-400">{progress.stats.completed}</p>
+              <p className="text-xs text-slate-400">Terminées</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-cyan-400">{progress.stats.in_progress}</p>
+              <p className="text-xs text-slate-400">En cours</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-slate-400">{progress.stats.pending}</p>
+              <p className="text-xs text-slate-400">En attente</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-violet-400">+{progress.stats.total_score_improvement}</p>
+              <p className="text-xs text-slate-400">Points gagnés</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick Wins */}
       {quick_wins && quick_wins.length > 0 && (
         <div className="bg-gradient-to-r from-violet-500/10 to-cyan-500/10 rounded-xl p-6 border border-violet-500/20">
@@ -228,35 +373,48 @@ export function StrategyPanel({ analysisId, globalScore, rateScores, diagnostics
       )}
 
       {/* Category Filter */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setActiveCategory('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeCategory === 'all'
-              ? 'bg-violet-500 text-white'
-              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-          }`}
-        >
-          Toutes ({recommendations?.length || 0})
-        </button>
-        {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
-          const count = recommendations?.filter(r => r.category === key).length || 0;
-          const Icon = config.icon;
-          return (
-            <button
-              key={key}
-              onClick={() => setActiveCategory(key)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeCategory === key
-                  ? `${config.bgClass} ${config.textClass} border ${config.borderClass}`
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {key.charAt(0).toUpperCase() + key.slice(1)} ({count})
-            </button>
-          );
-        })}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveCategory('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeCategory === 'all'
+                ? 'bg-violet-500 text-white'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            Toutes ({recommendations?.length || 0})
+          </button>
+          {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+            const count = recommendations?.filter(r => r.category === key).length || 0;
+            const Icon = config.icon;
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveCategory(key)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  activeCategory === key
+                    ? `${config.bgClass} ${config.textClass} border ${config.borderClass}`
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {key.charAt(0).toUpperCase() + key.slice(1)} ({count})
+              </button>
+            );
+          })}
+        </div>
+        
+        {/* Track All Button */}
+        {projectId && (
+          <button
+            onClick={trackAllRecommendations}
+            className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Tout tracker
+          </button>
+        )}
       </div>
 
       {/* Recommendations List */}
@@ -267,18 +425,32 @@ export function StrategyPanel({ analysisId, globalScore, rateScores, diagnostics
           const Icon = config.icon;
           const PriorityIcon = priorityConfig.icon;
           const isExpanded = expandedRecs[index];
+          const tracked = isTracked(rec.title);
+          const trackedStatus = getTrackedStatus(rec.title);
           
           return (
             <div 
               key={index}
-              className={`rounded-xl border ${config.borderClass} overflow-hidden transition-all`}
+              className={`rounded-xl border ${config.borderClass} overflow-hidden transition-all ${tracked ? 'ring-2 ring-green-500/30' : ''}`}
             >
               <button
                 onClick={() => toggleRec(index)}
                 className={`w-full ${config.bgClass} p-4 flex items-center justify-between hover:bg-opacity-80 transition-colors`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`w-5 h-5 ${config.textClass}`} />
+                  {tracked ? (
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      trackedStatus === 'completed' ? 'bg-green-500' :
+                      trackedStatus === 'in_progress' ? 'bg-cyan-500' :
+                      'bg-slate-600'
+                    }`}>
+                      {trackedStatus === 'completed' ? <Check className="w-4 h-4 text-white" /> :
+                       trackedStatus === 'in_progress' ? <PlayCircle className="w-4 h-4 text-white" /> :
+                       <Circle className="w-4 h-4 text-white" />}
+                    </div>
+                  ) : (
+                    <Icon className={`w-5 h-5 ${config.textClass}`} />
+                  )}
                   <div className="text-left">
                     <p className="font-semibold text-white">{rec.title}</p>
                     <div className="flex items-center gap-2 mt-1">
@@ -312,17 +484,76 @@ export function StrategyPanel({ analysisId, globalScore, rateScores, diagnostics
                     ))}
                   </ul>
                   
-                  <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-700">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-slate-400" />
-                      <span className="text-slate-400">Durée estimée:</span>
-                      <span className="text-white">{rec.timeline}</span>
-                    </div>
-                    {rec.current_score !== undefined && (
+                  <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-slate-700">
+                    <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2 text-sm">
-                        <TrendingUp className="w-4 h-4 text-slate-400" />
-                        <span className="text-slate-400">Score actuel:</span>
-                        <span className="text-white">{rec.current_score}/100</span>
+                        <Clock className="w-4 h-4 text-slate-400" />
+                        <span className="text-slate-400">Durée:</span>
+                        <span className="text-white">{rec.timeline}</span>
+                      </div>
+                      {rec.current_score !== undefined && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <TrendingUp className="w-4 h-4 text-slate-400" />
+                          <span className="text-slate-400">Score:</span>
+                          <span className="text-white">{rec.current_score}/100</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Tracking Actions */}
+                    {projectId && (
+                      <div className="flex items-center gap-2">
+                        {!tracked ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); trackRecommendation(rec); }}
+                            disabled={trackingRec === rec.title}
+                            className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm hover:bg-green-500/30 transition-colors flex items-center gap-2"
+                          >
+                            {trackingRec === rec.title ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Plus className="w-4 h-4" />
+                            )}
+                            Tracker
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            {trackedStatus !== 'completed' && (
+                              <>
+                                {trackedStatus !== 'in_progress' && (
+                                  <button
+                                    onClick={(e) => { 
+                                      e.stopPropagation(); 
+                                      const item = progress.items.find(i => i.title === rec.title);
+                                      if (item) updateStatus(item.progress_id, 'in_progress');
+                                    }}
+                                    className="px-3 py-1.5 bg-cyan-500/20 text-cyan-400 rounded-lg text-sm hover:bg-cyan-500/30 transition-colors flex items-center gap-1"
+                                  >
+                                    <PlayCircle className="w-4 h-4" />
+                                    Démarrer
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    const item = progress.items.find(i => i.title === rec.title);
+                                    if (item) updateStatus(item.progress_id, 'completed');
+                                  }}
+                                  className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm hover:bg-green-500/30 transition-colors flex items-center gap-1"
+                                >
+                                  <Check className="w-4 h-4" />
+                                  Terminé
+                                </button>
+                              </>
+                            )}
+                            {trackedStatus === 'completed' && (
+                              <span className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-sm flex items-center gap-1">
+                                <CheckCircle className="w-4 h-4" />
+                                Complété
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

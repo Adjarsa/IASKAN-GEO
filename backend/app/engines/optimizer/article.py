@@ -781,6 +781,205 @@ class ArticleOptimizerEngine:
                 opportunities.append(f"Créer un sous-titre H2 mentionnant {brand_name}")
         
         return opportunities[:5]
+    
+    def simulate_impact(
+        self, 
+        current_analysis: Dict[str, Any], 
+        improvements: List[str]
+    ) -> Dict[str, Any]:
+        """
+        Simulate the impact of implementing specific improvements.
+        
+        Args:
+            current_analysis: The current optimization analysis
+            improvements: List of improvement IDs to simulate
+            
+        Returns:
+            Simulated score changes and projected results
+        """
+        current_score = current_analysis.get("overall_score", 50)
+        current_scores = current_analysis.get("scores", {})
+        
+        # Impact values for each improvement type
+        IMPACT_MAP = {
+            # Content improvements
+            "add_faq": {"content": 8, "structure": 5, "overall": 6},
+            "improve_structure": {"structure": 10, "content": 3, "overall": 5},
+            "add_definitions": {"content": 5, "authority": 3, "overall": 4},
+            "expand_content": {"content": 12, "thoroughness": 15, "overall": 8},
+            "add_introduction": {"content": 5, "relevance": 8, "overall": 5},
+            
+            # Authority improvements
+            "add_author": {"authority": 12, "trust": 8, "overall": 7},
+            "add_sources": {"authority": 10, "trust": 10, "overall": 8},
+            "add_credentials": {"authority": 8, "trust": 5, "overall": 5},
+            "update_date": {"freshness": 15, "authority": 5, "overall": 6},
+            "add_expert_review": {"authority": 10, "trust": 8, "overall": 7},
+            
+            # Technical improvements
+            "add_schema": {"technical": 12, "visibility": 8, "overall": 7},
+            "improve_meta": {"technical": 5, "seo": 8, "overall": 5},
+            "add_structured_data": {"technical": 10, "visibility": 10, "overall": 8},
+            "optimize_headings": {"structure": 8, "seo": 5, "overall": 5},
+            
+            # Engagement improvements
+            "add_media": {"engagement": 10, "content": 5, "overall": 6},
+            "add_internal_links": {"engagement": 5, "seo": 5, "overall": 4},
+            "add_cta": {"engagement": 8, "overall": 3},
+        }
+        
+        # Calculate projected improvements
+        total_impact = {"overall": 0}
+        component_impacts = {}
+        
+        for improvement in improvements:
+            impact = IMPACT_MAP.get(improvement, {"overall": 3})
+            
+            for component, value in impact.items():
+                if component not in total_impact:
+                    total_impact[component] = 0
+                total_impact[component] += value
+                
+                if component != "overall":
+                    if component not in component_impacts:
+                        component_impacts[component] = 0
+                    component_impacts[component] += value
+        
+        # Cap improvements (diminishing returns)
+        for key in total_impact:
+            total_impact[key] = min(total_impact[key], 35)  # Max 35 point improvement
+        
+        # Calculate projected scores
+        projected_score = min(100, current_score + total_impact.get("overall", 0))
+        projected_scores = {}
+        
+        for component, current in current_scores.items():
+            improvement = component_impacts.get(component, 0)
+            projected_scores[component] = min(100, current + improvement)
+        
+        # Determine new grade
+        if projected_score >= 80:
+            projected_grade = "A"
+        elif projected_score >= 60:
+            projected_grade = "B"
+        elif projected_score >= 40:
+            projected_grade = "C"
+        else:
+            projected_grade = "D"
+        
+        return {
+            "simulation": {
+                "current_score": current_score,
+                "projected_score": projected_score,
+                "score_improvement": projected_score - current_score,
+                "projected_grade": projected_grade,
+                "improvements_applied": improvements,
+                "component_impacts": component_impacts,
+                "current_scores": current_scores,
+                "projected_scores": projected_scores
+            },
+            "recommendations": self._generate_implementation_order(improvements),
+            "estimated_effort": self._estimate_total_effort(improvements),
+            "confidence": self._calculate_confidence(len(improvements), current_score)
+        }
+    
+    def _generate_implementation_order(self, improvements: List[str]) -> List[Dict]:
+        """Generate recommended order for implementing improvements"""
+        # Priority order (higher value = implement first)
+        PRIORITY = {
+            "add_schema": 10,
+            "add_faq": 9,
+            "add_author": 9,
+            "improve_structure": 8,
+            "add_sources": 8,
+            "add_definitions": 7,
+            "update_date": 7,
+            "improve_meta": 6,
+            "expand_content": 6,
+            "add_media": 5,
+            "add_internal_links": 4,
+            "add_cta": 3,
+        }
+        
+        ordered = sorted(
+            improvements, 
+            key=lambda x: PRIORITY.get(x, 5), 
+            reverse=True
+        )
+        
+        return [
+            {
+                "improvement": imp,
+                "priority": i + 1,
+                "impact": "high" if PRIORITY.get(imp, 5) >= 8 else "medium" if PRIORITY.get(imp, 5) >= 5 else "low"
+            }
+            for i, imp in enumerate(ordered)
+        ]
+    
+    def _estimate_total_effort(self, improvements: List[str]) -> Dict:
+        """Estimate total effort for all improvements"""
+        EFFORT_MAP = {
+            "add_faq": {"hours": 2, "difficulty": "easy"},
+            "improve_structure": {"hours": 1, "difficulty": "easy"},
+            "add_definitions": {"hours": 1, "difficulty": "easy"},
+            "expand_content": {"hours": 4, "difficulty": "medium"},
+            "add_introduction": {"hours": 0.5, "difficulty": "easy"},
+            "add_author": {"hours": 1, "difficulty": "easy"},
+            "add_sources": {"hours": 3, "difficulty": "medium"},
+            "add_credentials": {"hours": 0.5, "difficulty": "easy"},
+            "update_date": {"hours": 0.5, "difficulty": "easy"},
+            "add_schema": {"hours": 2, "difficulty": "medium"},
+            "improve_meta": {"hours": 1, "difficulty": "easy"},
+            "add_media": {"hours": 3, "difficulty": "medium"},
+            "add_internal_links": {"hours": 1, "difficulty": "easy"},
+        }
+        
+        total_hours = sum(
+            EFFORT_MAP.get(imp, {"hours": 2}).get("hours", 2) 
+            for imp in improvements
+        )
+        
+        difficulties = [
+            EFFORT_MAP.get(imp, {"difficulty": "medium"}).get("difficulty")
+            for imp in improvements
+        ]
+        
+        if "hard" in difficulties:
+            overall_difficulty = "hard"
+        elif difficulties.count("medium") > len(difficulties) / 2:
+            overall_difficulty = "medium"
+        else:
+            overall_difficulty = "easy"
+        
+        return {
+            "total_hours": total_hours,
+            "overall_difficulty": overall_difficulty,
+            "estimated_timeline": f"{int(total_hours / 4)} - {int(total_hours / 2 + 1)} jours"
+        }
+    
+    def _calculate_confidence(self, num_improvements: int, current_score: int) -> Dict:
+        """Calculate confidence level of the simulation"""
+        # More improvements = lower confidence due to interaction effects
+        base_confidence = 95
+        
+        if num_improvements > 5:
+            confidence = base_confidence - (num_improvements - 5) * 5
+        else:
+            confidence = base_confidence
+        
+        # Lower current scores have higher variance
+        if current_score < 30:
+            confidence -= 10
+        elif current_score < 50:
+            confidence -= 5
+        
+        confidence = max(60, min(95, confidence))
+        
+        return {
+            "percentage": confidence,
+            "level": "high" if confidence >= 85 else "medium" if confidence >= 70 else "low",
+            "note": "Les résultats réels peuvent varier selon la qualité de l'implémentation"
+        }
 
 
 # Singleton instance

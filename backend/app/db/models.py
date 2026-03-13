@@ -384,3 +384,39 @@ class AdminLog(Base):
     target_id = Column(String(50))
     details = Column(JSON, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ImplementationProgress(Base):
+    """Track recommendation implementation progress per project"""
+    __tablename__ = "implementation_progress"
+    
+    id = Column(Integer, primary_key=True)
+    progress_id = Column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("prog_"))
+    project_id = Column(String(50), ForeignKey("projects.project_id"), nullable=False)
+    user_id = Column(String(50), nullable=False)
+    
+    # Recommendation tracking
+    recommendation_id = Column(String(100), nullable=False)  # e.g., "content_no_faq"
+    category = Column(String(50), nullable=False)  # content, authority, technical, engagement
+    title = Column(String(200), nullable=False)
+    
+    # Status
+    status = Column(String(20), default="pending")  # pending, in_progress, completed, skipped
+    priority = Column(String(20), default="medium")
+    
+    # Scores
+    initial_score = Column(Float)  # Score when recommendation was created
+    final_score = Column(Float)    # Score after implementation
+    
+    # Notes and metadata
+    notes = Column(Text)
+    completed_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Index for faster queries
+    __table_args__ = (
+        Index('idx_progress_project', 'project_id'),
+        Index('idx_progress_user', 'user_id'),
+        Index('idx_progress_status', 'status'),
+    )
