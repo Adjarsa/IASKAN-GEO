@@ -6,6 +6,7 @@ nixPkgs = ["python311", "nodejs_20", "yarn", "postgresql_15"]
 
 [phases.install]
 cmds = [
+    "cd backend && pip install emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/",
     "cd backend && pip install -r requirements.txt",
     "cd frontend && yarn install"
 ]
