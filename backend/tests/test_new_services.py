@@ -9,7 +9,7 @@ import os
 # Add backend to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://optimization-nexus.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://llm-share-voice.preview.emergentagent.com').rstrip('/')
 
 
 class TestServiceImports:

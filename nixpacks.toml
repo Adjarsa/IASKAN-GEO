@@ -1,0 +1,19 @@
+# IAskan - Nixpacks configuration for Railway
+# This configuration handles the monorepo structure
+
+[phases.setup]
+nixPkgs = ["python311", "nodejs_20", "yarn", "postgresql_15"]
+
+[phases.install]
+cmds = [
+    "cd backend && pip install -r requirements.txt",
+    "cd frontend && yarn install"
+]
+
+[phases.build]
+cmds = [
+    "cd frontend && yarn build"
+]
+
+[start]
+cmd = "bash start.sh"

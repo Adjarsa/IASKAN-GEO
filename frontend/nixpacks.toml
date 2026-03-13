@@ -1,0 +1,16 @@
+# IAskan Frontend - Nixpacks configuration for Railway
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "yarn"]
+
+[phases.install]
+cmds = ["yarn install"]
+
+[phases.build]
+cmds = ["yarn build"]
+
+[start]
+cmd = "npx serve -s build -l ${PORT:-3000}"
+
+[variables]
+NODE_VERSION = "20"

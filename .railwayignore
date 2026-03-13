@@ -1,0 +1,39 @@
+# Railway ignore file
+# Files and directories to exclude from deployment
+
+# Development and test files
+.git/
+.emergent/
+tests/
+test_reports/
+memory/
+*.md
+!README.md
+!DEPLOYMENT.md
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local environment files (use Railway variables instead)
+# backend/.env
+# frontend/.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Node modules (will be reinstalled during build)
+node_modules/
+
+# Build artifacts
+frontend/build/
+*.log
+
+# Backup files
+*.backup
+*.bak
