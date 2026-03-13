@@ -283,8 +283,20 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
   
 - **TESTS BACKEND** 
   - ✅ `/app/backend/tests/test_new_services.py` - 38 tests
-  - ✅ `/app/backend/tests/test_postgresql_migration.py` - 38 tests  
-  - ✅ Total: 76 tests passés (100%)
+  - ✅ `/app/backend/tests/test_postgresql_migration.py` - 38 tests
+  - ✅ `/app/backend/tests/test_analyses_endpoints.py` - 31 tests
+  - ✅ Total: 80+ tests passés (100%)
+
+### 2026-03-13 - Connexion Frontend aux Endpoints PostgreSQL
+- **NOUVEAUX ROUTERS CRÉÉS**
+  - ✅ `/app/backend/app/routers/analyses.py` - Liste des analyses
+    - `GET /api/analyses` - Liste filtrée par projet ou utilisateur
+    - `GET /api/analyses/history/{project_id}` - Données évolution pour graphiques
+  - ✅ `/app/backend/app/routers/analysis.py` - Ajout endpoint détail
+    - `GET /api/analysis/{analysis_id}` - Détails complets d'une analyse
+- **COMPATIBILITÉ FRONTEND VÉRIFIÉE**
+  - DashboardPage.jsx connecté aux nouveaux endpoints
+  - Format de réponse compatible avec les attentes du frontend
 
 ### 2026-03-10 (Session précédente)
 - **CELERY + REDIS IMPLÉMENTÉ**
