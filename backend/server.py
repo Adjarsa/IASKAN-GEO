@@ -53,10 +53,13 @@ llm_executor = ThreadPoolExecutor(max_workers=4)
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection (legacy - used alongside PostgreSQL during migration)
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# MongoDB connection (legacy - only initialized if not using PostgreSQL exclusively)
+mongo_url = os.environ.get('MONGO_URL', '')
+db = None
+client = None
+if mongo_url and not USE_POSTGRES:
+    client = AsyncIOMotorClient(mongo_url)
+    db = client[os.environ.get('DB_NAME', 'iaskan_db')]
 
 # Get API keys
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
@@ -812,7 +815,7 @@ async def send_verification_email(email: str, user_name: str, token: str) -> boo
         return False
     
     # Build verification URL
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://llm-share-voice.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://optimize-visibility.preview.emergentagent.com')
     verification_url = f"{frontend_url}/verify-email?token={token}"
     
     try:
@@ -944,7 +947,7 @@ async def send_scan_complete_email(user_email: str, user_name: str, project_name
         logger.warning("RESEND_API_KEY not configured, skipping scan complete email")
         return False
     
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://llm-share-voice.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://optimize-visibility.preview.emergentagent.com')
     analysis_url = f"{frontend_url}/analysis/{analysis_id}"
     
     # Score color
@@ -1081,7 +1084,7 @@ async def send_scheduled_report_email(
     
     try:
         score_color = "#10b981" if global_score >= 70 else "#f59e0b" if global_score >= 40 else "#ef4444"
-        frontend_url = os.environ.get("FRONTEND_URL", "https://llm-share-voice.preview.emergentagent.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "https://optimize-visibility.preview.emergentagent.com")
         analysis_url = f"{frontend_url}/analysis/{analysis_id}"
         
         # Build recipient list
@@ -1239,14 +1242,32 @@ async def check_scheduled_scans():
         try:
             now = datetime.now(timezone.utc)
             
-            # Find schedules that are due
-            due_schedules = await db.scan_schedules.find({
-                "enabled": True,
-                "next_run": {"$lte": now.isoformat()}
-            }, {"_id": 0}).to_list(100)
-            
-            for schedule in due_schedules:
-                await run_scheduled_scan(schedule)
+            if USE_POSTGRES:
+                # Use PostgreSQL for scheduled scans
+                from app.db import get_db_session, ScheduleService
+                from sqlalchemy import select
+                from app.db.models import ScanSchedule
+                
+                async with get_db_session() as session:
+                    if session:
+                        result = await session.execute(
+                            select(ScanSchedule).where(
+                                ScanSchedule.enabled == True,
+                                ScanSchedule.next_run <= now
+                            )
+                        )
+                        due_schedules = [ScheduleService.to_dict(s) for s in result.scalars().all()]
+                        for schedule in due_schedules:
+                            await run_scheduled_scan(schedule)
+            elif db is not None:
+                # Legacy MongoDB fallback
+                due_schedules = await db.scan_schedules.find({
+                    "enabled": True,
+                    "next_run": {"$lte": now.isoformat()}
+                }, {"_id": 0}).to_list(100)
+                
+                for schedule in due_schedules:
+                    await run_scheduled_scan(schedule)
             
         except Exception as e:
             logger.error(f"Error checking scheduled scans: {e}")
@@ -4419,8 +4440,9 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_db_client():
     """Cleanup on application shutdown"""
-    # Close MongoDB connection
-    client.close()
+    # Close MongoDB connection if configured
+    if client:
+        client.close()
     
     # Close PostgreSQL connections
     if USE_POSTGRES:
