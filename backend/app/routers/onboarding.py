@@ -99,7 +99,9 @@ async def get_onboarding_status(user: dict = Depends(get_current_user)):
             "current_step": "completed",
             "completed_steps": [s["id"] for s in ONBOARDING_STEPS],
             "skipped": False,
-            "progress_percent": 100
+            "progress_percent": 100,
+            "steps": ONBOARDING_STEPS,
+            "total_steps": len(ONBOARDING_STEPS)
         }
     
     # For new users, show onboarding
@@ -109,7 +111,8 @@ async def get_onboarding_status(user: dict = Depends(get_current_user)):
         "completed_steps": [],
         "skipped": False,
         "progress_percent": 0,
-        "steps": ONBOARDING_STEPS
+        "steps": ONBOARDING_STEPS,
+        "total_steps": len(ONBOARDING_STEPS)
     }
 
 
@@ -222,4 +225,27 @@ async def get_step_details(step_id: str):
     return {
         **step,
         "tips": tips.get(step_id, [])
+    }
+
+
+@router.post("/step/{step_id}/complete")
+async def complete_step(step_id: str, user: dict = Depends(get_current_user)):
+    """Mark a specific onboarding step as complete"""
+    step = next((s for s in ONBOARDING_STEPS if s["id"] == step_id), None)
+    
+    if not step:
+        raise HTTPException(status_code=404, detail="Step not found")
+    
+    # Find next step
+    current_order = step["order"]
+    next_step = next(
+        (s for s in ONBOARDING_STEPS if s["order"] == current_order + 1),
+        None
+    )
+    
+    return {
+        "success": True,
+        "completed_step": step_id,
+        "next_step": next_step["id"] if next_step else "completed",
+        "is_last_step": next_step is None
     }
