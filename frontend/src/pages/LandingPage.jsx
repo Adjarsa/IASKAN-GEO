@@ -356,7 +356,14 @@ const LandingPage = () => {
                     ))}
                   </ul>
                   
-                  <Link to="/login">
+                  <Link 
+                    to={plan.isFree ? "/login" : "/login?redirect=checkout"}
+                    onClick={() => {
+                      if (!plan.isFree) {
+                        localStorage.setItem("pending_plan", plan.name.toLowerCase());
+                      }
+                    }}
+                  >
                     <Button 
                       className={`w-full rounded-full ${plan.popular ? 'bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-lg shadow-violet-500/25' : ''}`}
                       variant={plan.popular ? 'default' : 'outline'}

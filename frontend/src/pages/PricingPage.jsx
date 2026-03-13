@@ -26,19 +26,65 @@ const PricingPage = () => {
     const paymentStatus = searchParams.get("payment");
     if (paymentStatus === "cancelled") {
       toast.info("Paiement annulé");
+      // Clear pending plan on cancel
+      localStorage.removeItem("pending_plan");
     }
-  }, [searchParams]);
+    
+    // Check if we need to complete checkout after login
+    const completeCheckout = searchParams.get("complete_checkout");
+    const pendingPlan = localStorage.getItem("pending_plan");
+    
+    if (user && (completeCheckout || pendingPlan)) {
+      const planToCheckout = completeCheckout || pendingPlan;
+      if (planToCheckout && planToCheckout !== "free") {
+        // Clear the pending plan
+        localStorage.removeItem("pending_plan");
+        // Auto-trigger checkout
+        setTimeout(() => {
+          handleCheckoutDirect(planToCheckout);
+        }, 500);
+      }
+    }
+  }, [searchParams, user]);
+
+  const handleCheckoutDirect = async (plan) => {
+    setLoading(plan);
+    try {
+      const response = await axios.post(
+        `${API}/checkout/session`,
+        {
+          plan,
+          success_url: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/pricing?payment=cancelled`
+        },
+        { withCredentials: true }
+      );
+
+      window.location.href = response.data.url;
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast.error(error.response?.data?.detail || "Erreur lors de la création du paiement");
+      setLoading(null);
+    }
+  };
 
   const handleCheckout = async (plan) => {
-    if (!user) {
-      navigate("/login");
+    // Plan gratuit - redirection vers inscription
+    if (plan === "free") {
+      if (!user) {
+        navigate("/login");
+      } else {
+        toast.success("Vous avez le plan Gratuit ! Profitez de votre audit mensuel.");
+        navigate("/dashboard");
+      }
       return;
     }
 
-    // Plan gratuit - pas de checkout nécessaire
-    if (plan === "free") {
-      toast.success("Vous avez le plan Gratuit ! Profitez de votre audit mensuel.");
-      navigate("/dashboard");
+    // Plan payant - sauvegarder le plan et rediriger vers login si non connecté
+    if (!user) {
+      // Sauvegarder le plan choisi pour le checkout après connexion
+      localStorage.setItem("pending_plan", plan);
+      navigate("/login?redirect=checkout");
       return;
     }
 

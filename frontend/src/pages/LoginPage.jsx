@@ -101,8 +101,18 @@ const LoginPage = () => {
       axios.post(`${API}/auth/session`, { session_id: sessionId }, { withCredentials: true })
         .then((response) => {
           toast.success("Connexion réussie !");
-          // Clear the hash and redirect to projects
-          window.location.href = window.location.origin + '/projects';
+          
+          // Check if there's a pending plan to checkout
+          const pendingPlan = localStorage.getItem("pending_plan");
+          const redirectParam = searchParams.get("redirect");
+          
+          if (pendingPlan && redirectParam === "checkout") {
+            // Redirect to pricing to complete checkout
+            window.location.href = window.location.origin + '/pricing?complete_checkout=' + pendingPlan;
+          } else {
+            // Clear the hash and redirect to projects
+            window.location.href = window.location.origin + '/projects';
+          }
         })
         .catch((error) => {
           console.error("Auth error:", error);
@@ -112,7 +122,7 @@ const LoginPage = () => {
           window.history.replaceState(null, '', window.location.pathname);
         });
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -134,6 +144,10 @@ const LoginPage = () => {
   }, [searchParams]);
 
   const handleGoogleLogin = () => {
+    // Check if pending plan exists for checkout redirect
+    const pendingPlan = localStorage.getItem("pending_plan");
+    const redirectParam = searchParams.get("redirect");
+    
     // Check if we're on Emergent platform or external deployment (Railway)
     const isEmergentPlatform = window.location.hostname.includes('emergentagent.com') || 
                                window.location.hostname.includes('localhost');
@@ -145,18 +159,30 @@ const LoginPage = () => {
       window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
     } else {
       // Use native Google OAuth on external deployments (Railway, etc.)
-      window.location.href = `${API}/auth/google/login`;
+      // Pass checkout info if user selected a paid plan
+      const loginUrl = pendingPlan && redirectParam === "checkout"
+        ? `${API}/auth/google/login?checkout_plan=${pendingPlan}`
+        : `${API}/auth/google/login`;
+      window.location.href = loginUrl;
     }
   };
 
   const handleMicrosoftLogin = () => {
-    // Redirect to Microsoft OAuth endpoint
-    window.location.href = `${API}/auth/microsoft/login`;
+    const pendingPlan = localStorage.getItem("pending_plan");
+    const redirectParam = searchParams.get("redirect");
+    const loginUrl = pendingPlan && redirectParam === "checkout"
+      ? `${API}/auth/microsoft/login?checkout_plan=${pendingPlan}`
+      : `${API}/auth/microsoft/login`;
+    window.location.href = loginUrl;
   };
 
   const handleLinkedInLogin = () => {
-    // Redirect to LinkedIn OAuth endpoint
-    window.location.href = `${API}/auth/linkedin/login`;
+    const pendingPlan = localStorage.getItem("pending_plan");
+    const redirectParam = searchParams.get("redirect");
+    const loginUrl = pendingPlan && redirectParam === "checkout"
+      ? `${API}/auth/linkedin/login?checkout_plan=${pendingPlan}`
+      : `${API}/auth/linkedin/login`;
+    window.location.href = loginUrl;
   };
 
   // Show loading if processing OAuth callback
