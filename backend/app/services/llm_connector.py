@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from .llm_abstraction import LlmChat, UserMessage
 
 from ..core.config import EMERGENT_LLM_KEY
 

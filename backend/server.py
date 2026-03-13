@@ -19,8 +19,8 @@ import io
 import secrets
 from fpdf import FPDF
 from authlib.integrations.starlette_client import OAuth
-from emergentintegrations.llm.chat import LlmChat, UserMessage
-from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+from app.services.llm_abstraction import LlmChat, UserMessage
+from app.services.stripe_abstraction import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 import resend
 
 # Import new modular routers
@@ -4242,7 +4242,7 @@ def call_llm_for_content(prompt: str) -> str:
     
     async def _async_call():
         try:
-            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            from app.services.llm_abstraction import LlmChat, UserMessage
             import uuid
             
             # Initialize chat with system message for GEO content

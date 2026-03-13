@@ -61,7 +61,7 @@ async def create_checkout_session(request: Request, checkout: CheckoutRequest, u
     plan_config = SUBSCRIPTION_PLANS[checkout.plan]
     
     try:
-        from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+        from ..services.stripe_abstraction import StripeCheckout, CheckoutSessionRequest
         
         stripe = StripeCheckout(api_key=STRIPE_API_KEY)
         
@@ -111,7 +111,7 @@ async def create_checkout_session(request: Request, checkout: CheckoutRequest, u
 async def get_checkout_status(session_id: str, user: dict = Depends(get_current_user)):
     """Check checkout session status and update subscription if paid"""
     try:
-        from emergentintegrations.payments.stripe.checkout import StripeCheckout
+        from ..services.stripe_abstraction import StripeCheckout
         
         stripe = StripeCheckout(api_key=STRIPE_API_KEY)
         status = stripe.get_session_status(session_id)

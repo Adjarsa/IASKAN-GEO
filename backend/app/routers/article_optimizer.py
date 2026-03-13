@@ -244,7 +244,7 @@ async def analyze_with_llm(
     
     # Enhance with LLM
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        from ..services.llm_abstraction import LlmChat, UserMessage
         
         # Prepare context for LLM
         diagnostics_summary = "\n".join([
