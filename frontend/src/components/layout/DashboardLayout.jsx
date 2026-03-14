@@ -31,11 +31,14 @@ import {
   FileText,
   Wand2,
   Sparkles,
-  Building2
+  Building2,
+  Loader2,
+  CheckCircle2,
+  Shield
 } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
-  const { user, subscription, logout, currentProject, clearProject } = useAuth();
+  const { user, subscription, logout, currentProject, clearProject, runningAnalysis } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -119,6 +122,64 @@ const DashboardLayout = ({ children }) => {
                 <p className="font-semibold text-slate-900 truncate">{currentProject.name}</p>
                 <p className="text-sm text-violet-600 truncate">{currentProject.brand_name}</p>
               </div>
+            </div>
+          )}
+
+          {/* Running Analysis Indicator */}
+          {runningAnalysis && runningAnalysis.status === 'running' && (
+            <div className="px-4 mb-4 flex-shrink-0">
+              <Link 
+                to={`/analysis/${runningAnalysis.analysis_id}`}
+                className="block p-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white hover:from-violet-600 hover:to-cyan-600 transition-all shadow-lg shadow-violet-500/25"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="relative">
+                    <Shield className="w-5 h-5" />
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full animate-pulse" />
+                  </div>
+                  <span className="text-xs font-medium uppercase tracking-wide">Analyse en cours</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm font-medium truncate">
+                    {runningAnalysis.current_phase === 'query_generation' && 'Génération requêtes...'}
+                    {runningAnalysis.current_phase === 'ai_querying' && `Interrogation IA (${runningAnalysis.queries_processed || 0}/${runningAnalysis.total_queries || '?'})`}
+                    {runningAnalysis.current_phase === 'calculating_indices' && 'Calcul des indices...'}
+                    {!runningAnalysis.current_phase && 'En cours...'}
+                  </span>
+                </div>
+                {/* Mini progress bar */}
+                <div className="mt-2 w-full bg-white/30 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className="h-full bg-white rounded-full transition-all duration-500"
+                    style={{ 
+                      width: runningAnalysis.current_phase === 'query_generation' ? '20%' 
+                           : runningAnalysis.current_phase === 'ai_querying' 
+                             ? `${Math.min(20 + Math.round((runningAnalysis.queries_processed || 0) / (runningAnalysis.total_queries || 1) * 60), 80)}%`
+                           : runningAnalysis.current_phase === 'calculating_indices' ? '90%'
+                           : '10%'
+                    }}
+                  />
+                </div>
+              </Link>
+            </div>
+          )}
+
+          {/* Completed Analysis Toast in Sidebar */}
+          {runningAnalysis && runningAnalysis.status === 'completed' && (
+            <div className="px-4 mb-4 flex-shrink-0">
+              <Link 
+                to={`/analysis/${runningAnalysis.analysis_id}`}
+                className="block p-3 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <div>
+                    <span className="text-sm font-medium text-emerald-700">Analyse terminée !</span>
+                    <p className="text-xs text-emerald-600">Score: {Math.round(runningAnalysis.global_score)}/100</p>
+                  </div>
+                </div>
+              </Link>
             </div>
           )}
 

@@ -54,37 +54,46 @@ const formatUrl = (url, maxLength = 35) => {
 
 const AnalysisPage = () => {
   const { analysisId } = useParams();
-  const { user, currentProject } = useAuth();
+  const { user, currentProject, runningAnalysis, startTrackingAnalysis, stopTrackingAnalysis } = useAuth();
   const navigate = useNavigate();
   const { fingerprint } = useFingerprint();
   
-  const [analysis, setAnalysis] = useState(null);
+  // Use global running analysis if it matches, otherwise local state
+  const [localAnalysis, setLocalAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
-  const [polling, setPolling] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(null);
   const [eligibilityError, setEligibilityError] = useState(null);
   const [showStrategy, setShowStrategy] = useState(false);
   const [showSemanticSearch, setShowSemanticSearch] = useState(false);
 
+  // Determine which analysis to display
+  const analysis = analysisId 
+    ? (runningAnalysis?.analysis_id === analysisId ? runningAnalysis : localAnalysis)
+    : null;
+  const polling = analysis?.status === 'running';
+
   useEffect(() => {
     if (analysisId) {
-      fetchAnalysis(analysisId);
+      // If the global running analysis matches, use it directly
+      if (runningAnalysis?.analysis_id === analysisId) {
+        setLocalAnalysis(runningAnalysis);
+        setLoading(false);
+      } else {
+        fetchAnalysis(analysisId);
+      }
     } else {
       setLoading(false);
     }
-  }, [analysisId]);
+  }, [analysisId, runningAnalysis]);
 
+  // Sync local analysis with global running analysis
   useEffect(() => {
-    let interval;
-    if (polling && analysis?.status === "running") {
-      interval = setInterval(() => {
-        fetchAnalysis(analysis.analysis_id);
-      }, 3000);
+    if (runningAnalysis?.analysis_id === analysisId) {
+      setLocalAnalysis(runningAnalysis);
     }
-    return () => clearInterval(interval);
-  }, [polling, analysis?.status, analysis?.analysis_id]);
+  }, [runningAnalysis, analysisId]);
 
   const fetchAnalysis = async (id, retryCount = 0) => {
     console.log("fetchAnalysis called with id:", id, "retry:", retryCount);
@@ -95,12 +104,14 @@ const AnalysisPage = () => {
         timeout: 30000 // 30 second timeout
       });
       console.log("fetchAnalysis response:", response.data);
-      setAnalysis(response.data.analysis);
+      const fetchedAnalysis = response.data.analysis;
+      setLocalAnalysis(fetchedAnalysis);
       
-      if (response.data.analysis?.status === "running") {
-        setPolling(true);
-      } else {
-        setPolling(false);
+      // If running, start global tracking
+      if (fetchedAnalysis?.status === "running") {
+        startTrackingAnalysis(fetchedAnalysis);
+      } else if (fetchedAnalysis?.status === "completed" || fetchedAnalysis?.status === "failed") {
+        stopTrackingAnalysis();
       }
     } catch (error) {
       console.error("Analysis error:", error);
@@ -144,6 +155,14 @@ const AnalysisPage = () => {
         },
         { withCredentials: true }
       );
+      
+      // Start global tracking immediately
+      const newAnalysis = {
+        analysis_id: response.data.analysis_id,
+        status: 'running',
+        current_phase: 'query_generation'
+      };
+      startTrackingAnalysis(newAnalysis);
       
       toast.success("Analyse IAskan Verified™ lancée !");
       navigate(`/analysis/${response.data.analysis_id}`);

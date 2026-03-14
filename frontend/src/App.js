@@ -70,6 +70,10 @@ const AuthProvider = ({ children }) => {
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentProject, setCurrentProject] = useState(null);
+  
+  // Running analysis state - persists across navigation
+  const [runningAnalysis, setRunningAnalysis] = useState(null);
+  const analysisPollingRef = useRef(null);
 
   const checkAuth = useCallback(async () => {
     if (window.location.hash?.includes('session_id=')) {
@@ -96,6 +100,24 @@ const AuthProvider = ({ children }) => {
           setCurrentProject(projectResponse.data.project);
         } catch (e) {
           localStorage.removeItem('currentProjectId');
+        }
+      }
+      
+      // Restore running analysis from localStorage
+      const savedAnalysisId = localStorage.getItem('runningAnalysisId');
+      if (savedAnalysisId) {
+        try {
+          const analysisResponse = await axios.get(`${API}/analysis/${savedAnalysisId}`, {
+            withCredentials: true,
+            timeout: 5000
+          });
+          if (analysisResponse.data.analysis?.status === 'running') {
+            setRunningAnalysis(analysisResponse.data.analysis);
+          } else {
+            localStorage.removeItem('runningAnalysisId');
+          }
+        } catch (e) {
+          localStorage.removeItem('runningAnalysisId');
         }
       }
     } catch (error) {
@@ -151,6 +173,67 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem('currentProjectId');
   };
 
+  // Start tracking an analysis
+  const startTrackingAnalysis = useCallback((analysis) => {
+    setRunningAnalysis(analysis);
+    localStorage.setItem('runningAnalysisId', analysis.analysis_id);
+  }, []);
+
+  // Stop tracking analysis
+  const stopTrackingAnalysis = useCallback(() => {
+    setRunningAnalysis(null);
+    localStorage.removeItem('runningAnalysisId');
+    if (analysisPollingRef.current) {
+      clearInterval(analysisPollingRef.current);
+      analysisPollingRef.current = null;
+    }
+  }, []);
+
+  // Poll for analysis updates (runs globally)
+  const pollAnalysis = useCallback(async () => {
+    if (!runningAnalysis?.analysis_id) return;
+    
+    try {
+      const response = await axios.get(`${API}/analysis/${runningAnalysis.analysis_id}`, {
+        withCredentials: true,
+        timeout: 10000
+      });
+      const updatedAnalysis = response.data.analysis;
+      
+      if (updatedAnalysis.status === 'completed' || updatedAnalysis.status === 'failed') {
+        setRunningAnalysis(updatedAnalysis);
+        localStorage.removeItem('runningAnalysisId');
+        if (analysisPollingRef.current) {
+          clearInterval(analysisPollingRef.current);
+          analysisPollingRef.current = null;
+        }
+        // Show toast notification
+        if (updatedAnalysis.status === 'completed') {
+          toast.success(`Analyse terminée ! Score: ${Math.round(updatedAnalysis.global_score)}/100`);
+        } else {
+          toast.error("L'analyse a échoué");
+        }
+      } else {
+        setRunningAnalysis(updatedAnalysis);
+      }
+    } catch (error) {
+      console.error("Polling error:", error);
+    }
+  }, [runningAnalysis?.analysis_id]);
+
+  // Start polling when analysis is running
+  useEffect(() => {
+    if (runningAnalysis?.status === 'running' && !analysisPollingRef.current) {
+      analysisPollingRef.current = setInterval(pollAnalysis, 3000);
+    }
+    
+    return () => {
+      if (analysisPollingRef.current) {
+        clearInterval(analysisPollingRef.current);
+      }
+    };
+  }, [runningAnalysis?.status, pollAnalysis]);
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -162,7 +245,11 @@ const AuthProvider = ({ children }) => {
       refreshSubscription,
       currentProject,
       selectProject,
-      clearProject
+      clearProject,
+      // Analysis tracking
+      runningAnalysis,
+      startTrackingAnalysis,
+      stopTrackingAnalysis
     }}>
       {children}
     </AuthContext.Provider>
