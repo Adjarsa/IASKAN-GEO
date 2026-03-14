@@ -48,6 +48,7 @@ import FAQPage from "@/pages/FAQPage";
 import AboutPage from "@/pages/AboutPage";
 import GDPRPage from "@/pages/GDPRPage";
 import CheckoutSuccessPage from "@/pages/CheckoutSuccessPage";
+import DiagnosticPage from "@/pages/DiagnosticPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -442,6 +443,14 @@ const AppRouter = () => {
       <Route path="/faq" element={<FAQPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/gdpr" element={<GDPRPage />} />
+      <Route
+        path="/diagnostic"
+        element={
+          <ProtectedRoute>
+            <DiagnosticPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
