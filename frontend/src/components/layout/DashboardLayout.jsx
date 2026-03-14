@@ -86,9 +86,9 @@ const DashboardLayout = ({ children }) => {
 
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-hidden">
           {/* Logo */}
-          <div className="p-6 flex items-center justify-between">
+          <div className="p-6 flex items-center justify-between flex-shrink-0">
             <Logo />
             <Button 
               variant="ghost" 
@@ -102,7 +102,7 @@ const DashboardLayout = ({ children }) => {
 
           {/* Current Project */}
           {currentProject && (
-            <div className="px-4 mb-4">
+            <div className="px-4 mb-4 flex-shrink-0">
               <div className="p-3 rounded-xl bg-gradient-to-br from-violet-50 to-cyan-50 border border-violet-100">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-slate-600 uppercase tracking-wide">Projet actif</span>
@@ -123,7 +123,7 @@ const DashboardLayout = ({ children }) => {
           )}
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 space-y-1">
+          <nav className="flex-1 px-4 space-y-1 overflow-y-auto min-h-0">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -158,7 +158,7 @@ const DashboardLayout = ({ children }) => {
           </nav>
 
           {/* Subscription Info */}
-          <div className="p-4">
+          <div className="p-4 flex-shrink-0">
             <div className="rounded-xl p-4 bg-white border border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <CreditCard className="w-4 h-4 text-violet-600" />
