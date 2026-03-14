@@ -89,7 +89,7 @@ async def create_project(project: ProjectCreate, user: dict = Depends(get_curren
             logo_url=logo_url
         )
         
-        return ProjectService.to_dict(new_project)
+        return {"project": ProjectService.to_dict(new_project)}
 
 
 @router.get("/debug")
@@ -188,8 +188,13 @@ async def claim_project_ownership(project_id: str, user: dict = Depends(get_curr
 @router.get("")
 async def list_projects(user: dict = Depends(get_current_user)):
     """List all projects for the current user"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     async with async_session_maker() as db:
+        logger.info(f"Fetching projects for user_id: {user['user_id']}")
         projects = await ProjectService.get_by_user(db, user["user_id"])
+        logger.info(f"Found {len(projects)} projects")
         
         result = []
         for project in projects:
@@ -204,7 +209,8 @@ async def list_projects(user: dict = Depends(get_current_user)):
             
             result.append(project_dict)
         
-        return result
+        # Return in format expected by frontend
+        return {"projects": result}
 
 
 @router.get("/{project_id}")
@@ -225,7 +231,7 @@ async def get_project(project_id: str, user: dict = Depends(get_current_user)):
         latest_analysis = await AnalysisService.get_latest_by_project(db, project_id)
         project_dict["latest_analysis"] = AnalysisService.to_dict(latest_analysis) if latest_analysis else None
         
-        return project_dict
+        return {"project": project_dict}
 
 
 @router.put("/{project_id}")
