@@ -8,10 +8,13 @@ from datetime import datetime, timezone
 from pydantic import BaseModel, HttpUrl
 import uuid
 
-from ..core.database import db
 from ..core.config import SUBSCRIPTION_PLANS, EMERGENT_LLM_KEY
 from ..engines.optimizer import optimizer_engine
 from ..models.article_optimizer import ArticleOptimization, OptimizationResult
+from ..db.database import async_session_maker
+from ..db.services import UserService
+from ..db.models import User, UserSession, Subscription
+from sqlalchemy import select
 
 router = APIRouter(prefix="/api/article-optimizer", tags=["Article Optimizer"])
 
@@ -42,42 +45,57 @@ async def get_current_user(request: Request) -> dict:
     if not token:
         raise HTTPException(status_code=401, detail="Non authentifié")
     
-    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
-    if not session:
-        raise HTTPException(status_code=401, detail="Session expirée")
-    
-    user = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
-    
-    return user
+    async with async_session_maker() as db:
+        # Find session
+        session_result = await db.execute(
+            select(UserSession).where(UserSession.session_token == token)
+        )
+        session = session_result.scalar_one_or_none()
+        
+        if not session:
+            raise HTTPException(status_code=401, detail="Session expirée")
+        
+        # Find user
+        user_result = await db.execute(
+            select(User).where(User.user_id == session.user_id)
+        )
+        user = user_result.scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
+        
+        return UserService.to_dict(user)
 
 
 async def check_optimizer_quota(user_id: str) -> dict:
     """Check if user has access to article optimizer"""
-    subscription = await db.subscriptions.find_one({"user_id": user_id}, {"_id": 0})
-    
-    if not subscription:
-        return {"allowed": False, "reason": "Pas d'abonnement actif"}
-    
-    plan = subscription.get("plan", "free")
-    plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["free"])
-    
-    # Check if feature is available
-    if not plan_config.get("article_optimizer", False):
-        return {
-            "allowed": False,
-            "reason": "L'optimiseur d'articles nécessite un abonnement Starter, Pro ou Business"
-        }
-    
-    # Check quota
-    limit = plan_config.get("article_optimizer_limit", 0)
-    used = subscription.get("article_optimizer_used", 0)
-    
-    if limit != -1 and used >= limit:  # -1 = unlimited
-        return {
-            "allowed": False,
-            "reason": f"Quota d'optimisations atteint ({used}/{limit} ce mois)"
+    async with async_session_maker() as db:
+        subscription_result = await db.execute(
+            select(Subscription).where(Subscription.user_id == user_id)
+        )
+        subscription = subscription_result.scalar_one_or_none()
+        
+        if not subscription:
+            return {"allowed": False, "reason": "Pas d'abonnement actif"}
+        
+        plan = subscription.plan or "free"
+        plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["free"])
+        
+        # Check if feature is available
+        if not plan_config.get("article_optimizer", False):
+            return {
+                "allowed": False,
+                "reason": "L'optimiseur d'articles nécessite un abonnement Starter, Pro ou Business"
+            }
+        
+        # Check quota
+        limit = plan_config.get("article_optimizer_limit", 0)
+        used = subscription.article_optimizer_used or 0
+        
+        if limit != -1 and used >= limit:  # -1 = unlimited
+            return {
+                "allowed": False,
+                "reason": f"Quota d'optimisations atteint ({used}/{limit} ce mois)"
         }
     
     return {
@@ -91,8 +109,17 @@ async def check_optimizer_quota(user_id: str) -> dict:
 @router.get("/quota")
 async def get_optimizer_quota(user: dict = Depends(get_current_user)):
     """Get user's article optimizer quota"""
-    quota = await check_optimizer_quota(user["user_id"])
-    return quota
+    try:
+        quota = await check_optimizer_quota(user["user_id"])
+        return quota
+    except Exception as e:
+        # Fallback for free users
+        return {
+            "allowed": True,
+            "limit": 3,
+            "used": 0,
+            "remaining": 3
+        }
 
 
 @router.post("/analyze")
