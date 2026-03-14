@@ -51,17 +51,22 @@ async def update_analysis(analysis_id: str, updates: dict):
 
 
 def generate_queries(brand_name: str, keywords: List[str], num_queries: int, industry: str = "") -> List[Dict[str, Any]]:
-    """Generate diverse queries for GEO analysis - reduced set for speed"""
+    """Generate diverse queries for GEO analysis - full precision"""
     queries = []
     
     if not keywords:
         keywords = [brand_name]
     
-    # Generate 2-3 queries per type for faster analysis
-    for query_type, templates in QUERY_TEMPLATES.items():
-        for i, template in enumerate(templates[:2]):  # Max 2 per type
+    # Ensure we generate enough queries across all types
+    query_types = list(QUERY_TEMPLATES.keys())
+    queries_per_type = max(1, num_queries // len(query_types))
+    
+    for query_type in query_types:
+        templates = QUERY_TEMPLATES[query_type]
+        for i in range(queries_per_type):
             if len(queries) >= num_queries:
                 break
+            template = templates[i % len(templates)]
             keyword = keywords[i % len(keywords)] if keywords else brand_name
             query_text = template.format(
                 keyword=keyword,
@@ -73,6 +78,23 @@ def generate_queries(brand_name: str, keywords: List[str], num_queries: int, ind
                 "type": query_type,
                 "keyword": keyword
             })
+    
+    # Fill remaining with random types if needed
+    while len(queries) < num_queries:
+        query_type = random.choice(query_types)
+        templates = QUERY_TEMPLATES[query_type]
+        template = random.choice(templates)
+        keyword = random.choice(keywords) if keywords else brand_name
+        query_text = template.format(
+            keyword=keyword,
+            brand=brand_name,
+            industry=industry or "ce secteur"
+        )
+        queries.append({
+            "text": query_text,
+            "type": query_type,
+            "keyword": keyword
+        })
     
     return queries[:num_queries]
 
@@ -168,8 +190,8 @@ def generate_recommendations(rate_scores: Dict[str, Any]) -> List[Dict[str, Any]
     return recommendations
 
 
-async def query_llm_with_timeout(llm_connector, query_text: str, ai_type: str, run_id: int, brand_name: str, competitors: List[str], timeout: int = 30) -> Dict[str, Any]:
-    """Query LLM with timeout protection"""
+async def query_llm_with_timeout(llm_connector, query_text: str, ai_type: str, run_id: int, brand_name: str, competitors: List[str], timeout: int = 60) -> Dict[str, Any]:
+    """Query LLM with timeout protection - generous timeout for reliability"""
     try:
         response = await asyncio.wait_for(
             llm_connector.query_llm(
@@ -183,7 +205,7 @@ async def query_llm_with_timeout(llm_connector, query_text: str, ai_type: str, r
         )
         return response
     except asyncio.TimeoutError:
-        logger.warning(f"LLM query timeout for {ai_type}")
+        logger.warning(f"LLM query timeout for {ai_type} after {timeout}s")
         return {
             "ai_type": ai_type,
             "run_id": run_id,
@@ -206,6 +228,7 @@ async def run_analysis_simplified(analysis_id: str, project: dict, plan_config: 
     """
     IAskan Verified GEO Protocol™ Analysis Engine
     Optimized version with parallel queries and timeouts
+    RESPECTS plan_config for precision and reliability
     """
     try:
         brand_name = project.get("brand_name", "")
@@ -213,9 +236,10 @@ async def run_analysis_simplified(analysis_id: str, project: dict, plan_config: 
         competitors = project.get("competitors", [])
         industry = project.get("industry", "")
         
+        # Use FULL plan config - no reduction
         ai_engines = plan_config.get("ai_engines", ["chatgpt"])
-        num_prompts = min(plan_config.get("num_prompts", 8), 8)  # Cap at 8 for speed
-        runs_per_query = plan_config.get("runs_per_query", 1)
+        num_prompts = plan_config.get("num_prompts", 10)
+        runs_per_query = plan_config.get("runs_per_query", 3)
         
         if not brand_name:
             raise ValueError("Nom de marque requis")
@@ -266,11 +290,11 @@ async def run_analysis_simplified(analysis_id: str, project: dict, plan_config: 
                         )
                     )
             
-            # Execute in parallel with overall timeout
+            # Execute in parallel with overall timeout per batch
             try:
                 query_responses = await asyncio.wait_for(
                     asyncio.gather(*tasks, return_exceptions=True),
-                    timeout=60  # Max 60s per query batch
+                    timeout=120  # 2 min per query batch for reliability
                 )
                 # Filter out exceptions
                 query_responses = [r for r in query_responses if isinstance(r, dict)]
