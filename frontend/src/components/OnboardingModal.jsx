@@ -201,10 +201,14 @@ export default function OnboardingModal({ isOpen, onClose, onComplete }) {
       const response = await axios.get(`${BACKEND_URL}/api/onboarding/status`, {
         withCredentials: true
       });
-      setCurrentStep(response.data.onboarding.current_step);
-      setCompletedSteps(response.data.onboarding.completed_steps || []);
+      // Handle both response formats (with or without nested 'onboarding' key)
+      const data = response.data.onboarding || response.data;
+      setCurrentStep(data.current_step || 'welcome');
+      setCompletedSteps(data.completed_steps || []);
     } catch (err) {
       console.error('Error fetching onboarding:', err);
+      // Default to welcome step on error
+      setCurrentStep('welcome');
     }
   };
 
@@ -216,14 +220,23 @@ export default function OnboardingModal({ isOpen, onClose, onComplete }) {
         {},
         { withCredentials: true }
       );
-      setCurrentStep(response.data.current_step);
-      setCompletedSteps(response.data.completed_steps);
+      const nextStep = response.data.next_step || 'completed';
+      setCurrentStep(nextStep);
+      setCompletedSteps(prev => [...prev, currentStep]);
       
-      if (response.data.current_step === 'completed') {
+      if (nextStep === 'completed' || response.data.is_last_step) {
         onComplete?.();
       }
     } catch (err) {
       console.error('Error completing step:', err);
+      // Try to move to next step anyway for better UX
+      const currentIndex = STEPS.findIndex(s => s.id === currentStep);
+      if (currentIndex < STEPS.length - 1) {
+        setCurrentStep(STEPS[currentIndex + 1].id);
+        setCompletedSteps(prev => [...prev, currentStep]);
+      } else {
+        onComplete?.();
+      }
     } finally {
       setLoading(false);
     }
