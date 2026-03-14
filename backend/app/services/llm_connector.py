@@ -5,14 +5,11 @@ Part of the IAskan Verified GEO Protocol
 """
 import asyncio
 import logging
+import os
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-
-from .llm_abstraction import LlmChat, UserMessage
-
-from ..core.config import EMERGENT_LLM_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +20,7 @@ llm_executor = ThreadPoolExecutor(max_workers=4)
 LLM_CONFIG = {
     "chatgpt": {
         "provider": "openai",
-        "model": "gpt-5.2",
+        "model": "gpt-4o",
         "display_name": "ChatGPT"
     },
     "claude": {
@@ -33,12 +30,12 @@ LLM_CONFIG = {
     },
     "gemini": {
         "provider": "gemini",
-        "model": "gemini-3-flash-preview",
+        "model": "gemini-2.0-flash",
         "display_name": "Gemini"
     },
     "perplexity": {
         "provider": "openai",
-        "model": "gpt-4o",
+        "model": "gpt-4o-mini",
         "display_name": "Perplexity"
     }
 }
@@ -49,6 +46,11 @@ objective et informative. Réponds en mentionnant les marques, entreprises ou so
 Sois précis et factuel dans tes recommandations."""
 
 
+def get_api_key():
+    """Get the API key for LLM calls"""
+    return os.environ.get('EMERGENT_LLM_KEY') or os.environ.get('OPENAI_API_KEY')
+
+
 class LLMConnector:
     """
     Service for connecting to multiple LLM providers.
@@ -56,8 +58,24 @@ class LLMConnector:
     """
     
     def __init__(self, api_key: str = None, system_message: str = None):
-        self.api_key = api_key or EMERGENT_LLM_KEY
+        self.api_key = api_key or get_api_key()
         self.system_message = system_message or GEO_SYSTEM_MESSAGE
+        self._using_emergent = False
+        self._init_llm_backend()
+    
+    def _init_llm_backend(self):
+        """Initialize LLM backend - try emergentintegrations first, fallback to OpenAI"""
+        try:
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            self._LlmChat = LlmChat
+            self._UserMessage = UserMessage
+            self._using_emergent = True
+            logger.info("LLMConnector: Using emergentintegrations")
+        except ImportError:
+            import openai
+            self._openai = openai
+            self._using_emergent = False
+            logger.info("LLMConnector: Using native OpenAI SDK")
     
     async def query_llm(
         self,
@@ -69,42 +87,19 @@ class LLMConnector:
     ) -> Dict[str, Any]:
         """
         Query a single LLM and return the response with brand analysis.
-        
-        Args:
-            query_text: The query to send to the LLM
-            ai_type: Type of LLM ('chatgpt', 'claude', 'gemini', 'perplexity')
-            run_id: Run identifier for multi-run analysis
-            brand_name: Brand name to look for in response
-            competitors: List of competitor names to track
-            
-        Returns:
-            Dict with response, brand_mentioned, position, competitor analysis, etc.
         """
         competitors = competitors or []
         
         try:
+            config = LLM_CONFIG.get(ai_type, LLM_CONFIG["chatgpt"])
             session_id = f"geo_{ai_type}_{uuid.uuid4().hex[:8]}_{run_id}"
             
-            chat = LlmChat(
-                api_key=self.api_key,
-                session_id=session_id,
-                system_message=self.system_message
-            )
-            
-            # Configure model based on AI type
-            config = LLM_CONFIG.get(ai_type, LLM_CONFIG["chatgpt"])
-            chat.with_model(config["provider"], config["model"])
-            
-            user_message = UserMessage(text=query_text)
-            
-            # Run LLM call in thread pool to avoid blocking
-            loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                llm_executor,
-                lambda: asyncio.run(chat.send_message(user_message))
-            )
-            
-            response_text = response if isinstance(response, str) else str(response)
+            if self._using_emergent:
+                # Use emergentintegrations
+                response_text = await self._query_with_emergent(query_text, config, session_id)
+            else:
+                # Use native OpenAI SDK
+                response_text = await self._query_with_openai(query_text, config)
             
             # Analyze response for brand and competitor mentions
             analysis = self._analyze_response(
@@ -136,6 +131,46 @@ class LLMConnector:
                 "credibility_score": 0.0,
                 "conversion_score": 0.0
             }
+    
+    async def _query_with_emergent(self, query_text: str, config: dict, session_id: str) -> str:
+        """Query using emergentintegrations"""
+        chat = self._LlmChat(
+            api_key=self.api_key,
+            session_id=session_id,
+            system_message=self.system_message
+        )
+        chat.with_model(config["provider"], config["model"])
+        
+        user_message = self._UserMessage(text=query_text)
+        
+        # Run LLM call in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            llm_executor,
+            lambda: asyncio.run(chat.send_message(user_message))
+        )
+        
+        return response if isinstance(response, str) else str(response)
+    
+    async def _query_with_openai(self, query_text: str, config: dict) -> str:
+        """Query using native OpenAI SDK"""
+        client = self._openai.OpenAI(api_key=self.api_key)
+        
+        # Run in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        
+        def sync_call():
+            response = client.chat.completions.create(
+                model=config.get("model", "gpt-4o"),
+                messages=[
+                    {"role": "system", "content": self.system_message},
+                    {"role": "user", "content": query_text}
+                ],
+                max_tokens=1000
+            )
+            return response.choices[0].message.content
+        
+        return await loop.run_in_executor(llm_executor, sync_call)
     
     async def query_all_llms(
         self,
