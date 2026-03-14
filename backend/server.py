@@ -1321,15 +1321,6 @@ async def check_scheduled_scans():
                         due_schedules = [ScheduleService.to_dict(s) for s in result.scalars().all()]
                         for schedule in due_schedules:
                             await run_scheduled_scan(schedule)
-            elif db is not None:
-                # Legacy MongoDB fallback
-                due_schedules = await db.scan_schedules.find({
-                    "enabled": True,
-                    "next_run": {"$lte": now.isoformat()}
-                }, {"_id": 0}).to_list(100)
-                
-                for schedule in due_schedules:
-                    await run_scheduled_scan(schedule)
             
         except Exception as e:
             logger.error(f"Error checking scheduled scans: {e}")

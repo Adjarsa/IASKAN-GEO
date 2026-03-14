@@ -1,11 +1,12 @@
 """
-Article Optimizer Router
+Article Optimizer Router - PostgreSQL Version
 API endpoints for article GEO optimization
 """
 from fastapi import APIRouter, HTTPException, Depends, Request, BackgroundTasks
 from typing import Optional, List
 from datetime import datetime, timezone
 from pydantic import BaseModel, HttpUrl
+from sqlalchemy import select, update, delete
 import uuid
 
 from ..core.config import SUBSCRIPTION_PLANS, EMERGENT_LLM_KEY
@@ -13,8 +14,7 @@ from ..engines.optimizer import optimizer_engine
 from ..models.article_optimizer import ArticleOptimization, OptimizationResult
 from ..db.database import async_session_maker
 from ..db.services import UserService
-from ..db.models import User, UserSession, Subscription
-from sqlalchemy import select
+from ..db.models import User, UserSession, Subscription, Project, ArticleOptimization as ArticleOptimizationModel
 
 router = APIRouter(prefix="/api/article-optimizer", tags=["Article Optimizer"])
 
@@ -68,7 +68,7 @@ async def get_current_user(request: Request) -> dict:
 
 
 async def check_optimizer_quota(user_id: str) -> dict:
-    """Check if user has access to article optimizer"""
+    """Check if user has access to article optimizer - PostgreSQL version"""
     async with async_session_maker() as db:
         subscription_result = await db.execute(
             select(Subscription).where(Subscription.user_id == user_id)
@@ -78,7 +78,7 @@ async def check_optimizer_quota(user_id: str) -> dict:
         if not subscription:
             return {"allowed": False, "reason": "Pas d'abonnement actif"}
         
-        plan = subscription.plan or "free"
+        plan = subscription.plan.value if subscription.plan else "free"
         plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["free"])
         
         # Check if feature is available
@@ -96,14 +96,14 @@ async def check_optimizer_quota(user_id: str) -> dict:
             return {
                 "allowed": False,
                 "reason": f"Quota d'optimisations atteint ({used}/{limit} ce mois)"
+            }
+        
+        return {
+            "allowed": True,
+            "limit": limit,
+            "used": used,
+            "remaining": "illimité" if limit == -1 else limit - used
         }
-    
-    return {
-        "allowed": True,
-        "limit": limit,
-        "used": used,
-        "remaining": "illimité" if limit == -1 else limit - used
-    }
 
 
 @router.get("/quota")
@@ -128,7 +128,7 @@ async def analyze_article(
     user: dict = Depends(get_current_user)
 ):
     """
-    Analyze an article for GEO optimization.
+    Analyze an article for GEO optimization - PostgreSQL version.
     Returns detailed diagnostics and action plan.
     """
     # Check quota
@@ -146,12 +146,15 @@ async def analyze_article(
     # Get brand name from project if provided
     brand_name = None
     if data.project_id:
-        project = await db.projects.find_one(
-            {"project_id": data.project_id, "user_id": user["user_id"]},
-            {"_id": 0}
-        )
-        if project:
-            brand_name = project.get("brand_name")
+        async with async_session_maker() as db:
+            result = await db.execute(
+                select(Project)
+                .where(Project.project_id == data.project_id)
+                .where(Project.user_id == user["user_id"])
+            )
+            project = result.scalar_one_or_none()
+            if project:
+                brand_name = project.brand_name
     
     # Create optimization record
     optimization_id = f"opt_{uuid.uuid4().hex[:12]}"
@@ -167,28 +170,29 @@ async def analyze_article(
         
         processing_time = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
         
-        # Store result
-        optimization_doc = {
-            "optimization_id": optimization_id,
-            "user_id": user["user_id"],
-            "organization_id": user.get("organization_id"),
-            "project_id": data.project_id,
-            "article_url": data.url,
-            "article_title": result.get("title", data.title),
-            "status": "completed" if result.get("success") else "failed",
-            "result": result,
-            "created_at": start_time.isoformat(),
-            "completed_at": datetime.now(timezone.utc).isoformat(),
-            "processing_time_ms": processing_time
-        }
-        
-        await db.article_optimizations.insert_one(optimization_doc)
-        
-        # Increment usage counter
-        await db.subscriptions.update_one(
-            {"user_id": user["user_id"]},
-            {"$inc": {"article_optimizer_used": 1}}
-        )
+        # Store result in PostgreSQL
+        async with async_session_maker() as db:
+            optimization = ArticleOptimizationModel(
+                optimization_id=optimization_id,
+                user_id=user["user_id"],
+                organization_id=user.get("organization_id"),
+                project_id=data.project_id,
+                article_url=data.url,
+                article_title=result.get("title", data.title),
+                status="completed" if result.get("success") else "failed",
+                result=result,
+                processing_time_ms=processing_time
+            )
+            db.add(optimization)
+            
+            # Increment usage counter
+            await db.execute(
+                update(Subscription)
+                .where(Subscription.user_id == user["user_id"])
+                .values(article_optimizer_used=Subscription.article_optimizer_used + 1)
+            )
+            
+            await db.commit()
         
         return {
             "success": result.get("success", False),
@@ -205,16 +209,17 @@ async def analyze_article(
         }
         
     except Exception as e:
-        # Log error
-        error_doc = {
-            "optimization_id": optimization_id,
-            "user_id": user["user_id"],
-            "article_url": data.url,
-            "status": "failed",
-            "error": str(e),
-            "created_at": start_time.isoformat()
-        }
-        await db.article_optimizations.insert_one(error_doc)
+        # Log error in PostgreSQL
+        async with async_session_maker() as db:
+            optimization = ArticleOptimizationModel(
+                optimization_id=optimization_id,
+                user_id=user["user_id"],
+                article_url=data.url,
+                status="failed",
+                error_message=str(e)
+            )
+            db.add(optimization)
+            await db.commit()
         
         raise HTTPException(
             status_code=500,
@@ -228,7 +233,7 @@ async def analyze_with_llm(
     user: dict = Depends(get_current_user)
 ):
     """
-    Analyze article with LLM-enhanced recommendations.
+    Analyze article with LLM-enhanced recommendations - PostgreSQL version.
     Uses GPT to generate more detailed and contextual suggestions.
     """
     # Check quota
@@ -252,12 +257,15 @@ async def analyze_with_llm(
     # Get brand name from project
     brand_name = None
     if data.project_id:
-        project = await db.projects.find_one(
-            {"project_id": data.project_id, "user_id": user["user_id"]},
-            {"_id": 0}
-        )
-        if project:
-            brand_name = project.get("brand_name")
+        async with async_session_maker() as db:
+            result = await db.execute(
+                select(Project)
+                .where(Project.project_id == data.project_id)
+                .where(Project.user_id == user["user_id"])
+            )
+            project = result.scalar_one_or_none()
+            if project:
+                brand_name = project.brand_name
     
     # First run standard analysis
     standard_result = await optimizer_engine.analyze_article(
@@ -326,25 +334,29 @@ Réponds en français, de manière structurée et actionnable."""
             "enhanced": True
         }
         
-        # Store optimization
+        # Store optimization in PostgreSQL
         optimization_id = f"opt_{uuid.uuid4().hex[:12]}"
-        await db.article_optimizations.insert_one({
-            "optimization_id": optimization_id,
-            "user_id": user["user_id"],
-            "project_id": data.project_id,
-            "article_url": data.url,
-            "article_title": standard_result.get("title"),
-            "status": "completed",
-            "result": enhanced_result,
-            "llm_enhanced": True,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-        
-        # Increment usage
-        await db.subscriptions.update_one(
-            {"user_id": user["user_id"]},
-            {"$inc": {"article_optimizer_used": 1}}
-        )
+        async with async_session_maker() as db:
+            optimization = ArticleOptimizationModel(
+                optimization_id=optimization_id,
+                user_id=user["user_id"],
+                project_id=data.project_id,
+                article_url=data.url,
+                article_title=standard_result.get("title"),
+                status="completed",
+                result=enhanced_result,
+                llm_enhanced=True
+            )
+            db.add(optimization)
+            
+            # Increment usage
+            await db.execute(
+                update(Subscription)
+                .where(Subscription.user_id == user["user_id"])
+                .values(article_optimizer_used=Subscription.article_optimizer_used + 1)
+            )
+            
+            await db.commit()
         
         return {
             "success": True,
@@ -367,17 +379,38 @@ async def get_optimization_history(
     project_id: Optional[str] = None,
     user: dict = Depends(get_current_user)
 ):
-    """Get user's optimization history"""
-    query = {"user_id": user["user_id"]}
-    if project_id:
-        query["project_id"] = project_id
-    
-    optimizations = await db.article_optimizations.find(
-        query,
-        {"_id": 0, "result.raw_analysis": 0}  # Exclude large raw data
-    ).sort("created_at", -1).limit(limit).to_list(limit)
-    
-    return {"optimizations": optimizations}
+    """Get user's optimization history - PostgreSQL version"""
+    async with async_session_maker() as db:
+        query = select(ArticleOptimizationModel).where(
+            ArticleOptimizationModel.user_id == user["user_id"]
+        )
+        
+        if project_id:
+            query = query.where(ArticleOptimizationModel.project_id == project_id)
+        
+        query = query.order_by(ArticleOptimizationModel.created_at.desc()).limit(limit)
+        
+        result = await db.execute(query)
+        optimizations = [
+            {
+                "optimization_id": opt.optimization_id,
+                "user_id": opt.user_id,
+                "project_id": opt.project_id,
+                "article_url": opt.article_url,
+                "article_title": opt.article_title,
+                "status": opt.status,
+                "llm_enhanced": opt.llm_enhanced,
+                "processing_time_ms": opt.processing_time_ms,
+                "created_at": opt.created_at.isoformat() if opt.created_at else None,
+                "result": {
+                    "scores": opt.result.get("scores") if opt.result else None,
+                    "title": opt.result.get("title") if opt.result else None
+                } if opt.result else None
+            }
+            for opt in result.scalars().all()
+        ]
+        
+        return {"optimizations": optimizations}
 
 
 @router.get("/{optimization_id}")
@@ -385,16 +418,33 @@ async def get_optimization(
     optimization_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """Get a specific optimization result"""
-    optimization = await db.article_optimizations.find_one(
-        {"optimization_id": optimization_id, "user_id": user["user_id"]},
-        {"_id": 0}
-    )
-    
-    if not optimization:
-        raise HTTPException(status_code=404, detail="Optimisation non trouvée")
-    
-    return {"optimization": optimization}
+    """Get a specific optimization result - PostgreSQL version"""
+    async with async_session_maker() as db:
+        result = await db.execute(
+            select(ArticleOptimizationModel)
+            .where(ArticleOptimizationModel.optimization_id == optimization_id)
+            .where(ArticleOptimizationModel.user_id == user["user_id"])
+        )
+        optimization = result.scalar_one_or_none()
+        
+        if not optimization:
+            raise HTTPException(status_code=404, detail="Optimisation non trouvée")
+        
+        return {
+            "optimization": {
+                "optimization_id": optimization.optimization_id,
+                "user_id": optimization.user_id,
+                "project_id": optimization.project_id,
+                "article_url": optimization.article_url,
+                "article_title": optimization.article_title,
+                "status": optimization.status,
+                "result": optimization.result,
+                "llm_enhanced": optimization.llm_enhanced,
+                "processing_time_ms": optimization.processing_time_ms,
+                "created_at": optimization.created_at.isoformat() if optimization.created_at else None,
+                "completed_at": optimization.completed_at.isoformat() if optimization.completed_at else None
+            }
+        }
 
 
 @router.delete("/{optimization_id}")
@@ -402,16 +452,19 @@ async def delete_optimization(
     optimization_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """Delete an optimization from history"""
-    result = await db.article_optimizations.delete_one({
-        "optimization_id": optimization_id,
-        "user_id": user["user_id"]
-    })
-    
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Optimisation non trouvée")
-    
-    return {"success": True, "message": "Optimisation supprimée"}
+    """Delete an optimization from history - PostgreSQL version"""
+    async with async_session_maker() as db:
+        result = await db.execute(
+            delete(ArticleOptimizationModel)
+            .where(ArticleOptimizationModel.optimization_id == optimization_id)
+            .where(ArticleOptimizationModel.user_id == user["user_id"])
+        )
+        await db.commit()
+        
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Optimisation non trouvée")
+        
+        return {"success": True, "message": "Optimisation supprimée"}
 
 
 @router.get("/export/{optimization_id}")
@@ -420,68 +473,70 @@ async def export_optimization(
     format: str = "json",
     user: dict = Depends(get_current_user)
 ):
-    """Export optimization result as JSON or Markdown"""
-    optimization = await db.article_optimizations.find_one(
-        {"optimization_id": optimization_id, "user_id": user["user_id"]},
-        {"_id": 0}
-    )
-    
-    if not optimization:
-        raise HTTPException(status_code=404, detail="Optimisation non trouvée")
-    
-    result = optimization.get("result", {})
-    
-    if format == "json":
-        return result
-    
-    elif format == "markdown":
-        # Generate markdown report
-        md = f"""# Rapport d'Optimisation GEO
+    """Export optimization result as JSON or Markdown - PostgreSQL version"""
+    async with async_session_maker() as db:
+        result = await db.execute(
+            select(ArticleOptimizationModel)
+            .where(ArticleOptimizationModel.optimization_id == optimization_id)
+            .where(ArticleOptimizationModel.user_id == user["user_id"])
+        )
+        optimization = result.scalar_one_or_none()
+        
+        if not optimization:
+            raise HTTPException(status_code=404, detail="Optimisation non trouvée")
+        
+        opt_result = optimization.result or {}
+        
+        if format == "json":
+            return opt_result
+        
+        elif format == "markdown":
+            # Generate markdown report
+            md = f"""# Rapport d'Optimisation GEO
 
 ## Article Analysé
-- **Titre**: {result.get('title', 'N/A')}
-- **URL**: {optimization.get('article_url', 'N/A')}
-- **Date**: {optimization.get('created_at', 'N/A')}
+- **Titre**: {opt_result.get('title', 'N/A')}
+- **URL**: {optimization.article_url or 'N/A'}
+- **Date**: {optimization.created_at.isoformat() if optimization.created_at else 'N/A'}
 
 ## Scores
 
 | Métrique | Score |
 |----------|-------|
-| Global | {result.get('scores', {}).get('overall', 0)}/100 |
-| Structure | {result.get('scores', {}).get('structure', 0)}/100 |
-| Autorité | {result.get('scores', {}).get('authority', 0)}/100 |
-| Citabilité | {result.get('scores', {}).get('citability', 0)}/100 |
-| Fraîcheur | {result.get('scores', {}).get('freshness', 0)}/100 |
+| Global | {opt_result.get('scores', {}).get('overall', 0)}/100 |
+| Structure | {opt_result.get('scores', {}).get('structure', 0)}/100 |
+| Autorité | {opt_result.get('scores', {}).get('authority', 0)}/100 |
+| Citabilité | {opt_result.get('scores', {}).get('citability', 0)}/100 |
+| Fraîcheur | {opt_result.get('scores', {}).get('freshness', 0)}/100 |
 
 ## Diagnostics
 
 """
-        for diag in result.get('diagnostics', []):
-            md += f"### [{diag['severity'].upper()}] {diag['issue']}\n"
-            md += f"{diag['recommendation']}\n\n"
+            for diag in opt_result.get('diagnostics', []):
+                md += f"### [{diag['severity'].upper()}] {diag['issue']}\n"
+                md += f"{diag['recommendation']}\n\n"
+            
+            md += "## Plan d'Action\n\n"
+            action_plan = opt_result.get('action_plan', {})
+            
+            for phase, data in [
+                ("immediate", "Actions Immédiates"),
+                ("short_term", "Court Terme"),
+                ("medium_term", "Moyen Terme")
+            ]:
+                if action_plan.get(phase):
+                    md += f"### {data}\n"
+                    for action in action_plan[phase]:
+                        md += f"- {action.get('action', '')}\n"
+                    md += "\n"
+            
+            if opt_result.get("llm_analysis"):
+                md += f"## Analyse LLM\n\n{opt_result['llm_analysis']}\n"
+            
+            return {"markdown": md}
         
-        md += "## Plan d'Action\n\n"
-        action_plan = result.get('action_plan', {})
-        
-        for phase, data in [
-            ("immediate", "Actions Immédiates"),
-            ("short_term", "Court Terme"),
-            ("medium_term", "Moyen Terme")
-        ]:
-            if action_plan.get(phase):
-                md += f"### {data}\n"
-                for action in action_plan[phase]:
-                    md += f"- {action.get('action', '')}\n"
-                md += "\n"
-        
-        if result.get("llm_analysis"):
-            md += f"## Analyse LLM\n\n{result['llm_analysis']}\n"
-        
-        return {"markdown": md}
-    
-    else:
-        raise HTTPException(status_code=400, detail="Format non supporté (json ou markdown)")
-
+        else:
+            raise HTTPException(status_code=400, detail="Format non supporté (json ou markdown)")
 
 
 # Simulation endpoint
@@ -498,21 +553,24 @@ async def simulate_optimization_impact(
     user: dict = Depends(get_current_user)
 ):
     """
-    Simulate the impact of implementing specific improvements.
+    Simulate the impact of implementing specific improvements - PostgreSQL version.
     Returns projected score changes and implementation recommendations.
     """
     try:
         # Build current analysis from request or fetch from DB
         if request_data.optimization_id:
             # Fetch from database
-            optimization = await db.article_optimizations.find_one(
-                {"optimization_id": request_data.optimization_id},
-                {"_id": 0}
-            )
-            if not optimization:
-                raise HTTPException(status_code=404, detail="Optimisation non trouvée")
-            
-            current_analysis = optimization.get("result", {})
+            async with async_session_maker() as db:
+                result = await db.execute(
+                    select(ArticleOptimizationModel)
+                    .where(ArticleOptimizationModel.optimization_id == request_data.optimization_id)
+                )
+                optimization = result.scalar_one_or_none()
+                
+                if not optimization:
+                    raise HTTPException(status_code=404, detail="Optimisation non trouvée")
+                
+                current_analysis = optimization.result or {}
         else:
             # Use provided scores
             current_analysis = {
