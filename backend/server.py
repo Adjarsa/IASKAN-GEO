@@ -4589,6 +4589,31 @@ async def init_database_endpoint():
     else:
         return {"status": "skipped", "message": "PostgreSQL not enabled"}
 
+# CORS middleware - MUST be added BEFORE routes
+# When using credentials, origin cannot be '*', must be specific origins
+cors_origins_env = os.environ.get('CORS_ORIGINS', '')
+if cors_origins_env and cors_origins_env != '*':
+    cors_origins = cors_origins_env.split(',')
+else:
+    # Default origins for IAskan
+    cors_origins = [
+        "https://www.iaskan.com",
+        "https://iaskan.com",
+        "https://api.iaskan.com",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://analysis-preview-2.preview.emergentagent.com",
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+
 # Include router
 app.include_router(api_router)
 
@@ -4610,29 +4635,6 @@ app.include_router(analysis_router.router)     # Celery-powered analysis pipelin
 app.include_router(analyses_router.router)     # Analyses listing (frontend compatibility)
 app.include_router(strategy_router.router)     # GEO Strategy Engine
 app.include_router(semantic_router.router)     # Semantic Search with pgvector
-
-# CORS middleware
-# When using credentials, origin cannot be '*', must be specific origins
-cors_origins_env = os.environ.get('CORS_ORIGINS', '')
-if cors_origins_env and cors_origins_env != '*':
-    cors_origins = cors_origins_env.split(',')
-else:
-    # Default origins for IAskan
-    cors_origins = [
-        "https://www.iaskan.com",
-        "https://iaskan.com",
-        "https://api.iaskan.com",
-        "http://localhost:3000",
-        "http://localhost:5173",
-    ]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=cors_origins,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.on_event("startup")
 async def startup_event():
