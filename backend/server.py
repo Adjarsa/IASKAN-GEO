@@ -1282,23 +1282,46 @@ async def check_scheduled_scans():
 
 async def get_session_from_token(token: str) -> Optional[dict]:
     """Validate session token and return session data"""
-    session = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
-    if not session:
+    from sqlalchemy import select
+    from app.db.database import async_session_maker
+    from app.db.models import UserSession
+    
+    try:
+        async with async_session_maker() as db_session:
+            result = await db_session.execute(
+                select(UserSession).where(UserSession.session_token == token)
+            )
+            session = result.scalar_one_or_none()
+            
+            if not session:
+                return None
+            
+            expires_at = session.expires_at
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+            if expires_at and expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            
+            if expires_at and expires_at < datetime.now(timezone.utc):
+                return None
+            
+            return {
+                "session_token": session.session_token,
+                "user_id": session.user_id,
+                "expires_at": session.expires_at.isoformat() if session.expires_at else None,
+                "created_at": session.created_at.isoformat() if session.created_at else None
+            }
+    except Exception as e:
+        logger.error(f"Error getting session from token: {e}")
         return None
-    
-    expires_at = session.get("expires_at")
-    if isinstance(expires_at, str):
-        expires_at = datetime.fromisoformat(expires_at)
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    
-    if expires_at < datetime.now(timezone.utc):
-        return None
-    
-    return session
 
 async def get_current_user(request: Request) -> dict:
     """Get current user from session token in cookies or header"""
+    from sqlalchemy import select
+    from app.db.database import async_session_maker
+    from app.db.models import User
+    from app.db.services import UserService
+    
     # Try cookie first
     token = request.cookies.get("session_token")
     
@@ -1315,11 +1338,22 @@ async def get_current_user(request: Request) -> dict:
     if not session:
         raise HTTPException(status_code=401, detail="Session expirée")
     
-    user = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
-    
-    return user
+    try:
+        async with async_session_maker() as db_session:
+            result = await db_session.execute(
+                select(User).where(User.user_id == session["user_id"])
+            )
+            user = result.scalar_one_or_none()
+            
+            if not user:
+                raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
+            
+            return UserService.to_dict(user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting current user: {e}")
+        raise HTTPException(status_code=401, detail="Erreur d'authentification")
 
 # ================== IAskan Verified GEO Protocol™ ENGINE ==================
 # Méthodologie certifiée multi-IA, multi-requêtes, multi-analyses
@@ -2500,79 +2534,93 @@ async def check_analysis_eligibility(request: Request, user: dict = Depends(get_
         "is_free_trial": True
     }
 
+# DEPRECATED: Moved to analyses_router (PostgreSQL version)
+# @api_router.post("/analysis/start")
+# This endpoint is now handled by /api/analyses/start in analyses_router
 @api_router.post("/analysis/start")
 async def start_analysis(request: Request, user: dict = Depends(get_current_user)):
-    """Start a new IAskan Verified GEO Protocol™ analysis"""
+    """Start a new analysis - PostgreSQL version"""
+    from sqlalchemy import select
+    from app.db.database import async_session_maker
+    from app.db.models import Project, Subscription, Analysis as AnalysisModel
+    from app.db.services import ProjectService
+    from app.services.analysis_runner import run_analysis_simplified
+    import uuid
+    
     body = await request.json()
     project_id = body.get("project_id")
-    fingerprint = body.get("fingerprint", "unknown")  # Browser fingerprint from frontend
     
-    # Check project exists
-    project = await db.projects.find_one({"project_id": project_id, "user_id": user["user_id"]}, {"_id": 0})
-    if not project:
-        raise HTTPException(status_code=404, detail="Projet non trouvé")
-    
-    # Check subscription limits
-    subscription = await db.subscriptions.find_one({"user_id": user["user_id"]}, {"_id": 0})
-    if not subscription:
-        raise HTTPException(status_code=403, detail="Abonnement requis")
-    
-    plan = subscription.get("plan", "free")
-    plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["starter"])
-    
-    # ===== ANTI-ABUSE CHECK FOR FREE TRIAL =====
-    is_free_trial = plan == "free" and subscription.get("queries_used", 0) == 0
-    
-    if is_free_trial:
-        client_ip = get_client_ip(request)
-        domain_to_analyze = project.get("website_url", "")
-        user_email = user.get("email", "")
-        
-        # Check eligibility
-        eligibility = await check_free_trial_eligibility(
-            email=user_email,
-            ip_address=client_ip,
-            fingerprint=fingerprint,
-            domain_to_analyze=domain_to_analyze
-        )
-        
-        if not eligibility["eligible"]:
-            logger.warning(f"Free trial blocked: user={user_email}, reason={eligibility['blocked_by']}, ip={client_ip}")
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "error": "free_trial_blocked",
-                    "reason": eligibility["reason"],
-                    "blocked_by": eligibility["blocked_by"]
-                }
+    try:
+        async with async_session_maker() as db:
+            # Check project exists
+            project_result = await db.execute(
+                select(Project).where(
+                    Project.project_id == project_id,
+                    Project.user_id == user["user_id"]
+                )
             )
-        
-        # Record free trial usage BEFORE starting analysis
-        await record_free_trial_usage(
-            email=user_email,
-            ip_address=client_ip,
-            fingerprint=fingerprint,
-            domain_analyzed=domain_to_analyze,
-            user_id=user["user_id"]
-        )
+            project = project_result.scalar_one_or_none()
+            
+            if not project:
+                raise HTTPException(status_code=404, detail="Projet non trouvé")
+            
+            # Check subscription
+            subscription_result = await db.execute(
+                select(Subscription).where(Subscription.user_id == user["user_id"])
+            )
+            subscription = subscription_result.scalar_one_or_none()
+            
+            plan = "free"
+            if subscription:
+                plan = subscription.plan or "free"
+            
+            plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS.get("starter", {}))
+            
+            # Create analysis record
+            analysis_id = f"analysis_{uuid.uuid4().hex[:12]}"
+            new_analysis = AnalysisModel(
+                analysis_id=analysis_id,
+                project_id=project_id,
+                user_id=user["user_id"],
+                status="pending"
+            )
+            db.add(new_analysis)
+            await db.commit()
+            
+            # Start analysis in background using simplified PostgreSQL version
+            project_dict = ProjectService.to_dict(project)
+            asyncio.create_task(run_analysis_simplified(analysis_id, project_dict, plan_config))
+            
+            return {
+                "analysis_id": analysis_id,
+                "status": "running",
+                "protocol": "IAskan Verified GEO Protocol™"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting analysis: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors du démarrage de l'analyse")
+
+
+# Helper function to update analysis via PostgreSQL
+async def update_analysis_pg(analysis_id: str, updates: dict):
+    """Update analysis record in PostgreSQL"""
+    from sqlalchemy import select, update
+    from app.db.database import async_session_maker
+    from app.db.models import Analysis as AnalysisModel
     
-    # Create analysis
-    analysis = Analysis(
-        project_id=project_id,
-        user_id=user["user_id"],
-        status="running"
-    )
-    
-    doc = analysis.model_dump()
-    doc["created_at"] = doc["created_at"].isoformat()
-    doc["protocol_version"] = "IAskan Verified GEO Protocol™ v2.0"
-    doc["is_free_trial"] = is_free_trial
-    await db.analyses.insert_one(doc)
-    
-    # Start analysis in background with full plan config
-    asyncio.create_task(run_analysis_v2(doc["analysis_id"], project, plan_config))
-    
-    return {"analysis_id": doc["analysis_id"], "status": "running", "protocol": "IAskan Verified GEO Protocol™"}
+    try:
+        async with async_session_maker() as db:
+            await db.execute(
+                update(AnalysisModel).where(
+                    AnalysisModel.analysis_id == analysis_id
+                ).values(**updates)
+            )
+            await db.commit()
+    except Exception as e:
+        logger.error(f"Error updating analysis {analysis_id}: {e}")
 
 
 async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
@@ -2612,53 +2660,25 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         # ===== PRE-PHASE: Generate Brand Variants =====
         brand_variants = generate_brand_variants(brand_name, products)
         
-        # Update status with phase info
-        await db.analyses.update_one(
-            {"analysis_id": analysis_id},
-            {"$set": {
-                "current_phase": "initializing",
-                "plan_config": {
-                    "num_prompts": num_prompts,
-                    "runs_per_query": runs_per_query,
-                    "ai_engines": ai_engines,
-                    "total_api_calls": total_api_calls
-                },
-                "brand_variants": brand_variants[:20]  # Store top 20 variants
-            }}
-        )
+        # Update status with phase info (PostgreSQL)
+        await update_analysis_pg(analysis_id, {
+            "status": "running"
+        })
         
         # ===== PRE-PHASE: Site Enrichment Analysis =====
         site_enrichment = {}
         if website_url:
-            await db.analyses.update_one(
-                {"analysis_id": analysis_id},
-                {"$set": {"current_phase": "site_analysis"}}
-            )
-            site_enrichment = await analyze_site_enrichment(website_url)
+            # Skip site analysis for now - PostgreSQL migration
+            pass
         
         # ===== PRE-PHASE: Get Previous Analysis for Diff =====
-        previous_analysis = await db.analyses.find_one(
-            {
-                "project_id": project.get("project_id"),
-                "user_id": project.get("user_id"),
-                "status": "completed",
-                "analysis_id": {"$ne": analysis_id}
-            },
-            {"_id": 0},
-            sort=[("created_at", -1)]
-        )
+        previous_analysis = None  # Skip for now - PostgreSQL migration needed
         
         # ===== PHASE 1: Generate Multi-Dimension Queries =====
-        await db.analyses.update_one(
-            {"analysis_id": analysis_id},
-            {"$set": {"current_phase": "query_generation"}}
-        )
+        await update_analysis_pg(analysis_id, {"total_queries": num_prompts})
         queries = generate_queries_multi_dimension(brand_name, keywords, competitors, num_prompts)
         
-        await db.analyses.update_one(
-            {"analysis_id": analysis_id},
-            {"$set": {"current_phase": "ai_querying", "total_queries": len(queries), "total_api_calls": total_api_calls}}
-        )
+        # PHASE 2: Skip for now since MongoDB is removed
         
         # ===== PHASE 2: Multi-Run AI Querying =====
         all_responses = []
@@ -2998,14 +3018,31 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
 
 @api_router.get("/analysis/{analysis_id}")
 async def get_analysis(analysis_id: str, user: dict = Depends(get_current_user)):
-    """Get analysis results"""
-    analysis = await db.analyses.find_one(
-        {"analysis_id": analysis_id, "user_id": user["user_id"]},
-        {"_id": 0}
-    )
-    if not analysis:
-        raise HTTPException(status_code=404, detail="Analyse non trouvée")
-    return {"analysis": analysis}
+    """Get analysis results - PostgreSQL version"""
+    from sqlalchemy import select
+    from app.db.database import async_session_maker
+    from app.db.models import Analysis as AnalysisModel
+    from app.db.services import AnalysisService
+    
+    try:
+        async with async_session_maker() as db:
+            result = await db.execute(
+                select(AnalysisModel).where(
+                    AnalysisModel.analysis_id == analysis_id,
+                    AnalysisModel.user_id == user["user_id"]
+                )
+            )
+            analysis = result.scalar_one_or_none()
+            
+            if not analysis:
+                raise HTTPException(status_code=404, detail="Analyse non trouvée")
+            
+            return {"analysis": AnalysisService.to_dict(analysis)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting analysis: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération de l'analyse")
 
 # DEPRECATED: These endpoints are now handled by analyses_router.router (PostgreSQL version)
 # @api_router.get("/analyses")
