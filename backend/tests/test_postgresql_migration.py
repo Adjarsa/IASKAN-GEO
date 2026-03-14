@@ -14,7 +14,7 @@ import asyncio
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://iaskan-preview-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://optimize-visibility-1.preview.emergentagent.com').rstrip('/')
 
 
 class TestPostgreSQLConnection:

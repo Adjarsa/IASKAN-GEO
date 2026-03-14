@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://iaskan-preview-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://optimize-visibility-1.preview.emergentagent.com').rstrip('/')
 
 # Test session and project created earlier
 TEST_SESSION_TOKEN = 'test_session_1772018666518'

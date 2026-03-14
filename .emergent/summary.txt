@@ -18,79 +18,77 @@ Following an initial setup, the user provided a comprehensive **23-section produ
 **User's preferred language**: French
 
 **what currently exists?**
-The application is now fully deployed and operational on a production-like infrastructure.
-- **Hosting:** The frontend and backend are deployed as separate services on **Railway**.
-- **Domains:** The application is accessible via custom domains:  for the frontend and  for the backend, with DNS and redirects correctly configured.
-- **Database:** The application is connected to a **Supabase PostgreSQL** database, where the  extension has been enabled and all necessary tables have been created.
-- **Authentication:** Native **Google OAuth 2.0** has been implemented for the Railway deployment, allowing users to sign up and log in. The legacy MongoDB code and Emergent-specific auth have been fully removed or made conditional to ensure portability.
-- **Features:** A significant number of features have been implemented, including a complete Admin Backoffice backend, a GEO Strategy Engine, implementation tracking, and an Article Optimizer simulator. The corresponding frontend pages (, ) have been connected to the new backend endpoints.
+The application is deployed on Railway with a FastAPI backend and a React frontend, connected to a Supabase PostgreSQL database. The core infrastructure includes native Google OAuth, pgvector for semantic search, and Stripe integration configured with the user's test keys.
+
+Key features implemented include an Article Optimizer, a GEO Strategy Engine with Automatic Objectives, a semantic search engine, and a complete pricing/payment flow. A new Free plan has been added, and the 7-day trial has been removed across the application. Several critical bugs related to the production environment, including a  database connection issue and legacy MongoDB code in the onboarding flow, have been resolved.
 
 **Last working item**:
-    - Last item agent was working: Implementing Automatic Objectives which suggest a plan to improve a GEO score (e.g., 5 actions to get from B to A). The agent created the backend logic in the , added an API endpoint, and created a new frontend component .
+    - Last item agent was working: Debugging a critical issue where the user () cannot see their created project (xiomi) in the UI, despite confirming its existence in the Supabase  table. The agent was investigating a potential  mismatch when the user reported that the  table does not exist in the database, which is the last point of investigation.
     - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? manual testing by curl
+    - Which testing method agent to use? backend testing agent. The agent must first connect to the Supabase database using  to list all tables (e.g., using ) to verify the actual schema and table names, as the user's claim contradicts the application's design.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1:  endpoint fails with 500 error (Priority: P0)
-  - Issue 2: Finish Automatic Objectives Feature (Priority: P1)
-  - Issue 3: Microsoft/LinkedIn SSO Failure (Priority: P2)
+  - Issue 1: User cannot see their created project (Priority: P0)
+  - Issue 2:  endpoint fails with 500 error (Priority: P1)
+  - Issue 3: Magic Link authentication fails with 500 error (Priority: P2)
+  - Issue 4: Microsoft/LinkedIn SSO Failure (Priority: P3)
 
   Issues Detail:
   - Issue 1: 
-     - Description: The endpoint  which is critical for creating the first super-administrator account, is consistently returning a 500 Internal Server Error. This blocks all access to the admin panel.
-     - Attempted fixes: The agent confirmed the code seemed correct but did not add further logging or fully diagnose the root cause before moving on. The error could be in the database query () or due to the user not existing.
+     - Description: The user  created a project named xiomi. The project data is present in the  table in Supabase, but it does not appear on the Mes Projets page in the frontend. This blocks all core functionality for the user.
+     - Attempted fixes: The agent hypothesized a  mismatch between the user's current session and the  stored on the project. The investigation stalled when the user claimed the  table does not exist.
      - Next debug checklist: 
-       1. Add detailed logging to the  function in .
-       2. Check the Railway deployment logs immediately after calling the endpoint to capture the specific Python exception.
-       3. Verify that the user's email exists in the  table in the Supabase database *before* calling the endpoint.
-       4. Refactor the function to provide a more descriptive error message if the user is not found.
-     - Why fix this issue and what will be achieved with the fix? This is a critical blocker. Fixing it will allow the user to gain admin privileges and test all the newly created Admin Backoffice features.
+       1. **Verify Database Schema:** Connect to the Supabase database and list all tables to find the correct table name for users (it might not be ). The source of truth for table names is .
+       2. **Find User's ID:** Once the correct table is identified, query it to find the  associated with the email .
+       3. **Compare IDs:** Compare the user's actual  with the  on the xiomi project ().
+       4. **Correct Ownership:** If the IDs do not match, provide the user with the correct SQL  statement to assign the project to the correct .
+     - Why fix this issue and what will be achieved with the fix? This is a critical blocker preventing the user from accessing their own data and using the application's core features.
      - Status:  IN PROGRESS
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix? Backend
-  - Issue 2: 
-     - Description: The Automatic Objectives feature has backend and frontend components created but is not yet integrated into the main UI.
-     - Next debug checklist: 
-       1. Add a button or section in the  or  to trigger fetching and displaying the  component.
-       2. Test the full flow: run an analysis, open the strategy panel, and view the automatic objectives.
-     - Why fix this issue and what will be achieved with the fix? Completes a user-requested feature enhancement.
-     - Status:  NOT STARTED
      - Is recurring issue? N
      - Should Test frontend/backend/both after fix? Both
+  - Issue 2: 
+     - Description: The endpoint , critical for creating the first super-administrator account, consistently returns a 500 Internal Server Error. This blocks all access to the admin panel.
+     - Status:  NOT STARTED
+     - Is recurring issue? Y
+     - Should Test frontend/backend/both after fix? Backend
   - Issue 3: 
-     - Description: Microsoft/LinkedIn SSO login fails with a  error. This was a low-priority issue from a previous session.
+     - Description: The Magic Link authentication flow returns a 500 Internal Server Error, likely because the  is not configured in the Railway production environment.
+     - Status:  NOT STARTED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? Backend
+  - Issue 4: 
+     - Description: Microsoft/LinkedIn SSO login fails. The agent identified this is due to missing client ID/secret credentials in the production environment.
      - Status:  BLOCKED
      - Is recurring issue? N
      - Should Test frontend/backend/both after fix? Backend
-     - Blocked on other issue: Awaiting user credentials/testing and prioritization.
+     - Blocked on other issue: Awaiting user to provide credentials.
 
 **In progress Task List**:
   - None.
 
 **Upcoming and Future Tasks**
-*   **P0 - Implement Semantic Search:** Use the now-enabled  extension to build the core semantic search functionality for finding similar queries and analyzing content gaps. This is a core product feature.
-*   **P1 - Integrate Article Optimizer Frontend:** The  component has been created but needs to be integrated into a new or existing page in the UI.
-*   **P2 - Connect  Analytics:** The  was added to  but the data fetching logic for the charts needs to be fully implemented and tested.
+*   **P1 - Connect  Analytics:** The  component exists but needs its data-fetching logic implemented to display user and system statistics.
 *   **P2 - Implement Full Exports:** Create backend logic for CSV/JSON exports of analysis data.
-*   **P3 - Stripe Integration:** Implement the full billing, subscription, and quota management system.
+*   **P3 - Onboarding Flow Polish:** The onboarding flow was patched multiple times to fix bugs. It needs a full end-to-end test and potential refactoring to ensure it is seamless for new users.
+*   **Future Tasks:**
+    *   Implement Microsoft & LinkedIn SSO (currently blocked pending user credentials).
 
 **Completed work in this session**
-- **Full Railway Deployment:** Deployed both the FastAPI backend and React frontend as separate services on Railway, resolving all build and runtime issues.
-- **Custom Domain & DNS Configuration:** Successfully configured  (frontend) and  (backend), including DNS (CNAME) setup and domain root redirection.
-- **Database Migration to Supabase:** Switched the database from Railway's internal PostgreSQL to Supabase to leverage the pre-installed  extension. Fixed all connection issues, including using the correct connection pooler URL.
-- **Native Google OAuth Implementation:** Implemented a complete, stateless Google OAuth 2.0 flow for the Railway deployment, including backend routes (, ) and frontend logic to handle authentication outside the Emergent environment.
-- **Production Readiness & Code Portability:** Systematically removed all legacy MongoDB code and hard dependencies on , making the server fully portable and fixing startup crashes ().
-- **CORS Resolution:** Fixed critical CORS errors that occurred when using credentials by correctly configuring the FastAPI  to use specific origins instead of a wildcard.
-- **Feature: Admin Backoffice Backend:** Implemented 12 API endpoints for user management, statistics, and system administration by refactoring the legacy  router to use PostgreSQL.
-- **Feature: GEO Strategy Engine:** Created the backend engine, API router, and a  frontend component to generate and display GEO recommendations.
-- **Feature: Implementation Score:** Added a system to track completed recommendations, including a new DB model, API endpoints, and UI elements (progress bar, track buttons) in the .
-- **Feature: Article Optimizer Simulator:** Enhanced the  with an impact simulation method and created an  component.
-- **Feature: Admin Dashboard Charts:** Added a new Analytics tab with chart components () to the .
+- **Feature: Finalized Automatic Objectives**: Created and integrated  into .
+- **Feature: Integrated Article Optimizer**: Integrated  into the .
+- **Feature: Implemented  Semantic Search**: Built the complete backend (services, API) and frontend () for semantic search functionality.
+- **Feature: Completed Stripe Integration & Pricing Update**:
+    - Configured the application with user-provided Stripe keys.
+    - Replaced the 7-day trial with a new Free plan across all relevant backend and frontend files.
+    - Implemented a forced checkout flow that redirects users to payment if they have selected a paid plan but not completed the purchase.
+- **Bugfix: Resolved Critical  Database Errors**: Fixed  on Supabase by adding  to the SQLAlchemy engine configuration (), unblocking all database operations in production.
+- **Bugfix: Migrated Onboarding to PostgreSQL**: Fully refactored  from legacy MongoDB calls to use PostgreSQL, fixing multiple 500 errors.
+- **Bugfix: Patched Onboarding Flow**: Added the missing  endpoint and aligned frontend/backend data structures to fix UI errors.
 
 **Earlier issues found/mentioned but not fixed**
-   - Issue 1:  endpoint fails with 500 error. This was encountered during this session and is now the highest priority pending issue.
+   - The  endpoint failure is the main one, now tracked in the pending issue list.
 
 **Known issue recurrence from previous fork**
   - **Issue recurrence in previous fork:** React DOM .
@@ -100,100 +98,71 @@ The application is now fully deployed and operational on a production-like infra
 
 
 **Key Technical Concepts**
-- **Frontend:** React  (locked), Tailwind CSS, Shadcn/UI, , 
-- **Backend:** FastAPI, PostgreSQL (Supabase), SQLAlchemy, Celery, Redis, 
-- **Deployment:** Railway (dual services for frontend/backend), Nixpacks, Custom Domains
-- **Authentication:** Native Google OAuth 2.0 (stateless)
+- **Frontend:** React  (locked), Tailwind CSS, Shadcn/UI, 
+- **Backend:** FastAPI, PostgreSQL (Supabase), SQLAlchemy, 
+- **Deployment:** Railway (dual services for frontend/backend)
+- **Authentication:** Native Google OAuth 2.0 ()
+- **Payments:** Stripe
 
 **key DB schema**
-  - All tables are now in the Supabase PostgreSQL database, defined in .
-  - **New tables:** .
+  - ****: Stores project information.
+  - ****: Stores user account data. **(The user claims this table does not exist, which needs immediate verification).**
+  - ****: Stores session tokens.
+  - ****: New table to store text embeddings for pgvector search.
+  - All model definitions are in .
 
 **changes in tech stack**
-- **Database:** Migrated from Railway PostgreSQL to **Supabase PostgreSQL**.
-- **Authentication:** Replaced Emergent-managed Google Auth with a native **Google OAuth 2.0** implementation using .
+- No new changes from the previous handoff.
 
 **All files of reference**
 - **Newly Created:** , , , , , , .
-- **Heavily Modified:** , , , , , , , .
+- **Heavily Modified:**  (critical fix),  (full migration),  (new plan), , , .
 
 **Areas that need refactoring**:
-- The  endpoint in  needs better error handling and logging to be debuggable.
+- The  endpoint in  needs better error handling.
+- The onboarding flow has been patched multiple times and could benefit from a holistic review to improve robustness.
 
 **key api endpoints**
--  (NEEDS FIXING)
-- , , etc. (12 new admin endpoints)
-- ,  (Native Google Auth)
-- , ,  (New Strategy endpoints)
+- : Endpoint that should return the user's projects.
+- : Endpoint that was failing due to legacy MongoDB code.
+- : Newly added endpoint.
+- : New endpoint for pgvector search.
+- : Endpoint to initiate a Stripe payment.
 
 **Critical Info for New Agent**
 - **Vous DEVEZ répondre en français.**
-- The application is **live** on Railway with custom domains. Do not use localhost for testing public-facing features like OAuth.
-- **The #1 priority is to fix the  endpoint.** The user cannot access any admin functionality until this is resolved. Debug this by checking Railway logs and adding more detailed logging in the code.
-- After fixing the admin setup, the next priority is to fully implement the core product feature: **semantic search using **. The database is ready for this.
+- **The #1 priority is to solve why the user cannot see their project.** The starting point for this investigation is the user's claim that **y a pas une tables users** (the  table doesn't exist). You must verify the actual database schema on Supabase before proceeding.
+- The  compatibility fix in  is critical for all database operations on Railway. Do not modify it unless necessary.
+- The  endpoint is still broken and blocks access to the admin panel.
 
 **documents and test reports created in this job**
+  - /app/memory/PRD.md (updated)
   - /app/GOOGLE_OAUTH_SETUP.md
   - /app/DEPLOY_FRONTEND_RAILWAY.md
 
 **Last 10 User Messages and any pending HUMAN messages**
-- **User:** Asks to continue with feature development. (Status: Completed)
-- **User:** Selects P4 - GEO Strategy Engine as the next task. (Status: Completed)
-- **User:** Agrees to add an implementation score feature and then work on the Article Optimizer. (Status: Completed)
-- **User:** Agrees to add automatic objectives and then work on pgvector semantic search. (Status: Completed, but pgvector was not started)
-- **User:** Asks to continue with feature development after the implementation score is done. (Status: Completed)
-- **User:** Asks to continue with evolutions. (Status: Completed)
-- **User:** Asks to continue evolutions after Admin page is connected. (Status: Completed)
-- **User:** Wants to add a real-time dashboard with charts to the Admin page, then configure the super_admin account. (Status: In Progress)
-- **User:** Asks what the  curl command does and which email to use. (Status: Completed, agent explained)
-- **User:** fait (done) - indicating they have run a command or deployed. (Status: Actioned by agent)
+1.  **User (2 messages ago):** Claims their project exists in the Supabase  table but is not visible in the client interface.
+2.  **User (2 messages ago):** Posts a screenshot showing they are logged in but the projects page says aucun projet afficher (no project displayed).
+3.  **User (2 messages ago):** Reports a  error when trying to create a *new* project, which the agent diagnosed as hitting the project limit for the free plan.
+4.  **User (1 message ago):** States there are no duplicate user accounts in the database.
+5.  **User (last message):** Critically states **y a pas une tables users** (there isn't a  table), contradicting the agent's assumptions and directing the next step of the investigation.
+6.  **User:** Shared the row from the  table for their project xiomi.
+7.  **User:** Reported an error  in the onboarding modal.
+8.  **User:** Stated they couldn't find the project created with their email .
+9.  **User:** Provided logs showing  from .
+10. **User:** Wants the app to repeatedly show the payment page on every click if a plan is chosen but not paid for.
 
 **Project Health Check:**
 - **Broken**:
-    - **Admin Access:** The  endpoint is broken, preventing any user from gaining admin rights. This is a critical blocker.
+    - **Project Visibility:** The user cannot see their own project, which is a critical failure of the core application loop.
+    - **Admin Access:** The  endpoint is broken, preventing any user from gaining admin rights.
+    - **Magic Link Auth:** Fails with a 500 error on production.
 - **Mocked**:
-    - The  and  components are created but not yet integrated into the UI.
+    - The  in the admin dashboard has UI components for charts, but they are not connected to any backend data.
 
 **3rd Party Integrations**
 - **Active**: Google OAuth 2.0 (native ), Supabase (PostgreSQL + pgvector), Resend, Railway.
-- **LLMs/Payments**: Uses an abstraction layer that falls back to native usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
-              [-o ORGANIZATION] [-t {openai,azure}]
-              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
-              [--azure-ad-token AZURE_AD_TOKEN] [-V]
-              {api,tools,migrate,grit} ...
-
-positional arguments:
-  {api,tools,migrate,grit}
-    api                 Direct API calls
-    tools               Client side tools for convenience
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set verbosity.
-  -b API_BASE, --api-base API_BASE
-                        What API base url to use.
-  -k API_KEY, --api-key API_KEY
-                        What API key to use.
-  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
-                        What proxy to use.
-  -o ORGANIZATION, --organization ORGANIZATION
-                        Which organization to run as (will use your default
-                        organization if not specified)
-  -t {openai,azure}, --api-type {openai,azure}
-                        The backend API to call, must be `openai` or `azure`
-  --api-version API_VERSION
-                        The Azure API version, e.g.
-                        'https://learn.microsoft.com/en-us/azure/ai-
-                        services/openai/reference#rest-api-versioning'
-  --azure-endpoint AZURE_ENDPOINT
-                        The Azure endpoint, e.g.
-                        'https://endpoint.openai.azure.com'
-  --azure-ad-token AZURE_AD_TOKEN
-                        A token from Azure Active Directory,
-                        https://www.microsoft.com/en-
-                        us/security/business/identity-access/microsoft-entra-
-                        id
-  -V, --version         show program's version number and exit and  SDKs. Stripe is not fully integrated yet.
+- **Stripe**: Configured with the user's test keys for creating checkout sessions.
 - **Decommissioned**: Emergent-managed Google Auth (on Railway), MongoDB.
 
 **Testing status**
@@ -203,7 +172,9 @@ options:
   - Known regressions: None.
 
 **Credentials to test flow:**
-Use the live frontend at  and authenticate via the Continuer avec Google button. The backend is at .
+- **User Account:**  (log in via Google).
+- **Stripe Test Card:** Use  with any future date and 3-digit CVC for testing payments.
 
 **What agent forgot to execute**
-The agent did not fully resolve the 500 error on the  endpoint. After an initial failed attempt to fix it, the user prompted to move on to other features, and the agent did. This critical bug was left unresolved and should have been prioritized over new features.</analysis>
+- The agent never fixed the  endpoint, which was a P0 issue in the previous handoff.
+- The agent operated on the assumption that the database table was named  without verifying the actual schema from the model definitions or by inspecting the database directly. This led to confusion and wasted effort when the user reported the table didn't exist. The next agent must start by verifying facts about the environment before making assumptions.</analysis>

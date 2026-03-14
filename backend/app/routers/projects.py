@@ -92,6 +92,99 @@ async def create_project(project: ProjectCreate, user: dict = Depends(get_curren
         return ProjectService.to_dict(new_project)
 
 
+@router.get("/debug")
+async def debug_user_projects(user: dict = Depends(get_current_user)):
+    """Debug endpoint to diagnose user/project mismatch issues"""
+    from sqlalchemy import select, text
+    from ..db.models import Project, User
+    
+    async with async_session_maker() as db:
+        # Get current user info
+        current_user_id = user["user_id"]
+        current_email = user.get("email", "unknown")
+        
+        # Count all projects
+        all_projects_result = await db.execute(select(Project))
+        all_projects = list(all_projects_result.scalars().all())
+        
+        # Get user's projects
+        user_projects = await ProjectService.get_by_user(db, current_user_id)
+        
+        # Get all unique user_ids from projects
+        project_user_ids = list(set([p.user_id for p in all_projects]))
+        
+        # Check if current user exists in users table
+        user_check = await db.execute(
+            select(User).where(User.email == current_email)
+        )
+        db_user = user_check.scalar_one_or_none()
+        
+        return {
+            "diagnostic": "project_visibility_check",
+            "current_session": {
+                "user_id": current_user_id,
+                "email": current_email,
+            },
+            "database_user": {
+                "exists": db_user is not None,
+                "user_id": db_user.user_id if db_user else None,
+                "email": db_user.email if db_user else None,
+                "id_matches_session": db_user.user_id == current_user_id if db_user else False,
+            },
+            "projects_summary": {
+                "total_in_database": len(all_projects),
+                "projects_for_current_user": len(user_projects),
+                "all_project_user_ids": project_user_ids,
+            },
+            "all_projects": [
+                {
+                    "project_id": p.project_id,
+                    "name": p.name,
+                    "user_id": p.user_id,
+                    "belongs_to_current_user": p.user_id == current_user_id
+                }
+                for p in all_projects
+            ]
+        }
+
+
+@router.post("/claim/{project_id}")
+async def claim_project_ownership(project_id: str, user: dict = Depends(get_current_user)):
+    """
+    Claim ownership of a project (admin/debug endpoint).
+    This endpoint allows reassigning a project to the current authenticated user.
+    Used to fix user_id mismatch issues.
+    """
+    from sqlalchemy import update
+    from ..db.models import Project
+    
+    async with async_session_maker() as db:
+        # Find the project
+        project = await ProjectService.get_by_id(db, project_id)
+        
+        if not project:
+            raise HTTPException(status_code=404, detail="Projet non trouvé")
+        
+        old_user_id = project.user_id
+        new_user_id = user["user_id"]
+        
+        # Update the project's user_id
+        await db.execute(
+            update(Project).where(Project.project_id == project_id).values(user_id=new_user_id)
+        )
+        await db.commit()
+        
+        logger.info(f"Project {project_id} ownership transferred from {old_user_id} to {new_user_id}")
+        
+        return {
+            "success": True,
+            "message": f"Projet '{project.name}' assigné à votre compte avec succès",
+            "project_id": project_id,
+            "old_user_id": old_user_id,
+            "new_user_id": new_user_id
+        }
+
+
 @router.get("")
 async def list_projects(user: dict = Depends(get_current_user)):
     """List all projects for the current user"""
