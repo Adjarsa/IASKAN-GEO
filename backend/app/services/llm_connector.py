@@ -133,7 +133,7 @@ class LLMConnector:
             }
     
     async def _query_with_emergent(self, query_text: str, config: dict, session_id: str) -> str:
-        """Query using emergentintegrations"""
+        """Query using emergentintegrations - async native"""
         chat = self._LlmChat(
             api_key=self.api_key,
             session_id=session_id,
@@ -143,12 +143,22 @@ class LLMConnector:
         
         user_message = self._UserMessage(text=query_text)
         
-        # Run LLM call in thread pool to avoid blocking
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            llm_executor,
-            lambda: asyncio.run(chat.send_message(user_message))
-        )
+        # Use send_message directly if it's async, otherwise wrap properly
+        try:
+            # Try async method first
+            if hasattr(chat, 'send_message_async'):
+                response = await chat.send_message_async(user_message)
+            else:
+                # Fallback: run sync method in executor without nested asyncio.run
+                loop = asyncio.get_event_loop()
+                response = await loop.run_in_executor(
+                    llm_executor,
+                    lambda: chat.send_message_sync(user_message) if hasattr(chat, 'send_message_sync') else str(chat.send_message(user_message))
+                )
+        except Exception as e:
+            logger.warning(f"Emergent LLM error, trying alternative: {e}")
+            # Fallback to OpenAI if emergent fails
+            return await self._query_with_openai(query_text, config)
         
         return response if isinstance(response, str) else str(response)
     
