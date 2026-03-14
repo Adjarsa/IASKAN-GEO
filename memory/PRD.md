@@ -293,6 +293,26 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 
 ## Changelog
 
+### 2026-03-14 - Migration MongoDB → PostgreSQL Complete
+- **MIGRATION MONGODB → POSTGRESQL TERMINÉE**
+  - ✅ ~40+ endpoints migrés de MongoDB vers PostgreSQL SQLAlchemy
+  - ✅ Nouveaux modèles créés:
+    - `CompetitorComparison` - Stockage des comparaisons concurrentielles
+    - `FreeTrialUsage` - Anti-abus pour essais gratuits
+  - ✅ Endpoints migrés:
+    - `/api/content-audit/{project_id}` - Audit de contenu
+    - `/api/analysis/{analysis_id}/pdf` - Génération PDF
+    - `/api/analysis/compare` - Comparaison concurrentielle
+    - `/api/analysis/check-eligibility` - Vérification éligibilité
+    - `/api/comparisons/history/{project_id}` - Historique comparaisons
+    - `/api/contact` - Formulaire de contact
+    - Fonctions de vérification email
+    - Fonctions de notifications
+    - Fonctions de free trial
+    - Fonction `run_scheduled_scan`
+    - Fonction `run_analysis_v2`
+  - ✅ Code MongoDB legacy restant: 1 appel dans bloc fallback (ne s'exécute pas car USE_POSTGRES=true)
+
 ### 2026-03-12 (Session actuelle - Refactoring Services)
 - **POSTGRESQL INSTALLÉ ET FONCTIONNEL**
   - ✅ PostgreSQL 15.16 installé localement

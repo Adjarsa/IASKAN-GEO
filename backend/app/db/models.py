@@ -420,3 +420,44 @@ class ImplementationProgress(Base):
         Index('idx_progress_user', 'user_id'),
         Index('idx_progress_status', 'status'),
     )
+
+
+# ================== COMPETITOR COMPARISON MODEL ==================
+
+class CompetitorComparison(Base):
+    """Store competitor comparison results"""
+    __tablename__ = "competitor_comparisons"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    comparison_id = Column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("cmp_"))
+    project_id = Column(String(50), ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    brand_name = Column(String(255))
+    competitors = Column(JSON, default=list)  # List of competitor brand names
+    status = Column(String(20), default="pending")  # pending, running, completed, failed
+    results = Column(JSON, default=dict)  # Full comparison results
+    error = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True))
+    
+    __table_args__ = (
+        Index('idx_comparison_project', 'project_id'),
+        Index('idx_comparison_user', 'user_id'),
+    )
+
+
+# ================== FREE TRIAL USAGE MODEL ==================
+
+class FreeTrialUsage(Base):
+    """Track free trial usage for anti-abuse"""
+    __tablename__ = "free_trial_usage"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    usage_id = Column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("ftu_"))
+    email = Column(String(255), nullable=False, index=True)
+    email_domain = Column(String(255))
+    ip_address = Column(String(50), index=True)
+    fingerprint = Column(String(255), index=True)
+    analyzed_domain = Column(String(255), index=True)
+    user_id = Column(String(50))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

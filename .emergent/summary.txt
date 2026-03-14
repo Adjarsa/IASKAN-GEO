@@ -18,80 +18,104 @@ Following an initial setup, the user provided a comprehensive **23-section produ
 **User's preferred language**: French
 
 **what currently exists?**
-The application is deployed on Railway with a FastAPI backend and a React frontend, connected to a Supabase PostgreSQL database. The core infrastructure includes native Google OAuth, pgvector for semantic search, and Stripe integration configured with the user's test keys.
+The application is a FastAPI/React stack deployed on Railway with a Supabase PostgreSQL database. The critical P0 bug where the user could not see their project has been resolved. The agent fixed it by correcting a  prefix mismatch in the database and aligning the backend/frontend data structures for the project list endpoint.
 
-Key features implemented include an Article Optimizer, a GEO Strategy Engine with Automatic Objectives, a semantic search engine, and a complete pricing/payment flow. A new Free plan has been added, and the 7-day trial has been removed across the application. Several critical bugs related to the production environment, including a  database connection issue and legacy MongoDB code in the onboarding flow, have been resolved.
+However, resolving the first issue revealed a cascade of new 500 errors caused by extensive legacy MongoDB code in various endpoints. The agent applied temporary patches and placeholder logic to stop the app from crashing, particularly for the analysis, visibility, and article optimizer endpoints. API keys for several LLM providers (OpenAI, Anthropic, Google, Perplexity) have been added to the backend environment.
 
 **Last working item**:
-    - Last item agent was working: Debugging a critical issue where the user () cannot see their created project (xiomi) in the UI, despite confirming its existence in the Supabase  table. The agent was investigating a potential  mismatch when the user reported that the  table does not exist in the database, which is the last point of investigation.
+    - Last item agent was working: Fixing a cascade of  messages appearing after the main project visibility bug was fixed. These errors were caused by legacy MongoDB code still present in , , and . The agent implemented temporary, non-functional patches to stop the errors, most notably replacing the complex  function with a simplified placeholder.
     - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? backend testing agent. The agent must first connect to the Supabase database using  to list all tables (e.g., using ) to verify the actual schema and table names, as the user's claim contradicts the application's design.
+    - Which testing method agent to use? backend testing agent. The placeholder logic needs to be replaced with full PostgreSQL implementations, and then the core features (starting an analysis, checking quota) must be thoroughly tested.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: User cannot see their created project (Priority: P0)
-  - Issue 2:  endpoint fails with 500 error (Priority: P1)
-  - Issue 3: Magic Link authentication fails with 500 error (Priority: P2)
-  - Issue 4: Microsoft/LinkedIn SSO Failure (Priority: P3)
+  - Issue 1: Core analysis logic is a non-functional placeholder (Priority: P0)
+  - Issue 2: Sidebar menu does not scroll (Priority: P1)
+  - Issue 3: Widespread legacy MongoDB code causing errors (Priority: P1)
+  - Issue 4:  endpoint fails with 500 error (Priority: P2)
+  - Issue 5: Magic Link authentication fails with 500 error (Priority: P3)
+  - Issue 6: Microsoft/LinkedIn SSO Failure (Priority: P4)
 
   Issues Detail:
   - Issue 1: 
-     - Description: The user  created a project named xiomi. The project data is present in the  table in Supabase, but it does not appear on the Mes Projets page in the frontend. This blocks all core functionality for the user.
-     - Attempted fixes: The agent hypothesized a  mismatch between the user's current session and the  stored on the project. The investigation stalled when the user claimed the  table does not exist.
+     - Description: The core  function in , which performs the main GEO analysis, was replaced with a simplified placeholder to fix a crash. The application no longer performs any real analysis.
+     - Attempted fixes: The agent created a simplified function that simulates a result and updates the database, bypassing the complex MongoDB logic.
      - Next debug checklist: 
-       1. **Verify Database Schema:** Connect to the Supabase database and list all tables to find the correct table name for users (it might not be ). The source of truth for table names is .
-       2. **Find User's ID:** Once the correct table is identified, query it to find the  associated with the email .
-       3. **Compare IDs:** Compare the user's actual  with the  on the xiomi project ().
-       4. **Correct Ownership:** If the IDs do not match, provide the user with the correct SQL  statement to assign the project to the correct .
-     - Why fix this issue and what will be achieved with the fix? This is a critical blocker preventing the user from accessing their own data and using the application's core features.
-     - Status:  IN PROGRESS
+       1. Review the original logic of  (if possible from git history).
+       2. Re-implement the entire analysis pipeline using PostgreSQL queries and services.
+       3. Ensure all intermediate steps (e.g., ) correctly interact with the  table.
+     - Why fix this issue and what will be achieved with the fix? This is the core value proposition of the IAskan platform. Fixing it will restore the main functionality of the application.
+     - Status:  NOT STARTED
      - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? Both
+     - Should Test frontend/backend/both after fix? Backend
+     - Blocked on other issue: None.
   - Issue 2: 
-     - Description: The endpoint , critical for creating the first super-administrator account, consistently returns a 500 Internal Server Error. This blocks all access to the admin panel.
+     - Description: The user reported that the left-hand navigation menu in the dashboard does not scroll, making some menu items inaccessible when the list is long.
+     - Attempted fixes: The agent added various Tailwind CSS classes (, , ) to , but the user confirmed the issue persists in production.
+     - Next debug checklist: 
+       1. Inspect the component structure in  again.
+       2. Use browser developer tools to analyze the computed CSS and the flexbox layout of the sidebar container and its children.
+       3. The issue is likely a parent container consuming the height, preventing the inner navigation list from overflowing. Check the hierarchy: . The  needs to be the element that scrolls.
+     - Why fix this issue and what will be achieved with the fix? It's a significant UI/UX bug that prevents users from accessing all features of the application.
+     - Status:  IN PROGRESS
+     - Is recurring issue? Y
+     - Should Test frontend/backend/both after fix? Frontend
+  - Issue 3: 
+     - Description: Multiple endpoints, including  and , were crashing due to legacy MongoDB calls (). The agent applied temporary patches that return default or empty data.
+     - Attempted fixes: The agent replaced the failing code with placeholder return values to prevent 500 errors.
+     - Next debug checklist: 
+       1. Go through , , and .
+       2. Search for all remaining instances of  collection calls (e.g., , ).
+       3. Replace each call with its SQLAlchemy equivalent, using the existing database session ().
+     - Why fix this issue and what will be achieved with the fix? This will remove significant technical debt and fix underlying bugs in multiple features that are currently masked by temporary patches.
+     - Status:  IN PROGRESS
+     - Is recurring issue? Y
+     - Should Test frontend/backend/both after fix? Backend
+  - Issue 4: 
+     - Description: The endpoint  returns a 500 Internal Server Error, blocking access to the admin panel.
      - Status:  NOT STARTED
      - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? Backend
-  - Issue 3: 
-     - Description: The Magic Link authentication flow returns a 500 Internal Server Error, likely because the  is not configured in the Railway production environment.
+  - Issue 5: 
+     - Description: Magic Link authentication fails with a 500 Internal Server Error, likely due to a missing  in the production environment (though this should be re-verified).
      - Status:  NOT STARTED
      - Is recurring issue? N
      - Should Test frontend/backend/both after fix? Backend
-  - Issue 4: 
-     - Description: Microsoft/LinkedIn SSO login fails. The agent identified this is due to missing client ID/secret credentials in the production environment.
+  - Issue 6: 
+     - Description: Microsoft/LinkedIn SSO login fails due to missing credentials in the production environment.
      - Status:  BLOCKED
      - Is recurring issue? N
      - Should Test frontend/backend/both after fix? Backend
      - Blocked on other issue: Awaiting user to provide credentials.
 
 **In progress Task List**:
-  - None.
+  - Task 1: Complete migration of legacy MongoDB code to PostgreSQL
+     - Where to resume: Systematically go through  and other router files (, ), identify all remaining MongoDB calls, and replace them with the correct SQLAlchemy logic.
+     - What will be achieved with this? Eliminate a major source of technical debt and bugs, making the backend stable and consistent with the PostgreSQL architecture.
+     - Status:  IN PROGRESS
+     - Should Test frontend/backend/both after fix? Backend
 
 **Upcoming and Future Tasks**
 *   **P1 - Connect  Analytics:** The  component exists but needs its data-fetching logic implemented to display user and system statistics.
 *   **P2 - Implement Full Exports:** Create backend logic for CSV/JSON exports of analysis data.
 *   **P3 - Onboarding Flow Polish:** The onboarding flow was patched multiple times to fix bugs. It needs a full end-to-end test and potential refactoring to ensure it is seamless for new users.
-*   **Future Tasks:**
-    *   Implement Microsoft & LinkedIn SSO (currently blocked pending user credentials).
 
 **Completed work in this session**
-- **Feature: Finalized Automatic Objectives**: Created and integrated  into .
-- **Feature: Integrated Article Optimizer**: Integrated  into the .
-- **Feature: Implemented  Semantic Search**: Built the complete backend (services, API) and frontend () for semantic search functionality.
-- **Feature: Completed Stripe Integration & Pricing Update**:
-    - Configured the application with user-provided Stripe keys.
-    - Replaced the 7-day trial with a new Free plan across all relevant backend and frontend files.
-    - Implemented a forced checkout flow that redirects users to payment if they have selected a paid plan but not completed the purchase.
-- **Bugfix: Resolved Critical  Database Errors**: Fixed  on Supabase by adding  to the SQLAlchemy engine configuration (), unblocking all database operations in production.
-- **Bugfix: Migrated Onboarding to PostgreSQL**: Fully refactored  from legacy MongoDB calls to use PostgreSQL, fixing multiple 500 errors.
-- **Bugfix: Patched Onboarding Flow**: Added the missing  endpoint and aligned frontend/backend data structures to fix UI errors.
+- **Resolved Critical P0 Bug (Project Not Visible):**
+    - Identified and guided the user to fix a  prefix mismatch ( vs ) in the Supabase database via a SQL  query.
+    - Corrected the backend response format in  to match frontend expectations (), making the user's project appear in the UI.
+- **Patched Multiple Legacy MongoDB Crashes:**
+    - Applied temporary patches to endpoints in , , and  to prevent  by returning default/mock data.
+- **Added API Keys:**
+    - Integrated user-provided API keys for OpenAI, Perplexity, Google, and Anthropic into the  file.
 
 **Earlier issues found/mentioned but not fixed**
-   - The  endpoint failure is the main one, now tracked in the pending issue list.
+   - The  and  authentication issues were carried over from the previous session and remain unfixed.
 
 **Known issue recurrence from previous fork**
   - **Issue recurrence in previous fork:** React DOM .
+  - **Recurrence count:** 1
   - **Status:** RESOLVED. **Critical Constraint: DO NOT upgrade React from v18.2.0.**
 
 **Code Architecture**
@@ -100,81 +124,88 @@ Key features implemented include an Article Optimizer, a GEO Strategy Engine wit
 **Key Technical Concepts**
 - **Frontend:** React  (locked), Tailwind CSS, Shadcn/UI, 
 - **Backend:** FastAPI, PostgreSQL (Supabase), SQLAlchemy, 
-- **Deployment:** Railway (dual services for frontend/backend)
+- **Deployment:** Railway
 - **Authentication:** Native Google OAuth 2.0 ()
 - **Payments:** Stripe
+- **Technical Debt:** Significant amount of legacy MongoDB code remains, mostly in , which is partially patched or commented out.
 
 **key DB schema**
   - ****: Stores project information.
-  - ****: Stores user account data. **(The user claims this table does not exist, which needs immediate verification).**
-  - ****: Stores session tokens.
-  - ****: New table to store text embeddings for pgvector search.
+  - ****: Stores user account data. The agent has verified this table exists.
   - All model definitions are in .
 
 **changes in tech stack**
-- No new changes from the previous handoff.
+- No new technologies were added. The session focused on migrating away from legacy MongoDB code towards the established PostgreSQL stack.
 
 **All files of reference**
-- **Newly Created:** , , , , , , .
-- **Heavily Modified:**  (critical fix),  (full migration),  (new plan), , , .
+- **Heavily Modified:**  (multiple patches, placeholder logic),  (response format corrected),  (patched),  (patched),  (sidebar scroll attempted fix).
+- **Newly Created:**  (A temporary page created to help the user run diagnostics, should be removed).
+- **Important:**  (source of truth for DB schema),  (updated with new keys).
 
 **Areas that need refactoring**:
-- The  endpoint in  needs better error handling.
-- The onboarding flow has been patched multiple times and could benefit from a holistic review to improve robustness.
+- **:** This file is the top priority. It's a monolithic file containing over 3000 lines of code, with a mix of active routes, commented-out legacy code, and patched functions. It must be broken down into smaller, dedicated router files, and all remaining MongoDB logic must be fully migrated to PostgreSQL.
+- **Temporary Patches:** The placeholder functions in  and  must be replaced with proper PostgreSQL implementations.
+- **:** The entire core analysis function needs to be rewritten from scratch using PostgreSQL.
+- **:** This temporary diagnostic page should be removed from the frontend.
 
 **key api endpoints**
-- : Endpoint that should return the user's projects.
-- : Endpoint that was failing due to legacy MongoDB code.
-- : Newly added endpoint.
-- : New endpoint for pgvector search.
-- : Endpoint to initiate a Stripe payment.
+- : **FIXED**. Now correctly returns projects for the logged-in user.
+- : **BROKEN/MOCKED**. Triggers a placeholder function instead of the real analysis.
+- : **BROKEN/MOCKED**. Returns a default value to avoid crashing.
+- : **BROKEN/MOCKED**. Returns a default value to avoid crashing.
+- : **BROKEN**. Returns 500 error.
 
 **Critical Info for New Agent**
 - **Vous DEVEZ répondre en français.**
-- **The #1 priority is to solve why the user cannot see their project.** The starting point for this investigation is the user's claim that **y a pas une tables users** (the  table doesn't exist). You must verify the actual database schema on Supabase before proceeding.
-- The  compatibility fix in  is critical for all database operations on Railway. Do not modify it unless necessary.
-- The  endpoint is still broken and blocks access to the admin panel.
+- The highest priority (P0) is to re-implement the core analysis logic ( in ) using PostgreSQL, as it's currently a non-functional placeholder.
+- The second priority (P1) is the sidebar scroll bug in  which impacts usability.
+- The third priority (P1) is to systematically remove all remaining legacy MongoDB code from  and other routers. The application is unstable and riddled with temporary patches.
+- Do not trust any endpoint that isn't explicitly defined in a dedicated router file in . The  file contains many legacy endpoints that conflict with or override the correct PostgreSQL-based ones.
 
 **documents and test reports created in this job**
-  - /app/memory/PRD.md (updated)
-  - /app/GOOGLE_OAUTH_SETUP.md
-  - /app/DEPLOY_FRONTEND_RAILWAY.md
+  - None.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (2 messages ago):** Claims their project exists in the Supabase  table but is not visible in the client interface.
-2.  **User (2 messages ago):** Posts a screenshot showing they are logged in but the projects page says aucun projet afficher (no project displayed).
-3.  **User (2 messages ago):** Reports a  error when trying to create a *new* project, which the agent diagnosed as hitting the project limit for the free plan.
-4.  **User (1 message ago):** States there are no duplicate user accounts in the database.
-5.  **User (last message):** Critically states **y a pas une tables users** (there isn't a  table), contradicting the agent's assumptions and directing the next step of the investigation.
-6.  **User:** Shared the row from the  table for their project xiomi.
-7.  **User:** Reported an error  in the onboarding modal.
-8.  **User:** Stated they couldn't find the project created with their email .
-9.  **User:** Provided logs showing  from .
-10. **User:** Wants the app to repeatedly show the payment page on every click if a plan is chosen but not paid for.
+- **10. ** - User incorrectly assumes the DB is correct and the issue is in the UI, sharing a screenshot that reveals the  vs  prefix mismatch. (Issue identified by agent).
+- **9. ** - User reports that the project is still not visible even after they ran the SQL update query. (Led agent to investigate frontend/backend response mismatch).
+- **8. ** - User confirms the project visibility issue is **RESOLVED**. Immediately followed by logs showing new 500 errors.
+- **7. ** - User reports a new bug: the sidebar menu is not scrollable.
+- **6. ** - User confirms the agent's attempt to fix the scrollbar has failed in production.
+- **5. (User posts logs showing )** - This log indicated more legacy MongoDB code was being executed.
+- **4. (User posts API Keys)** - User provides keys for OpenAI, Perplexity, Google, Anthropic.
+- **3. (User posts logs showing 500 error for )** - Indicates the next critical bug after deployment.
+- **2. (User posts logs showing the same errors again)** - Confirms the agent's fixes have not yet been deployed to Railway.
+- **1. (User posts new logs showing successful deployment but persistent errors)** - Confirms deployment happened but the root cause (MongoDB code) is still present.
 
 **Project Health Check:**
 - **Broken**:
-    - **Project Visibility:** The user cannot see their own project, which is a critical failure of the core application loop.
-    - **Admin Access:** The  endpoint is broken, preventing any user from gaining admin rights.
-    - **Magic Link Auth:** Fails with a 500 error on production.
+    - **Core Analysis Engine:** The main  function is a placeholder.
+    - **Sidebar Scrolling:** The main navigation menu is not scrollable.
+    - **Admin Setup:**  endpoint is broken.
+    - **Magic Link Auth:** Fails with a 500 error.
 - **Mocked**:
-    - The  in the admin dashboard has UI components for charts, but they are not connected to any backend data.
+    - **Article Optimizer Quota ():** Returns a default value.
+    - **Visibility Endpoint ():** Returns a default value.
+    - **Admin Analytics Tab:** UI exists but is not connected to data.
 
 **3rd Party Integrations**
 - **Active**: Google OAuth 2.0 (native ), Supabase (PostgreSQL + pgvector), Resend, Railway.
-- **Stripe**: Configured with the user's test keys for creating checkout sessions.
-- **Decommissioned**: Emergent-managed Google Auth (on Railway), MongoDB.
+- **Stripe**: Configured with the user's test keys.
+- **LLM Providers**: API Keys for OpenAI, Anthropic, Google, and Perplexity are present in  but are not yet used in the refactored code.
+- **Decommissioned**: Emergent-managed Google Auth, MongoDB.
 
 **Testing status**
   - Testing agent used after significant changes: NO
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: []
-  - Known regressions: None.
+  - Known regressions: The entire analysis engine is a regression; it has been replaced with a non-functional mock.
 
 **Credentials to test flow:**
 - **User Account:**  (log in via Google).
 - **Stripe Test Card:** Use  with any future date and 3-digit CVC for testing payments.
 
 **What agent forgot to execute**
-- The agent never fixed the  endpoint, which was a P0 issue in the previous handoff.
-- The agent operated on the assumption that the database table was named  without verifying the actual schema from the model definitions or by inspecting the database directly. This led to confusion and wasted effort when the user reported the table didn't exist. The next agent must start by verifying facts about the environment before making assumptions.</analysis>
+- The agent failed to solve the sidebar scrolling issue.
+- The agent prioritized patching crashes over correct implementation, leading to the creation of significant technical debt (e.g., mocking the entire  function instead of migrating it).
+- The agent did not address pre-existing issues from the initial handoff summary:  and Magic Link authentication failures.
+- The agent created a temporary debug page () but did not schedule its removal.</analysis>

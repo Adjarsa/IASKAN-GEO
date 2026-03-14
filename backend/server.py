@@ -697,9 +697,13 @@ async def check_free_trial_eligibility(
     domain_to_analyze: str
 ) -> Dict[str, Any]:
     """
-    Check if user is eligible for free trial
+    Check if user is eligible for free trial - PostgreSQL version
     Returns: {"eligible": bool, "reason": str, "blocked_by": str}
     """
+    from sqlalchemy import select
+    from app.db.database import async_session_maker
+    from app.db.models import FreeTrialUsage as FreeTrialUsageModel
+    
     # Extract domains
     email_domain = extract_email_domain(email)
     analyzed_domain = extract_domain_from_url(domain_to_analyze)
@@ -712,43 +716,52 @@ async def check_free_trial_eligibility(
             "blocked_by": "temporary_email"
         }
     
-    # Check 2: Email already used for free trial
-    existing_email = await db.free_trial_usage.find_one({"email": email.lower()})
-    if existing_email:
-        return {
-            "eligible": False,
-            "reason": "Cette adresse email a déjà utilisé l'essai gratuit.",
-            "blocked_by": "email"
-        }
-    
-    # Check 3: IP address already used for free trial
-    existing_ip = await db.free_trial_usage.find_one({"ip_address": ip_address})
-    if existing_ip:
-        return {
-            "eligible": False,
-            "reason": "Un essai gratuit a déjà été utilisé depuis cette connexion.",
-            "blocked_by": "ip_address"
-        }
-    
-    # Check 4: Fingerprint already used for free trial
-    if fingerprint and fingerprint != "unknown":
-        existing_fp = await db.free_trial_usage.find_one({"fingerprint": fingerprint})
-        if existing_fp:
+    async with async_session_maker() as session:
+        # Check 2: Email already used for free trial
+        result = await session.execute(
+            select(FreeTrialUsageModel).where(FreeTrialUsageModel.email == email.lower()).limit(1)
+        )
+        if result.scalar_one_or_none():
             return {
                 "eligible": False,
-                "reason": "Un essai gratuit a déjà été utilisé depuis ce navigateur.",
-                "blocked_by": "fingerprint"
+                "reason": "Cette adresse email a déjà utilisé l'essai gratuit.",
+                "blocked_by": "email"
             }
-    
-    # Check 5: Domain already analyzed for free
-    if analyzed_domain:
-        existing_domain = await db.free_trial_usage.find_one({"analyzed_domain": analyzed_domain})
-        if existing_domain:
+        
+        # Check 3: IP address already used for free trial
+        result = await session.execute(
+            select(FreeTrialUsageModel).where(FreeTrialUsageModel.ip_address == ip_address).limit(1)
+        )
+        if result.scalar_one_or_none():
             return {
                 "eligible": False,
-                "reason": f"Le domaine '{analyzed_domain}' a déjà bénéficié d'une analyse gratuite.",
-                "blocked_by": "domain"
+                "reason": "Un essai gratuit a déjà été utilisé depuis cette connexion.",
+                "blocked_by": "ip_address"
             }
+        
+        # Check 4: Fingerprint already used for free trial
+        if fingerprint and fingerprint != "unknown":
+            result = await session.execute(
+                select(FreeTrialUsageModel).where(FreeTrialUsageModel.fingerprint == fingerprint).limit(1)
+            )
+            if result.scalar_one_or_none():
+                return {
+                    "eligible": False,
+                    "reason": "Un essai gratuit a déjà été utilisé depuis ce navigateur.",
+                    "blocked_by": "fingerprint"
+                }
+        
+        # Check 5: Domain already analyzed for free
+        if analyzed_domain:
+            result = await session.execute(
+                select(FreeTrialUsageModel).where(FreeTrialUsageModel.analyzed_domain == analyzed_domain).limit(1)
+            )
+            if result.scalar_one_or_none():
+                return {
+                    "eligible": False,
+                    "reason": f"Le domaine '{analyzed_domain}' a déjà bénéficié d'une analyse gratuite.",
+                    "blocked_by": "domain"
+                }
     
     return {"eligible": True, "reason": "Éligible à l'essai gratuit", "blocked_by": None}
 
@@ -759,19 +772,21 @@ async def record_free_trial_usage(
     domain_analyzed: str,
     user_id: str
 ):
-    """Record free trial usage to prevent future abuse"""
-    usage = FreeTrialUsage(
-        email=email.lower(),
-        email_domain=extract_email_domain(email),
-        ip_address=ip_address,
-        fingerprint=fingerprint or "unknown",
-        analyzed_domain=extract_domain_from_url(domain_analyzed),
-        user_id=user_id
-    )
+    """Record free trial usage to prevent future abuse - PostgreSQL version"""
+    from app.db.database import async_session_maker
+    from app.db.models import FreeTrialUsage as FreeTrialUsageModel
     
-    doc = usage.model_dump()
-    doc["created_at"] = doc["created_at"].isoformat()
-    await db.free_trial_usage.insert_one(doc)
+    async with async_session_maker() as session:
+        usage = FreeTrialUsageModel(
+            email=email.lower(),
+            email_domain=extract_email_domain(email),
+            ip_address=ip_address,
+            fingerprint=fingerprint or "unknown",
+            analyzed_domain=extract_domain_from_url(domain_analyzed),
+            user_id=user_id
+        )
+        session.add(usage)
+        await session.commit()
     
     logger.info(f"Free trial usage recorded: email={email}, ip={ip_address}, domain={domain_analyzed}")
 
@@ -796,21 +811,33 @@ def get_client_ip(request: Request) -> str:
 # ================== EMAIL VERIFICATION FUNCTIONS ==================
 
 async def create_verification_token(user_id: str, email: str) -> str:
-    """Create a new email verification token"""
-    # Invalidate any existing tokens for this user
-    await db.email_verification_tokens.update_many(
-        {"user_id": user_id, "used": False},
-        {"$set": {"used": True}}
-    )
+    """Create a new email verification token - PostgreSQL version"""
+    from sqlalchemy import select, update
+    from app.db.database import async_session_maker
+    from app.db.models import EmailVerificationToken as EmailVerificationTokenModel
     
-    # Create new token
-    token = EmailVerificationToken(user_id=user_id, email=email)
-    doc = token.model_dump()
-    doc["expires_at"] = doc["expires_at"].isoformat()
-    doc["created_at"] = doc["created_at"].isoformat()
-    await db.email_verification_tokens.insert_one(doc)
-    
-    return token.token
+    async with async_session_maker() as session:
+        # Invalidate any existing tokens for this user
+        await session.execute(
+            update(EmailVerificationTokenModel)
+            .where(EmailVerificationTokenModel.user_id == user_id)
+            .where(EmailVerificationTokenModel.used == False)
+            .values(used=True)
+        )
+        
+        # Create new token
+        new_token = secrets.token_urlsafe(32)
+        token_obj = EmailVerificationTokenModel(
+            token_id=f"evt_{uuid.uuid4().hex[:12]}",
+            user_id=user_id,
+            email=email,
+            token=new_token,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
+        )
+        session.add(token_obj)
+        await session.commit()
+        
+        return new_token
 
 async def send_verification_email(email: str, user_name: str, token: str) -> bool:
     """Send verification email using Resend"""
@@ -819,7 +846,7 @@ async def send_verification_email(email: str, user_name: str, token: str) -> boo
         return False
     
     # Build verification URL
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://optimize-visibility-1.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://analysis-preview-2.preview.emergentagent.com')
     verification_url = f"{frontend_url}/verify-email?token={token}"
     
     try:
@@ -880,45 +907,58 @@ async def send_verification_email(email: str, user_name: str, token: str) -> boo
         return False
 
 async def verify_email_token(token: str) -> Dict[str, Any]:
-    """Verify an email verification token"""
-    # Find the token
-    token_doc = await db.email_verification_tokens.find_one({"token": token}, {"_id": 0})
+    """Verify an email verification token - PostgreSQL version"""
+    from sqlalchemy import select, update
+    from app.db.database import async_session_maker
+    from app.db.models import EmailVerificationToken as EmailVerificationTokenModel, User
     
-    if not token_doc:
-        return {"success": False, "error": "Token invalide ou expiré"}
-    
-    if token_doc.get("used"):
-        return {"success": False, "error": "Ce lien a déjà été utilisé"}
-    
-    # Check expiration
-    expires_at = token_doc.get("expires_at")
-    if isinstance(expires_at, str):
-        expires_at = datetime.fromisoformat(expires_at)
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    
-    if expires_at < datetime.now(timezone.utc):
-        return {"success": False, "error": "Ce lien a expiré. Veuillez demander un nouveau lien de vérification."}
-    
-    # Mark token as used
-    await db.email_verification_tokens.update_one(
-        {"token": token},
-        {"$set": {"used": True}}
-    )
-    
-    # Update user's email_verified status
-    await db.users.update_one(
-        {"user_id": token_doc["user_id"]},
-        {"$set": {"email_verified": True, "email_verified_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    
-    logger.info(f"Email verified for user {token_doc['user_id']}")
-    
-    return {
-        "success": True,
-        "user_id": token_doc["user_id"],
-        "email": token_doc["email"]
-    }
+    async with async_session_maker() as session:
+        # Find the token
+        result = await session.execute(
+            select(EmailVerificationTokenModel).where(EmailVerificationTokenModel.token == token)
+        )
+        token_obj = result.scalar_one_or_none()
+        
+        if not token_obj:
+            return {"success": False, "error": "Token invalide ou expiré"}
+        
+        if token_obj.used:
+            return {"success": False, "error": "Ce lien a déjà été utilisé"}
+        
+        # Check expiration
+        expires_at = token_obj.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        
+        if expires_at < datetime.now(timezone.utc):
+            return {"success": False, "error": "Ce lien a expiré. Veuillez demander un nouveau lien de vérification."}
+        
+        # Mark token as used
+        await session.execute(
+            update(EmailVerificationTokenModel)
+            .where(EmailVerificationTokenModel.token == token)
+            .values(used=True)
+        )
+        
+        # Update user's email_verified status
+        await session.execute(
+            update(User)
+            .where(User.user_id == token_obj.user_id)
+            .values(
+                email_verified=True,
+                email_verified_at=datetime.now(timezone.utc)
+            )
+        )
+        
+        await session.commit()
+        
+        logger.info(f"Email verified for user {token_obj.user_id}")
+        
+        return {
+            "success": True,
+            "user_id": token_obj.user_id,
+            "email": token_obj.email
+        }
 
 # ================== NOTIFICATION FUNCTIONS ==================
 
@@ -929,21 +969,26 @@ async def create_notification(
     message: str,
     data: Dict[str, Any] = None
 ) -> str:
-    """Create a notification for a user"""
-    notification = Notification(
-        user_id=user_id,
-        type=notification_type,
-        title=title,
-        message=message,
-        data=data or {}
-    )
+    """Create a notification for a user - PostgreSQL version"""
+    from app.db.database import async_session_maker
+    from app.db.models import Notification as NotificationModel
     
-    doc = notification.model_dump()
-    doc["created_at"] = doc["created_at"].isoformat()
-    await db.notifications.insert_one(doc)
+    notification_id = f"notif_{uuid.uuid4().hex[:12]}"
+    
+    async with async_session_maker() as session:
+        notification = NotificationModel(
+            notification_id=notification_id,
+            user_id=user_id,
+            type=notification_type,
+            title=title,
+            message=message,
+            data=data or {}
+        )
+        session.add(notification)
+        await session.commit()
     
     logger.info(f"Notification created for user {user_id}: {notification_type}")
-    return notification.notification_id
+    return notification_id
 
 async def send_scan_complete_email(user_email: str, user_name: str, project_name: str, analysis_id: str, global_score: float) -> bool:
     """Send email notification when scan is complete"""
@@ -951,7 +996,7 @@ async def send_scan_complete_email(user_email: str, user_name: str, project_name
         logger.warning("RESEND_API_KEY not configured, skipping scan complete email")
         return False
     
-    frontend_url = os.environ.get('FRONTEND_URL', 'https://optimize-visibility-1.preview.emergentagent.com')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://analysis-preview-2.preview.emergentagent.com')
     analysis_url = f"{frontend_url}/analysis/{analysis_id}"
     
     # Score color
@@ -1088,7 +1133,7 @@ async def send_scheduled_report_email(
     
     try:
         score_color = "#10b981" if global_score >= 70 else "#f59e0b" if global_score >= 40 else "#ef4444"
-        frontend_url = os.environ.get("FRONTEND_URL", "https://optimize-visibility-1.preview.emergentagent.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "https://analysis-preview-2.preview.emergentagent.com")
         analysis_url = f"{frontend_url}/analysis/{analysis_id}"
         
         # Build recipient list
@@ -1172,68 +1217,81 @@ async def send_scheduled_report_email(
 
 
 async def run_scheduled_scan(schedule: dict):
-    """Execute a scheduled scan for a project"""
+    """Execute a scheduled scan for a project - PostgreSQL version"""
+    from sqlalchemy import select, update
+    from app.db.database import async_session_maker
+    from app.db.models import Project, Subscription, Analysis as AnalysisModel, ScanSchedule
+    from app.db.services import ProjectService
+    from app.services.analysis_runner import run_analysis_simplified
+    
     try:
         project_id = schedule.get("project_id")
         user_id = schedule.get("user_id")
         
-        # Get project
-        project = await db.projects.find_one({"project_id": project_id, "user_id": user_id}, {"_id": 0})
-        if not project:
-            logger.error(f"Scheduled scan: Project {project_id} not found")
-            return False
-        
-        # Get user subscription
-        subscription = await db.subscriptions.find_one({"user_id": user_id}, {"_id": 0})
-        if not subscription:
-            logger.error(f"Scheduled scan: No subscription for user {user_id}")
-            return False
-        
-        plan = subscription.get("plan", "free")
-        
-        # Only Pro and Business can use scheduled scans
-        if plan not in ["pro", "business"]:
-            logger.warning(f"Scheduled scan: User {user_id} has {plan} plan, scheduled scans require Pro or Business")
-            return False
-        
-        # Check quota
-        scans_used = subscription.get("scans_used", 0)
-        plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["pro"])
-        scans_limit = plan_config.get("scans_limit", 50)
-        
-        if scans_used >= scans_limit:
-            logger.warning(f"Scheduled scan: User {user_id} has reached scan limit")
-            return False
-        
-        # Create analysis
-        analysis_id = f"ana_{uuid.uuid4().hex[:12]}"
-        analysis_doc = {
-            "analysis_id": analysis_id,
-            "project_id": project_id,
-            "user_id": user_id,
-            "status": "pending",
-            "scheduled": True,
-            "schedule_id": schedule.get("schedule_id"),
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "current_phase": "initializing"
-        }
-        await db.analyses.insert_one(analysis_doc)
-        
-        # Run analysis in background
-        asyncio.create_task(run_analysis_v2(analysis_id, project, plan_config))
-        
-        # Update schedule
-        await db.scan_schedules.update_one(
-            {"schedule_id": schedule.get("schedule_id")},
-            {"$set": {
-                "last_run": datetime.now(timezone.utc).isoformat(),
-                "next_run": calculate_next_run(schedule),
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }}
-        )
-        
-        logger.info(f"Scheduled scan started: {analysis_id} for project {project_id}")
-        return True
+        async with async_session_maker() as session:
+            # Get project
+            result = await session.execute(
+                select(Project).where(Project.project_id == project_id).where(Project.user_id == user_id)
+            )
+            project = result.scalar_one_or_none()
+            if not project:
+                logger.error(f"Scheduled scan: Project {project_id} not found")
+                return False
+            
+            # Get user subscription
+            result = await session.execute(
+                select(Subscription).where(Subscription.user_id == user_id)
+            )
+            subscription = result.scalar_one_or_none()
+            if not subscription:
+                logger.error(f"Scheduled scan: No subscription for user {user_id}")
+                return False
+            
+            plan = subscription.plan.value if subscription.plan else "free"
+            
+            # Only Pro and Business can use scheduled scans
+            if plan not in ["pro", "business"]:
+                logger.warning(f"Scheduled scan: User {user_id} has {plan} plan, scheduled scans require Pro or Business")
+                return False
+            
+            # Check quota
+            scans_used = subscription.scans_used or 0
+            plan_config = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["pro"])
+            scans_limit = plan_config.get("scans_limit", 50)
+            
+            if scans_used >= scans_limit:
+                logger.warning(f"Scheduled scan: User {user_id} has reached scan limit")
+                return False
+            
+            # Create analysis
+            analysis_id = f"ana_{uuid.uuid4().hex[:12]}"
+            new_analysis = AnalysisModel(
+                analysis_id=analysis_id,
+                project_id=project_id,
+                user_id=user_id,
+                status="pending"
+            )
+            session.add(new_analysis)
+            
+            # Update schedule
+            await session.execute(
+                update(ScanSchedule)
+                .where(ScanSchedule.schedule_id == schedule.get("schedule_id"))
+                .values(
+                    last_run=datetime.now(timezone.utc),
+                    next_run=calculate_next_run(schedule),
+                    updated_at=datetime.now(timezone.utc)
+                )
+            )
+            
+            await session.commit()
+            
+            # Run analysis in background
+            project_dict = ProjectService.to_dict(project)
+            asyncio.create_task(run_analysis_simplified(analysis_id, project_dict, plan_config))
+            
+            logger.info(f"Scheduled scan started: {analysis_id} for project {project_id}")
+            return True
         
     except Exception as e:
         logger.error(f"Failed to run scheduled scan: {e}")
@@ -2489,50 +2547,63 @@ def generate_recommendations_v2(
 
 @api_router.post("/analysis/check-eligibility")
 async def check_analysis_eligibility(request: Request, user: dict = Depends(get_current_user)):
-    """Check if user is eligible to start an analysis (anti-abuse check)"""
+    """Check if user is eligible to start an analysis (anti-abuse check) - PostgreSQL version"""
+    from sqlalchemy import select
+    from app.db.database import async_session_maker
+    from app.db.models import Project, Subscription
+    
     body = await request.json()
     project_id = body.get("project_id")
     fingerprint = body.get("fingerprint", "unknown")
     
-    # Check project exists
-    project = await db.projects.find_one({"project_id": project_id, "user_id": user["user_id"]}, {"_id": 0})
-    if not project:
-        raise HTTPException(status_code=404, detail="Projet non trouvé")
-    
-    # Check subscription
-    subscription = await db.subscriptions.find_one({"user_id": user["user_id"]}, {"_id": 0})
-    if not subscription:
-        return {"eligible": False, "reason": "Abonnement requis", "is_free_trial": False}
-    
-    plan = subscription.get("plan", "free")
-    is_free_trial = plan == "free" and subscription.get("queries_used", 0) == 0
-    
-    if not is_free_trial:
-        # Paid users are always eligible (within their limits)
-        queries_used = subscription.get("queries_used", 0)
-        queries_limit = subscription.get("queries_limit", 0)
+    async with async_session_maker() as session:
+        # Check project exists
+        result = await session.execute(
+            select(Project)
+            .where(Project.project_id == project_id)
+            .where(Project.user_id == user["user_id"])
+        )
+        project = result.scalar_one_or_none()
+        if not project:
+            raise HTTPException(status_code=404, detail="Projet non trouvé")
+        
+        # Check subscription
+        result = await session.execute(
+            select(Subscription).where(Subscription.user_id == user["user_id"])
+        )
+        subscription = result.scalar_one_or_none()
+        if not subscription:
+            return {"eligible": False, "reason": "Abonnement requis", "is_free_trial": False}
+        
+        plan = subscription.plan.value if subscription.plan else "free"
+        is_free_trial = plan == "free" and (subscription.queries_used or 0) == 0
+        
+        if not is_free_trial:
+            # Paid users are always eligible (within their limits)
+            queries_used = subscription.queries_used or 0
+            queries_limit = subscription.queries_limit or 0
+            return {
+                "eligible": queries_used < queries_limit,
+                "reason": "Limite d'analyses atteinte" if queries_used >= queries_limit else "Éligible",
+                "is_free_trial": False,
+                "queries_remaining": max(0, queries_limit - queries_used)
+            }
+        
+        # Free trial - check anti-abuse
+        client_ip = get_client_ip(request)
+        eligibility = await check_free_trial_eligibility(
+            email=user.get("email", ""),
+            ip_address=client_ip,
+            fingerprint=fingerprint,
+            domain_to_analyze=project.website_url or ""
+        )
+        
         return {
-            "eligible": queries_used < queries_limit,
-            "reason": "Limite d'analyses atteinte" if queries_used >= queries_limit else "Éligible",
-            "is_free_trial": False,
-            "queries_remaining": max(0, queries_limit - queries_used)
+            "eligible": eligibility["eligible"],
+            "reason": eligibility["reason"],
+            "blocked_by": eligibility.get("blocked_by"),
+            "is_free_trial": True
         }
-    
-    # Free trial - check anti-abuse
-    client_ip = get_client_ip(request)
-    eligibility = await check_free_trial_eligibility(
-        email=user.get("email", ""),
-        ip_address=client_ip,
-        fingerprint=fingerprint,
-        domain_to_analyze=project.get("website_url", "")
-    )
-    
-    return {
-        "eligible": eligibility["eligible"],
-        "reason": eligibility["reason"],
-        "blocked_by": eligibility.get("blocked_by"),
-        "is_free_trial": True
-    }
 
 # DEPRECATED: Moved to analyses_router (PostgreSQL version)
 # @api_router.post("/analysis/start")
@@ -2749,15 +2820,9 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
             query_results.append(query_result)
             
             # Update progress
-            await db.analyses.update_one(
-                {"analysis_id": analysis_id},
-                {"$set": {"queries_processed": query_idx + 1}}
-            )
+            await update_analysis_pg(analysis_id, {"queries_processed": query_idx + 1})
         
-        await db.analyses.update_one(
-            {"analysis_id": analysis_id},
-            {"$set": {"current_phase": "calculating_indices"}}
-        )
+        await update_analysis_pg(analysis_id, {"status": "running"})
         
         # ===== PHASE 3: Calculate Stability Index™ =====
         stability_data = calculate_stability_index(all_responses)
@@ -2791,11 +2856,18 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         # ===== PHASE 9: Identify Discovered Competitors =====
         discovered_competitors = await identify_competitors_from_analysis(all_responses, brand_name, competitors)
         
-        # Update project with discovered competitors
-        await db.projects.update_one(
-            {"project_id": project.get("project_id")},
-            {"$set": {"discovered_competitors": discovered_competitors}}
-        )
+        # Update project with discovered competitors (PostgreSQL)
+        from app.db.database import async_session_maker
+        from sqlalchemy import update as sql_update
+        from app.db.models import Project
+        
+        async with async_session_maker() as session:
+            await session.execute(
+                sql_update(Project)
+                .where(Project.project_id == project.get("project_id"))
+                .values(competitors=discovered_competitors)
+            )
+            await session.commit()
         
         # Merge user-defined and discovered competitors for analysis summary
         all_competitors_analyzed = list(set(competitors[:5] + [c["name"] for c in discovered_competitors[:10]]))
@@ -2902,36 +2974,38 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
                     "metrics_impacted": ["citability", "authority"]
                 })
         
-        # Update analysis with complete results
-        await db.analyses.update_one(
-            {"analysis_id": analysis_id},
-            {"$set": {
-                "status": "completed",
-                "global_score": rate_score["total"],
-                "grade": rate_score.get("grade", "N/A"),
-                "rate_score": rate_score,
-                "ai_scores": final_ai_scores,
-                "query_scores": query_results,
-                "recommendations": recommendations,
-                "competitor_comparison": competitor_comparison,
-                "indices": indices,
-                "stability_data": stability_data,
-                "query_type_breakdown": query_type_breakdown,
-                "analysis_summary": analysis_summary,
-                "current_phase": "completed",
-                "completed_at": datetime.now(timezone.utc).isoformat(),
-                # NEW: Enhanced scan data
-                "site_enrichment": site_enrichment,
-                "scan_diff": scan_diff,
-                "brand_analysis": brand_analysis
-            }}
-        )
+        # Update analysis with complete results (PostgreSQL)
+        await update_analysis_pg(analysis_id, {
+            "status": "completed",
+            "global_score": rate_score["total"],
+            "grade": rate_score.get("grade", "N/A"),
+            "rate_scores": rate_score,
+            "ai_scores": final_ai_scores,
+            "query_scores": query_results,
+            "recommendations": recommendations,
+            "competitor_analysis": {"discovered": competitor_comparison},
+            "stability_score": stability_data.get("stability_score", 0),
+            "total_queries": num_prompts,
+            "mention_rate": stability_data.get("mention_rate", 0),
+            "ai_engines_used": ai_engines,
+            "completed_at": datetime.now(timezone.utc)
+        })
         
-        # Update subscription usage - use total_api_calls calculated at the start
-        await db.subscriptions.update_one(
-            {"user_id": project["user_id"]},
-            {"$inc": {"queries_used": total_api_calls, "scans_used": 1}}
-        )
+        # Update subscription usage - PostgreSQL version
+        from app.db.database import async_session_maker
+        from sqlalchemy import update as sql_update
+        from app.db.models import Subscription
+        
+        async with async_session_maker() as session:
+            result = await session.execute(
+                sql_update(Subscription)
+                .where(Subscription.user_id == project["user_id"])
+                .values(
+                    queries_used=Subscription.queries_used + total_api_calls,
+                    scans_used=Subscription.scans_used + 1
+                )
+            )
+            await session.commit()
         
         logger.info(f"Analysis {analysis_id} completed: {num_prompts} prompts × {runs_per_query} runs × {len(ai_engines)} AI = {total_api_calls} total queries")
         
@@ -2955,35 +3029,20 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
             }
         )
         
-        # Send email notification
-        user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
-        if user:
-            # Get analysis to check if it's a scheduled scan
-            analysis_data = await db.analyses.find_one({"analysis_id": analysis_id}, {"_id": 0})
-            is_scheduled = analysis_data.get("scheduled", False) if analysis_data else False
+        # Send email notification - PostgreSQL version
+        from app.db.database import async_session_maker
+        from sqlalchemy import select
+        from app.db.models import User, Analysis as AnalysisModel, ScanSchedule
+        
+        async with async_session_maker() as session:
+            result = await session.execute(select(User).where(User.user_id == user_id))
+            user = result.scalar_one_or_none()
             
-            if is_scheduled:
-                # For scheduled scans, use the special report email
-                schedule = await db.scan_schedules.find_one(
-                    {"schedule_id": analysis_data.get("schedule_id")},
-                    {"_id": 0}
-                )
-                recipients = schedule.get("report_recipients", []) if schedule else []
-                
-                await send_scheduled_report_email(
-                    user_email=user.get("email", ""),
-                    user_name=user.get("name", ""),
-                    project_name=project_name,
-                    analysis_id=analysis_id,
-                    global_score=global_score,
-                    grade=rate_score.get("grade", "N/A"),
-                    recipients=recipients
-                )
-            else:
+            if user:
                 # For manual scans, use the standard notification email
                 await send_scan_complete_email(
-                    user_email=user.get("email", ""),
-                    user_name=user.get("name", ""),
+                    user_email=user.email or "",
+                    user_name=user.name or "",
                     project_name=project_name,
                     analysis_id=analysis_id,
                     global_score=global_score
@@ -2991,14 +3050,10 @@ async def run_analysis_v2(analysis_id: str, project: dict, plan_config: dict):
         
     except Exception as e:
         logger.error(f"Analysis error: {e}")
-        await db.analyses.update_one(
-            {"analysis_id": analysis_id},
-            {"$set": {
-                "status": "failed",
-                "error": str(e),
-                "current_phase": "failed"
-            }}
-        )
+        await update_analysis_pg(analysis_id, {
+            "status": "failed",
+            "error_message": str(e)
+        })
         
         # Create failure notification
         user_id = project.get("user_id")
@@ -3137,12 +3192,29 @@ async def get_analysis(analysis_id: str, user: dict = Depends(get_current_user))
 
 @api_router.get("/comparisons/history/{project_id}")
 async def get_comparison_history(project_id: str, user: dict = Depends(get_current_user)):
-    """Get competitor comparison history for charts"""
-    # Get completed comparisons
-    comparisons = await db.competitor_comparisons.find(
-        {"project_id": project_id, "user_id": user["user_id"], "status": "completed"},
-        {"_id": 0}
-    ).sort("created_at", 1).to_list(50)
+    """Get competitor comparison history for charts - PostgreSQL version"""
+    from sqlalchemy import select
+    from app.db.database import async_session_maker
+    from app.db.models import CompetitorComparison
+    
+    async with async_session_maker() as session:
+        # Get completed comparisons
+        result = await session.execute(
+            select(CompetitorComparison)
+            .where(CompetitorComparison.project_id == project_id)
+            .where(CompetitorComparison.user_id == user["user_id"])
+            .where(CompetitorComparison.status == "completed")
+            .order_by(CompetitorComparison.created_at.asc())
+            .limit(50)
+        )
+        comparisons = [
+            {
+                "comparison_id": c.comparison_id,
+                "results": c.results or {},
+                "created_at": c.created_at.isoformat() if c.created_at else ""
+            }
+            for c in result.scalars().all()
+        ]
     
     history = {
         "ranking_evolution": [],
@@ -3481,38 +3553,42 @@ def generate_analysis_pdf(analysis: dict, project: dict) -> bytes:
 
 @api_router.get("/analysis/{analysis_id}/pdf")
 async def download_analysis_pdf(analysis_id: str, user: dict = Depends(get_current_user)):
-    """Generate and download PDF report for an analysis"""
-    # Get analysis
-    analysis = await db.analyses.find_one(
-        {"analysis_id": analysis_id, "user_id": user["user_id"]},
-        {"_id": 0}
-    )
-    if not analysis:
-        raise HTTPException(status_code=404, detail="Analyse non trouvée")
+    """Generate and download PDF report for an analysis - PostgreSQL version"""
+    from app.db.database import async_session_maker
+    from app.db.services import AnalysisService, ProjectService
+    from app.db.models import AnalysisStatus
     
-    if analysis.get("status") != "completed":
-        raise HTTPException(status_code=400, detail="L'analyse n'est pas encore terminée")
-    
-    # Get project
-    project = await db.projects.find_one(
-        {"project_id": analysis.get("project_id")},
-        {"_id": 0}
-    )
-    if not project:
-        project = {"name": "Projet", "brand_name": "Marque"}
-    
-    # Generate PDF
-    pdf_bytes = generate_analysis_pdf(analysis, project)
-    
-    # Create filename
-    project_name = project.get('name', 'analyse').replace(' ', '_')
-    filename = f"IAskan_Rapport_{project_name}_{analysis_id}.pdf"
-    
-    return StreamingResponse(
-        io.BytesIO(pdf_bytes),
-        media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
+    async with async_session_maker() as session:
+        # Get analysis
+        analysis = await AnalysisService.get_by_id(session, analysis_id)
+        if not analysis or analysis.user_id != user["user_id"]:
+            raise HTTPException(status_code=404, detail="Analyse non trouvée")
+        
+        if analysis.status != AnalysisStatus.COMPLETED:
+            raise HTTPException(status_code=400, detail="L'analyse n'est pas encore terminée")
+        
+        # Get project
+        project = await ProjectService.get_by_id(session, analysis.project_id)
+        if not project:
+            project_dict = {"name": "Projet", "brand_name": "Marque"}
+        else:
+            project_dict = ProjectService.to_dict(project)
+        
+        # Convert analysis to dict
+        analysis_dict = AnalysisService.to_dict(analysis)
+        
+        # Generate PDF
+        pdf_bytes = generate_analysis_pdf(analysis_dict, project_dict)
+        
+        # Create filename
+        project_name = project_dict.get('name', 'analyse').replace(' ', '_')
+        filename = f"IAskan_Rapport_{project_name}_{analysis_id}.pdf"
+        
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
 
 # ================== COMPETITOR COMPARISON ==================
 
@@ -3608,48 +3684,51 @@ async def analyze_competitor_visibility(brand_name: str, query: str, ai_type: st
 
 @api_router.post("/analysis/compare")
 async def start_competitor_comparison(request: Request, user: dict = Depends(get_current_user)):
-    """Start a competitor comparison analysis"""
+    """Start a competitor comparison analysis - PostgreSQL version"""
+    from app.db.database import async_session_maker
+    from app.db.services import ProjectService
+    from app.db.models import CompetitorComparison
+    
     body = await request.json()
     project_id = body.get("project_id")
     custom_competitors = body.get("competitors", [])
     
-    # Get project
-    project = await db.projects.find_one(
-        {"project_id": project_id, "user_id": user["user_id"]},
-        {"_id": 0}
-    )
-    if not project:
-        raise HTTPException(status_code=404, detail="Projet non trouvé")
-    
-    # Get competitors from project or custom list
-    competitors = custom_competitors if custom_competitors else project.get("competitors", [])
-    if not competitors:
-        raise HTTPException(status_code=400, detail="Aucun concurrent défini pour ce projet")
-    
-    brand_name = project.get("brand_name", "")
-    if not brand_name:
-        raise HTTPException(status_code=400, detail="Nom de marque requis")
-    
-    # Create comparison ID
-    comparison_id = f"cmp_{uuid.uuid4().hex[:12]}"
-    
-    # Store initial comparison document
-    comparison_doc = {
-        "comparison_id": comparison_id,
-        "project_id": project_id,
-        "user_id": user["user_id"],
-        "brand_name": brand_name,
-        "competitors": competitors,
-        "status": "running",
-        "results": {},
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.competitor_comparisons.insert_one(comparison_doc)
-    
-    # Run comparison in background
-    asyncio.create_task(run_competitor_comparison(comparison_id, brand_name, competitors, project))
-    
-    return {"comparison_id": comparison_id, "status": "running"}
+    async with async_session_maker() as session:
+        # Get project
+        project = await ProjectService.get_by_id(session, project_id)
+        if not project or project.user_id != user["user_id"]:
+            raise HTTPException(status_code=404, detail="Projet non trouvé")
+        
+        # Get competitors from project or custom list
+        competitors = custom_competitors if custom_competitors else (project.competitors or [])
+        if not competitors:
+            raise HTTPException(status_code=400, detail="Aucun concurrent défini pour ce projet")
+        
+        brand_name = project.brand_name
+        if not brand_name:
+            raise HTTPException(status_code=400, detail="Nom de marque requis")
+        
+        # Create comparison ID
+        comparison_id = f"cmp_{uuid.uuid4().hex[:12]}"
+        
+        # Store comparison document
+        comparison = CompetitorComparison(
+            comparison_id=comparison_id,
+            project_id=project_id,
+            user_id=user["user_id"],
+            brand_name=brand_name,
+            competitors=competitors,
+            status="running",
+            results={}
+        )
+        session.add(comparison)
+        await session.commit()
+        
+        # Run comparison in background
+        project_dict = ProjectService.to_dict(project)
+        asyncio.create_task(run_competitor_comparison(comparison_id, brand_name, competitors, project_dict))
+        
+        return {"comparison_id": comparison_id, "status": "running"}
 
 
 async def run_competitor_comparison(comparison_id: str, brand_name: str, competitors: List[str], project: dict):
@@ -3769,54 +3848,108 @@ async def run_competitor_comparison(comparison_id: str, brand_name: str, competi
             "ai_engines_used": len(ai_engines)
         }
         
-        # Update comparison in database
-        await db.competitor_comparisons.update_one(
-            {"comparison_id": comparison_id},
-            {
-                "$set": {
-                    "status": "completed",
-                    "results": results,
-                    "completed_at": datetime.now(timezone.utc).isoformat()
-                }
-            }
-        )
+        # Update comparison in database - PostgreSQL version
+        from app.db.database import async_session_maker
+        from sqlalchemy import update
+        from app.db.models import CompetitorComparison
+        
+        async with async_session_maker() as session:
+            await session.execute(
+                update(CompetitorComparison)
+                .where(CompetitorComparison.comparison_id == comparison_id)
+                .values(
+                    status="completed",
+                    results=results,
+                    completed_at=datetime.now(timezone.utc)
+                )
+            )
+            await session.commit()
         
     except Exception as e:
         logger.error(f"Competitor comparison error: {str(e)}")
-        await db.competitor_comparisons.update_one(
-            {"comparison_id": comparison_id},
-            {
-                "$set": {
-                    "status": "failed",
-                    "error": str(e),
-                    "completed_at": datetime.now(timezone.utc).isoformat()
-                }
-            }
-        )
+        from app.db.database import async_session_maker
+        from sqlalchemy import update
+        from app.db.models import CompetitorComparison
+        
+        try:
+            async with async_session_maker() as session:
+                await session.execute(
+                    update(CompetitorComparison)
+                    .where(CompetitorComparison.comparison_id == comparison_id)
+                    .values(
+                        status="failed",
+                        error=str(e),
+                        completed_at=datetime.now(timezone.utc)
+                    )
+                )
+                await session.commit()
+        except Exception as db_error:
+            logger.error(f"Failed to update comparison status: {db_error}")
 
 
 @api_router.get("/analysis/compare/{comparison_id}")
 async def get_competitor_comparison(comparison_id: str, user: dict = Depends(get_current_user)):
-    """Get competitor comparison results"""
-    comparison = await db.competitor_comparisons.find_one(
-        {"comparison_id": comparison_id, "user_id": user["user_id"]},
-        {"_id": 0}
-    )
-    if not comparison:
-        raise HTTPException(status_code=404, detail="Comparaison non trouvée")
+    """Get competitor comparison results - PostgreSQL version"""
+    from sqlalchemy import select
+    from app.db.database import async_session_maker
+    from app.db.models import CompetitorComparison
     
-    return {"comparison": comparison}
+    async with async_session_maker() as session:
+        result = await session.execute(
+            select(CompetitorComparison)
+            .where(CompetitorComparison.comparison_id == comparison_id)
+            .where(CompetitorComparison.user_id == user["user_id"])
+        )
+        comparison = result.scalar_one_or_none()
+        
+        if not comparison:
+            raise HTTPException(status_code=404, detail="Comparaison non trouvée")
+        
+        return {
+            "comparison": {
+                "comparison_id": comparison.comparison_id,
+                "project_id": comparison.project_id,
+                "brand_name": comparison.brand_name,
+                "competitors": comparison.competitors or [],
+                "status": comparison.status,
+                "results": comparison.results or {},
+                "error": comparison.error,
+                "created_at": comparison.created_at.isoformat() if comparison.created_at else None,
+                "completed_at": comparison.completed_at.isoformat() if comparison.completed_at else None
+            }
+        }
 
 
 @api_router.get("/analysis/comparisons/{project_id}")
 async def get_project_comparisons(project_id: str, user: dict = Depends(get_current_user)):
-    """Get all competitor comparisons for a project"""
-    comparisons = await db.competitor_comparisons.find(
-        {"project_id": project_id, "user_id": user["user_id"]},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(20)
+    """Get all competitor comparisons for a project - PostgreSQL version"""
+    from sqlalchemy import select
+    from app.db.database import async_session_maker
+    from app.db.models import CompetitorComparison
     
-    return {"comparisons": comparisons}
+    async with async_session_maker() as session:
+        result = await session.execute(
+            select(CompetitorComparison)
+            .where(CompetitorComparison.project_id == project_id)
+            .where(CompetitorComparison.user_id == user["user_id"])
+            .order_by(CompetitorComparison.created_at.desc())
+            .limit(20)
+        )
+        comparisons = [
+            {
+                "comparison_id": c.comparison_id,
+                "project_id": c.project_id,
+                "brand_name": c.brand_name,
+                "competitors": c.competitors or [],
+                "status": c.status,
+                "results": c.results or {},
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+                "completed_at": c.completed_at.isoformat() if c.completed_at else None
+            }
+            for c in result.scalars().all()
+        ]
+        
+        return {"comparisons": comparisons}
 
 # ================== VISIBILITY TRACKING ==================
 
@@ -3926,107 +4059,115 @@ async def get_visibility_data(project_id: str, user: dict = Depends(get_current_
 
 @api_router.get("/content-audit/{project_id}")
 async def get_content_audit(project_id: str, user: dict = Depends(get_current_user)):
-    """Get content audit data for a project"""
-    # Verify project belongs to user
-    project = await db.projects.find_one(
-        {"project_id": project_id, "user_id": user["user_id"]},
-        {"_id": 0}
-    )
-    if not project:
-        raise HTTPException(status_code=404, detail="Projet non trouve")
+    """Get content audit data for a project - PostgreSQL version"""
+    from app.db.database import async_session_maker
+    from app.db.services import ProjectService, AnalysisService
+    from app.db.models import AnalysisStatus
     
-    # Get latest completed analysis
-    latest_analysis = await db.analyses.find_one(
-        {"project_id": project_id, "status": "completed"},
-        {"_id": 0},
-        sort=[("created_at", -1)]
-    )
-    
-    if not latest_analysis:
-        return {
-            "global_citability_score": 0,
-            "pages_analyzed": 0,
-            "structure_score": 0,
-            "content_gaps": 0,
-            "schema_coverage": 0,
-            "pages": [],
-            "gaps": [],
-            "structure_recommendations": [],
-            "has_data": False
-        }
-    
-    # Calculate citability from analysis data
-    rate_score = latest_analysis.get("rate_score", {})
-    indices = latest_analysis.get("indices", {})
-    recommendations = latest_analysis.get("recommendations", [])
-    
-    # Global citability = average of relevance and authority
-    relevance = rate_score.get("relevance", 0)
-    authority = rate_score.get("authority", 0)
-    global_citability = round((relevance + authority) / 2)
-    
-    # Structure score from truthfulness (format/structure matters for LLMs)
-    structure_score = round(rate_score.get("truthfulness", 0) * 0.8 + rate_score.get("endorsement", 0) * 0.2)
-    
-    # Schema coverage (estimated from credibility factors in responses)
-    query_scores = latest_analysis.get("query_scores", [])
-    schema_signals = 0
-    total_checks = 0
-    for query in query_scores:
-        for resp in query.get("responses", []):
-            total_checks += 1
-            cred_factors = resp.get("credibility_factors", [])
-            if "facts" in cred_factors or "sources" in cred_factors:
-                schema_signals += 1
-    schema_coverage = round(schema_signals / total_checks * 100) if total_checks > 0 else 0
-    
-    # Content gaps from recommendations
-    gaps = []
-    for rec in recommendations[:5]:
-        if rec.get("priority") in ["critical", "high", "medium"]:
-            gaps.append({
-                "topic": rec.get("title", ""),
-                "priority": "high" if rec.get("priority") == "critical" else rec.get("priority", "medium"),
-                "potential_impact": 20 if rec.get("impact") == "critique" else (15 if rec.get("impact") == "eleve" else 10)
+    async with async_session_maker() as db_session:
+        # Verify project belongs to user
+        project = await ProjectService.get_by_id(db_session, project_id)
+        if not project or project.user_id != user["user_id"]:
+            raise HTTPException(status_code=404, detail="Projet non trouve")
+        
+        # Get latest completed analysis
+        from sqlalchemy import select
+        from app.db.models import Analysis
+        result = await db_session.execute(
+            select(Analysis)
+            .where(Analysis.project_id == project_id)
+            .where(Analysis.status == AnalysisStatus.COMPLETED)
+            .order_by(Analysis.created_at.desc())
+            .limit(1)
+        )
+        latest_analysis = result.scalar_one_or_none()
+        
+        if not latest_analysis:
+            return {
+                "global_citability_score": 0,
+                "pages_analyzed": 0,
+                "structure_score": 0,
+                "content_gaps": 0,
+                "schema_coverage": 0,
+                "pages": [],
+                "gaps": [],
+                "structure_recommendations": [],
+                "has_data": False
+            }
+        
+        # Calculate citability from analysis data
+        rate_score = latest_analysis.rate_scores or {}
+        recommendations = latest_analysis.recommendations or []
+        
+        # Global citability = average of relevance and authority
+        relevance = rate_score.get("relevance", 0)
+        authority = rate_score.get("authority", 0)
+        global_citability = round((relevance + authority) / 2) if (relevance or authority) else 0
+        
+        # Structure score from truthfulness (format/structure matters for LLMs)
+        truthfulness = rate_score.get("truthfulness", 0)
+        endorsement = rate_score.get("endorsement", 0)
+        structure_score = round(truthfulness * 0.8 + endorsement * 0.2) if (truthfulness or endorsement) else 0
+        
+        # Schema coverage (estimated from credibility factors in responses)
+        query_scores = latest_analysis.query_scores or []
+        schema_signals = 0
+        total_checks = 0
+        for query in query_scores:
+            for resp in query.get("responses", []):
+                total_checks += 1
+                cred_factors = resp.get("credibility_factors", [])
+                if "facts" in cred_factors or "sources" in cred_factors:
+                    schema_signals += 1
+        schema_coverage = round(schema_signals / total_checks * 100) if total_checks > 0 else 0
+        
+        # Content gaps from recommendations
+        gaps = []
+        for rec in recommendations[:5]:
+            if rec.get("priority") in ["critical", "high", "medium"]:
+                gaps.append({
+                    "topic": rec.get("title", ""),
+                    "priority": "high" if rec.get("priority") == "critical" else rec.get("priority", "medium"),
+                    "potential_impact": 20 if rec.get("impact") == "critique" else (15 if rec.get("impact") == "eleve" else 10)
+                })
+        
+        # Simulated page analysis based on project keywords
+        pages = []
+        keywords = project.keywords or []
+        for i, kw in enumerate(keywords[:4]):
+            score = max(30, min(90, global_citability + (i * 5) - 10))
+            pages.append({
+                "url": f"/{kw.lower().replace(' ', '-')}",
+                "title": f"Page {kw}",
+                "citability_score": score,
+                "structure_score": score - 5,
+                "has_schema": i < 2,
+                "content_length": 1500 + i * 500,
+                "headings_count": 8 + i * 2,
+                "lists_count": 3 + i,
+                "issues": ["Ajouter FAQ", "Optimiser structure"] if score < 60 else [],
+                "strengths": ["Bonne structure"] if score >= 60 else []
             })
-    
-    # Simulated page analysis based on project keywords
-    pages = []
-    keywords = project.get("keywords", [])
-    for i, kw in enumerate(keywords[:4]):
-        score = max(30, min(90, global_citability + (i * 5) - 10))
-        pages.append({
-            "url": f"/{kw.lower().replace(' ', '-')}",
-            "title": f"Page {kw}",
-            "citability_score": score,
-            "structure_score": score - 5,
-            "has_schema": i < 2,
-            "content_length": 1500 + i * 500,
-            "headings_count": 8 + i * 2,
-            "lists_count": 3 + i,
-            "issues": ["Ajouter FAQ", "Optimiser structure"] if score < 60 else [],
-            "strengths": ["Bonne structure"] if score >= 60 else []
-        })
-    
-    # Structure recommendations
-    structure_recommendations = [
-        {"type": "schema", "title": "Ajouter Schema.org Product", "pages": 3},
-        {"type": "faq", "title": "Ajouter section FAQ", "pages": 4},
-        {"type": "heading", "title": "Ameliorer structure des titres", "pages": 2},
-        {"type": "list", "title": "Ajouter listes a puces", "pages": 3}
-    ]
-    
-    return {
-        "global_citability_score": global_citability,
-        "pages_analyzed": len(pages),
-        "structure_score": structure_score,
-        "content_gaps": len(gaps),
-        "schema_coverage": schema_coverage,
-        "pages": pages,
-        "gaps": gaps,
-        "structure_recommendations": structure_recommendations,
-        "has_data": True
-    }
+        
+        # Structure recommendations
+        structure_recommendations = [
+            {"type": "schema", "title": "Ajouter Schema.org Product", "pages": 3},
+            {"type": "faq", "title": "Ajouter section FAQ", "pages": 4},
+            {"type": "heading", "title": "Ameliorer structure des titres", "pages": 2},
+            {"type": "list", "title": "Ajouter listes a puces", "pages": 3}
+        ]
+        
+        return {
+            "global_citability_score": global_citability,
+            "pages_analyzed": len(pages),
+            "structure_score": structure_score,
+            "content_gaps": len(gaps),
+            "schema_coverage": schema_coverage,
+            "pages": pages,
+            "gaps": gaps,
+            "structure_recommendations": structure_recommendations,
+            "has_data": True
+        }
 
 
 # ================== GENERAL ROUTES ==================
@@ -4369,20 +4510,24 @@ class ContactForm(BaseModel):
 
 @api_router.post("/contact")
 async def send_contact_message(form: ContactForm):
-    """Handle contact form submission"""
+    """Handle contact form submission - PostgreSQL version"""
     try:
         # Store contact message in database
-        contact_doc = {
-            "contact_id": f"contact_{uuid.uuid4().hex[:12]}",
-            "name": form.name,
-            "email": form.email,
-            "company": form.company,
-            "subject": form.subject,
-            "message": form.message,
-            "status": "new",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.contact_messages.insert_one(contact_doc)
+        from app.db.database import async_session_maker
+        from app.db.models import ContactMessage
+        
+        async with async_session_maker() as session:
+            contact = ContactMessage(
+                contact_id=f"contact_{uuid.uuid4().hex[:12]}",
+                name=form.name,
+                email=form.email,
+                company=form.company,
+                subject=form.subject,
+                message=form.message,
+                status="new"
+            )
+            session.add(contact)
+            await session.commit()
         
         # Send notification email to admin
         if RESEND_API_KEY:
