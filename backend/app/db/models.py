@@ -224,7 +224,9 @@ class Analysis(Base):
     recommendations = Column(JSON, default=list)
     stability_score = Column(Float)
     total_queries = Column(Integer, default=0)
+    queries_processed = Column(Integer, default=0)  # Progress tracking
     queries_with_mention = Column(Integer, default=0)
+    current_phase = Column(String(50))  # query_generation, ai_querying, calculating_indices, completed
     mention_rate = Column(Float)
     average_position = Column(Float)
     ai_engines_used = Column(JSON, default=list)

@@ -39,13 +39,24 @@ async def update_analysis(analysis_id: str, updates: dict):
     """Update analysis record in PostgreSQL"""
     try:
         async with async_session_maker() as db:
-            valid_updates = {k: v for k, v in updates.items() if v is not None}
-            await db.execute(
-                update(Analysis).where(
-                    Analysis.analysis_id == analysis_id
-                ).values(**valid_updates)
-            )
-            await db.commit()
+            # Only use columns that EXIST in the database (not just model)
+            # queries_processed and current_phase may not exist yet - use total_queries as progress
+            existing_columns = {
+                'status', 'global_score', 'grade', 'mention_rate', 'ai_scores',
+                'rate_scores', 'query_scores', 'recommendations', 'total_queries',
+                'queries_with_mention', 'ai_engines_used', 'error_message',
+                'started_at', 'completed_at', 'competitor_analysis', 'stability_score',
+                'average_position'
+            }
+            valid_updates = {k: v for k, v in updates.items() if v is not None and k in existing_columns}
+            
+            if valid_updates:
+                await db.execute(
+                    update(Analysis).where(
+                        Analysis.analysis_id == analysis_id
+                    ).values(**valid_updates)
+                )
+                await db.commit()
     except Exception as e:
         logger.error(f"Error updating analysis {analysis_id}: {e}")
 
