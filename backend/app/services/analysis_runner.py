@@ -15,58 +15,52 @@ from ..db.models import Analysis, Project, Subscription
 logger = logging.getLogger(__name__)
 
 # Query templates for different intent types - GEO optimized
+# IMPORTANT: Most queries should NOT include the brand name
+# to test ORGANIC visibility (will the AI mention us naturally?)
+
 QUERY_TEMPLATES = {
-    "transactional": [
+    # Generic transactional - NO brand name (high GEO value)
+    "transactional_generic": [
         "Quel est le meilleur {keyword} en 2024?",
         "Je cherche un {keyword} fiable et performant, que me conseillez-vous?",
-        "Quelle marque de {keyword} acheter pour un usage professionnel?",
+        "Quelle marque de {keyword} acheter?",
         "Top 5 des meilleurs {keyword} rapport qualité-prix",
-        "Quel {keyword} choisir pour {industry}?",
-        "Meilleur {keyword} haut de gamme à acheter",
-        "Où acheter un bon {keyword}?",
+        "Quel {keyword} choisir pour un usage quotidien?",
+        "Meilleur {keyword} pas cher mais de qualité",
+        "Recommandez-moi un bon {keyword}",
+        "Quel {keyword} acheter en ce moment?",
     ],
-    "comparative": [
-        "Comparez les meilleures marques de {keyword} du marché",
-        "{brand} vs Samsung vs LG : quel est le meilleur {keyword}?",
+    # Generic comparative - NO brand name (high GEO value)
+    "comparative_generic": [
+        "Comparez les meilleures marques de {keyword}",
         "Quels sont les leaders du marché en {keyword}?",
-        "Comparatif {keyword} : {brand} face à la concurrence",
-        "Quelle est la différence entre {brand} et ses concurrents pour {keyword}?",
         "Classement des meilleures marques de {keyword}",
-        "{brand} est-il meilleur que Apple pour {keyword}?",
+        "Quelle est la meilleure marque de {keyword}?",
+        "Top marques de {keyword} recommandées",
+        "Quelles marques de {keyword} sont les plus fiables?",
     ],
-    "informational": [
-        "Qu'est-ce qui fait un bon {keyword}?",
-        "Comment choisir son {keyword} en {industry}?",
-        "Quels critères pour acheter un {keyword}?",
-        "Guide d'achat {keyword} : les points essentiels",
-        "Tout savoir sur les {keyword} avant d'acheter",
-        "Quelles sont les innovations récentes en {keyword}?",
-        "Avantages et inconvénients des différentes marques de {keyword}",
-    ],
-    "commercial": [
-        "Avis et test de {brand} : que vaut cette marque?",
-        "Est-ce que {brand} est une bonne marque de {keyword}?",
-        "Retours d'expérience sur {brand} pour {keyword}",
-        "{brand} {keyword} avis consommateurs",
-        "Faut-il acheter un {keyword} {brand}?",
-        "Test complet {brand} : notre verdict",
-        "Les produits {brand} sont-ils fiables?",
-    ],
-    "reputation": [
-        "Que pensent les experts de {brand}?",
-        "{brand} est-elle une marque recommandée?",
-        "Quelle est la réputation de {brand} dans {industry}?",
-        "Les professionnels recommandent-ils {brand}?",
-        "{brand} : marque de confiance ou à éviter?",
-        "Pourquoi choisir {brand} plutôt qu'une autre marque?",
-    ],
+    # Problem-solving - NO brand name (high GEO value)
     "problem_solving": [
-        "Quelle solution pour améliorer mon {keyword}?",
-        "Comment résoudre mes problèmes de {keyword}?",
-        "Quelle marque offre le meilleur service après-vente pour {keyword}?",
-        "Je cherche un {keyword} durable et écologique",
+        "Je cherche un {keyword} durable et pas trop cher",
         "Quel {keyword} pour un budget limité?",
-        "Alternative à {brand} pour {keyword}?",
+        "Meilleur {keyword} pour les professionnels?",
+        "Quel {keyword} offre le meilleur rapport qualité-prix?",
+        "Je veux un {keyword} qui dure longtemps, que choisir?",
+        "Quel {keyword} pour une utilisation intensive?",
+    ],
+    # Informational - NO brand name (medium GEO value)
+    "informational": [
+        "Comment choisir un bon {keyword}?",
+        "Quels critères pour acheter un {keyword}?",
+        "Guide d'achat {keyword} : que regarder?",
+        "Qu'est-ce qui fait un bon {keyword}?",
+        "Les points importants pour choisir son {keyword}",
+    ],
+    # Brand reputation queries - WITH brand name (validation only, ~20% of queries)
+    "brand_validation": [
+        "Est-ce que {brand} est une bonne marque?",
+        "{brand} vs la concurrence, que choisir?",
+        "Les produits {brand} sont-ils fiables?",
     ],
 }
 
@@ -122,7 +116,12 @@ async def update_subscription_usage(user_id: str, api_calls: int):
 
 
 def generate_queries(brand_name: str, keywords: List[str], num_queries: int, industry: str = "") -> List[Dict[str, Any]]:
-    """Generate diverse, realistic queries for GEO analysis"""
+    """
+    Generate diverse, realistic queries for GEO analysis.
+    
+    IMPORTANT: ~80% of queries are GENERIC (no brand name) to test organic visibility.
+    Only ~20% include the brand name for validation purposes.
+    """
     queries = []
     used_templates = set()
     
@@ -132,25 +131,54 @@ def generate_queries(brand_name: str, keywords: List[str], num_queries: int, ind
     if not industry:
         industry = "le marché"
     
-    # Shuffle query types for better distribution
-    query_types = list(QUERY_TEMPLATES.keys())
-    random.shuffle(query_types)
+    # Priority: Generic queries first (80%), brand queries last (20%)
+    generic_types = ["transactional_generic", "comparative_generic", "problem_solving", "informational"]
+    brand_types = ["brand_validation"]
     
-    # Calculate queries per type
-    queries_per_type = max(2, num_queries // len(query_types))
+    # Calculate distribution: 80% generic, 20% brand
+    generic_count = int(num_queries * 0.80)
+    brand_count = num_queries - generic_count
     
-    for query_type in query_types:
-        templates = QUERY_TEMPLATES[query_type].copy()
+    # Generate generic queries (NO brand name - true GEO test)
+    for query_type in generic_types:
+        templates = QUERY_TEMPLATES.get(query_type, []).copy()
         random.shuffle(templates)
         
+        queries_per_type = generic_count // len(generic_types)
         count = 0
+        
         for template in templates:
-            if len(queries) >= num_queries:
+            if len([q for q in queries if q["type"].startswith("generic") or q["type"] in generic_types]) >= generic_count:
                 break
-            if count >= queries_per_type:
+            if count >= queries_per_type + 2:  # Allow slight overflow
                 break
             
-            # Use different keywords for variety
+            keyword = keywords[len(queries) % len(keywords)]
+            
+            query_text = template.format(
+                keyword=keyword,
+                industry=industry
+            )
+            
+            if query_text not in used_templates:
+                used_templates.add(query_text)
+                queries.append({
+                    "text": query_text,
+                    "type": query_type,
+                    "keyword": keyword,
+                    "includes_brand": False  # Flag for analysis
+                })
+                count += 1
+    
+    # Generate brand validation queries (~20%)
+    for query_type in brand_types:
+        templates = QUERY_TEMPLATES.get(query_type, []).copy()
+        random.shuffle(templates)
+        
+        for template in templates:
+            if len([q for q in queries if q.get("includes_brand")]) >= brand_count:
+                break
+            
             keyword = keywords[len(queries) % len(keywords)]
             
             query_text = template.format(
@@ -159,40 +187,20 @@ def generate_queries(brand_name: str, keywords: List[str], num_queries: int, ind
                 industry=industry
             )
             
-            # Avoid duplicate queries
             if query_text not in used_templates:
                 used_templates.add(query_text)
                 queries.append({
                     "text": query_text,
                     "type": query_type,
-                    "keyword": keyword
+                    "keyword": keyword,
+                    "includes_brand": True  # Flag for analysis
                 })
-                count += 1
     
-    # Fill remaining with random high-value queries
-    high_value_templates = [
-        f"Recommandez-moi une marque de {keywords[0]} fiable",
-        f"Quelle est la meilleure marque de {keywords[0]} selon les experts?",
-        f"Top marques {keywords[0]} recommandées par les professionnels",
-        f"{brand_name} ou la concurrence : qui choisir?",
-        f"Pourquoi {brand_name} est populaire pour {keywords[0]}?",
-        f"Les avantages de {brand_name} par rapport aux autres marques",
-        f"Est-ce que {brand_name} vaut le coup en 2024?",
-        f"Marques de {keywords[0]} les plus fiables du marché",
-    ]
+    # Shuffle to mix generic and brand queries
+    random.shuffle(queries)
     
-    for template in high_value_templates:
-        if len(queries) >= num_queries:
-            break
-        if template not in used_templates:
-            used_templates.add(template)
-            queries.append({
-                "text": template,
-                "type": "high_value",
-                "keyword": keywords[0]
-            })
+    logger.info(f"Generated {len(queries)} queries for '{brand_name}': {len([q for q in queries if not q.get('includes_brand')])} generic, {len([q for q in queries if q.get('includes_brand')])} with brand")
     
-    logger.info(f"Generated {len(queries)} unique queries for brand '{brand_name}'")
     return queries[:num_queries]
 
 
