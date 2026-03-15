@@ -81,17 +81,22 @@ const AnalysisPage = () => {
         setLocalAnalysis(runningAnalysis);
         setLoading(false);
       } else {
-        fetchAnalysis(analysisId);
+        // Small delay to ensure analysis is created in DB before fetching
+        const timer = setTimeout(() => {
+          fetchAnalysis(analysisId);
+        }, 500);
+        return () => clearTimeout(timer);
       }
     } else {
       setLoading(false);
     }
-  }, [analysisId, runningAnalysis]);
+  }, [analysisId]);
 
   // Sync local analysis with global running analysis
   useEffect(() => {
     if (runningAnalysis?.analysis_id === analysisId) {
       setLocalAnalysis(runningAnalysis);
+      setLoading(false);
     }
   }, [runningAnalysis, analysisId]);
 
@@ -156,13 +161,19 @@ const AnalysisPage = () => {
         { withCredentials: true }
       );
       
-      // Start global tracking immediately
+      // Start global tracking immediately with full analysis object
       const newAnalysis = {
         analysis_id: response.data.analysis_id,
+        project_id: currentProject.project_id,
         status: 'running',
-        current_phase: 'query_generation'
+        current_phase: 'query_generation',
+        total_queries: 0,
+        queries_processed: 0,
+        created_at: new Date().toISOString()
       };
       startTrackingAnalysis(newAnalysis);
+      setLocalAnalysis(newAnalysis);
+      setLoading(false);
       
       toast.success("Analyse IAskan Verified™ lancée !");
       navigate(`/analysis/${response.data.analysis_id}`);
