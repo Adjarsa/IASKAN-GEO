@@ -67,32 +67,44 @@ QUERY_TEMPLATES = {
 
 
 async def update_analysis(analysis_id: str, updates: dict):
-    """Update analysis record in PostgreSQL"""
-    try:
-        async with async_session_maker() as db:
-            # All columns that exist in the Analysis model
-            existing_columns = {
-                'status', 'global_score', 'grade', 'mention_rate', 'ai_scores',
-                'rate_scores', 'query_scores', 'recommendations', 'total_queries',
-                'queries_processed', 'queries_with_mention', 'current_phase',
-                'ai_engines_used', 'error_message', 'started_at', 'completed_at', 
-                'competitor_analysis', 'stability_score', 'average_position'
-            }
-            
-            valid_updates = {k: v for k, v in updates.items() if v is not None and k in existing_columns}
-            
-            if valid_updates:
-                logger.info(f"Updating analysis {analysis_id}: {list(valid_updates.keys())}")
-                await db.execute(
-                    update(Analysis).where(
-                        Analysis.analysis_id == analysis_id
-                    ).values(**valid_updates)
-                )
-                await db.commit()
-    except Exception as e:
-        logger.error(f"Error updating analysis {analysis_id}: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
+    """Update analysis record in PostgreSQL with retry logic"""
+    max_retries = 3
+    retry_delay = 1
+    
+    for attempt in range(max_retries):
+        try:
+            async with async_session_maker() as db:
+                # All columns that exist in the Analysis model
+                existing_columns = {
+                    'status', 'global_score', 'grade', 'mention_rate', 'ai_scores',
+                    'rate_scores', 'query_scores', 'recommendations', 'total_queries',
+                    'queries_processed', 'queries_with_mention', 'current_phase',
+                    'ai_engines_used', 'error_message', 'started_at', 'completed_at', 
+                    'competitor_analysis', 'stability_score', 'average_position'
+                }
+                
+                valid_updates = {k: v for k, v in updates.items() if v is not None and k in existing_columns}
+                
+                if valid_updates:
+                    logger.info(f"[{analysis_id}] Updating: {list(valid_updates.keys())} (attempt {attempt + 1})")
+                    result = await db.execute(
+                        update(Analysis).where(
+                            Analysis.analysis_id == analysis_id
+                        ).values(**valid_updates)
+                    )
+                    await db.commit()
+                    logger.info(f"[{analysis_id}] Update committed successfully")
+                    return True
+        except Exception as e:
+            logger.error(f"[{analysis_id}] Update error (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                import traceback
+                logger.error(f"[{analysis_id}] Update failed after {max_retries} attempts")
+                logger.error(traceback.format_exc())
+    return False
 
 
 async def update_subscription_usage(user_id: str, api_calls: int):
