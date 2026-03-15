@@ -369,6 +369,18 @@ class AnalysisService:
         """Convert Analysis model to dictionary"""
         if not analysis:
             return None
+        
+        # Extract progress from ai_scores (workaround for missing columns)
+        ai_scores = analysis.ai_scores or {}
+        queries_processed = ai_scores.pop('_progress', 0) if isinstance(ai_scores, dict) else 0
+        current_phase = ai_scores.pop('_phase', None) if isinstance(ai_scores, dict) else None
+        
+        # Try to get from actual columns first (if they exist)
+        if hasattr(analysis, 'queries_processed') and analysis.queries_processed:
+            queries_processed = analysis.queries_processed
+        if hasattr(analysis, 'current_phase') and analysis.current_phase:
+            current_phase = analysis.current_phase
+        
         return {
             "analysis_id": analysis.analysis_id,
             "project_id": analysis.project_id,
@@ -376,16 +388,16 @@ class AnalysisService:
             "status": analysis.status.value if analysis.status else "pending",
             "global_score": analysis.global_score,
             "grade": analysis.grade,
-            "ai_scores": analysis.ai_scores or {},
+            "ai_scores": {k: v for k, v in (ai_scores or {}).items() if not k.startswith('_')},
             "rate_scores": analysis.rate_scores or {},
             "query_scores": analysis.query_scores or [],
             "competitor_analysis": analysis.competitor_analysis or {},
             "recommendations": analysis.recommendations or [],
             "stability_score": analysis.stability_score,
             "total_queries": analysis.total_queries or 0,
-            "queries_processed": getattr(analysis, 'queries_processed', 0) or 0,
+            "queries_processed": queries_processed,
             "queries_with_mention": analysis.queries_with_mention or 0,
-            "current_phase": getattr(analysis, 'current_phase', None),
+            "current_phase": current_phase,
             "mention_rate": analysis.mention_rate,
             "average_position": analysis.average_position,
             "ai_engines_used": analysis.ai_engines_used or [],

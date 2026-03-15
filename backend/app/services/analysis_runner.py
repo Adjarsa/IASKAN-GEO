@@ -39,8 +39,7 @@ async def update_analysis(analysis_id: str, updates: dict):
     """Update analysis record in PostgreSQL"""
     try:
         async with async_session_maker() as db:
-            # Only use columns that EXIST in the database (not just model)
-            # queries_processed and current_phase may not exist yet - use total_queries as progress
+            # Only use columns that EXIST in the database
             existing_columns = {
                 'status', 'global_score', 'grade', 'mention_rate', 'ai_scores',
                 'rate_scores', 'query_scores', 'recommendations', 'total_queries',
@@ -48,6 +47,27 @@ async def update_analysis(analysis_id: str, updates: dict):
                 'started_at', 'completed_at', 'competitor_analysis', 'stability_score',
                 'average_position'
             }
+            
+            # Store progress in ai_scores JSON field as workaround
+            progress_fields = {}
+            if 'queries_processed' in updates:
+                progress_fields['_progress'] = updates.pop('queries_processed')
+            if 'current_phase' in updates:
+                progress_fields['_phase'] = updates.pop('current_phase')
+            
+            # If we have progress to store, merge into ai_scores
+            if progress_fields:
+                # Get current ai_scores
+                result = await db.execute(
+                    select(Analysis.ai_scores).where(Analysis.analysis_id == analysis_id)
+                )
+                current_scores = result.scalar_one_or_none() or {}
+                if not isinstance(current_scores, dict):
+                    current_scores = {}
+                # Merge progress into ai_scores
+                current_scores.update(progress_fields)
+                updates['ai_scores'] = current_scores
+            
             valid_updates = {k: v for k, v in updates.items() if v is not None and k in existing_columns}
             
             if valid_updates:
