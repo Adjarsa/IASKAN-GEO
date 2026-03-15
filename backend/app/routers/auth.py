@@ -807,6 +807,7 @@ async def reset_password(body: PasswordResetConfirm):
 @router.post("/magic-link")
 async def request_magic_link(request: Request, body: MagicLinkRequest):
     """Request magic link login email"""
+    is_new_user = False
     async with async_session_maker() as db:
         user = await UserService.get_by_email(db, body.email)
         
@@ -815,6 +816,7 @@ async def request_magic_link(request: Request, body: MagicLinkRequest):
                 db, email=body.email, name=body.email.split("@")[0], auth_provider="magic_link"
             )
             await SubscriptionService.create_free(db, user.user_id)
+            is_new_user = True
         
         magic_token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
@@ -831,7 +833,13 @@ async def request_magic_link(request: Request, body: MagicLinkRequest):
     referer = request.headers.get("referer", "")
     frontend_url = referer.split("/")[0] + "//" + referer.split("/")[2] if "//" in referer else FRONTEND_URL
     
+    # Send magic link email
     asyncio.create_task(send_magic_link_email(body.email, user.name or "", magic_token, frontend_url))
+    
+    # Send welcome email for new users
+    if is_new_user:
+        await email_service.send_welcome_email(body.email, user.name or body.email.split("@")[0])
+        logger.info(f"New user registered via Magic Link: email={body.email}")
     
     return {"message": "Un lien de connexion a été envoyé à votre adresse email."}
 

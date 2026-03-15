@@ -10,7 +10,8 @@ from typing import Dict, Any, List
 
 from sqlalchemy import select, update
 from ..db.database import async_session_maker
-from ..db.models import Analysis, Project, Subscription
+from ..db.models import Analysis, Project, Subscription, User
+from .email_service import email_service
 
 logger = logging.getLogger(__name__)
 
@@ -97,8 +98,6 @@ async def update_analysis(analysis_id: str, updates: dict):
 async def update_subscription_usage(user_id: str, api_calls: int):
     """Update subscription usage counters after analysis"""
     try:
-        from ..db.models import Subscription
-        
         async with async_session_maker() as db:
             # Increment queries_used and scans_used
             await db.execute(
@@ -113,6 +112,60 @@ async def update_subscription_usage(user_id: str, api_calls: int):
             logger.info(f"Updated subscription for user {user_id}: +{api_calls} queries, +1 scan")
     except Exception as e:
         logger.error(f"Error updating subscription usage for {user_id}: {e}")
+
+
+async def get_user_info(user_id: str) -> Dict[str, str]:
+    """Get user email and name for notification"""
+    try:
+        async with async_session_maker() as db:
+            result = await db.execute(
+                select(User).where(User.user_id == user_id)
+            )
+            user = result.scalar_one_or_none()
+            if user:
+                return {
+                    "email": user.email,
+                    "name": user.name or user.email.split("@")[0]
+                }
+    except Exception as e:
+        logger.error(f"Error getting user info for {user_id}: {e}")
+    return None
+
+
+async def send_analysis_complete_notification(
+    user_id: str,
+    project_name: str,
+    brand_name: str,
+    global_score: float,
+    grade: str,
+    analysis_id: str,
+    recommendations: List[Dict[str, Any]] = None
+):
+    """Send email notification when analysis is complete"""
+    try:
+        user_info = await get_user_info(user_id)
+        if not user_info:
+            logger.warning(f"Cannot send notification: user {user_id} not found")
+            return
+        
+        # Extract top recommendation titles
+        top_recs = []
+        if recommendations:
+            top_recs = [rec.get("title", "") for rec in recommendations[:3] if rec.get("title")]
+        
+        await email_service.send_scan_complete_email(
+            email=user_info["email"],
+            user_name=user_info["name"],
+            project_name=project_name,
+            brand_name=brand_name,
+            global_score=global_score,
+            grade=grade,
+            analysis_id=analysis_id,
+            recommendations=top_recs
+        )
+        logger.info(f"Analysis complete notification sent to {user_info['email']}")
+    except Exception as e:
+        logger.error(f"Failed to send analysis complete notification: {e}")
 
 
 def generate_queries(brand_name: str, keywords: List[str], num_queries: int, industry: str = "") -> List[Dict[str, Any]]:
@@ -476,6 +529,17 @@ async def run_analysis_simplified(analysis_id: str, project: dict, plan_config: 
         user_id = project.get("user_id")
         if user_id:
             await update_subscription_usage(user_id, total_api_calls)
+            
+            # Send completion notification email
+            await send_analysis_complete_notification(
+                user_id=user_id,
+                project_name=project.get("name", "Projet"),
+                brand_name=brand_name,
+                global_score=rate_scores["total"],
+                grade=rate_scores["grade"],
+                analysis_id=analysis_id,
+                recommendations=recommendations
+            )
         
         logger.info(f"Analysis {analysis_id} COMPLETED with score: {rate_scores['total']}")
         
