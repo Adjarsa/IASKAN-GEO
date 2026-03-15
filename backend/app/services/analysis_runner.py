@@ -39,38 +39,19 @@ async def update_analysis(analysis_id: str, updates: dict):
     """Update analysis record in PostgreSQL"""
     try:
         async with async_session_maker() as db:
-            # Only use columns that EXIST in the database
+            # All columns that exist in the Analysis model
             existing_columns = {
                 'status', 'global_score', 'grade', 'mention_rate', 'ai_scores',
                 'rate_scores', 'query_scores', 'recommendations', 'total_queries',
-                'queries_with_mention', 'ai_engines_used', 'error_message',
-                'started_at', 'completed_at', 'competitor_analysis', 'stability_score',
-                'average_position'
+                'queries_processed', 'queries_with_mention', 'current_phase',
+                'ai_engines_used', 'error_message', 'started_at', 'completed_at', 
+                'competitor_analysis', 'stability_score', 'average_position'
             }
-            
-            # Store progress in ai_scores JSON field as workaround
-            progress_fields = {}
-            if 'queries_processed' in updates:
-                progress_fields['_progress'] = updates.pop('queries_processed')
-            if 'current_phase' in updates:
-                progress_fields['_phase'] = updates.pop('current_phase')
-            
-            # If we have progress to store, merge into ai_scores
-            if progress_fields:
-                # Get current ai_scores
-                result = await db.execute(
-                    select(Analysis.ai_scores).where(Analysis.analysis_id == analysis_id)
-                )
-                current_scores = result.scalar_one_or_none() or {}
-                if not isinstance(current_scores, dict):
-                    current_scores = {}
-                # Merge progress into ai_scores
-                current_scores.update(progress_fields)
-                updates['ai_scores'] = current_scores
             
             valid_updates = {k: v for k, v in updates.items() if v is not None and k in existing_columns}
             
             if valid_updates:
+                logger.info(f"Updating analysis {analysis_id}: {list(valid_updates.keys())}")
                 await db.execute(
                     update(Analysis).where(
                         Analysis.analysis_id == analysis_id
@@ -79,6 +60,8 @@ async def update_analysis(analysis_id: str, updates: dict):
                 await db.commit()
     except Exception as e:
         logger.error(f"Error updating analysis {analysis_id}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
 
 
 def generate_queries(brand_name: str, keywords: List[str], num_queries: int, industry: str = "") -> List[Dict[str, Any]]:
