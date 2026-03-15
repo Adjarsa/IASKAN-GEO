@@ -100,6 +100,27 @@ async def update_analysis(analysis_id: str, updates: dict):
         logger.error(traceback.format_exc())
 
 
+async def update_subscription_usage(user_id: str, api_calls: int):
+    """Update subscription usage counters after analysis"""
+    try:
+        from ..db.models import Subscription
+        
+        async with async_session_maker() as db:
+            # Increment queries_used and scans_used
+            await db.execute(
+                update(Subscription)
+                .where(Subscription.user_id == user_id)
+                .values(
+                    queries_used=Subscription.queries_used + api_calls,
+                    scans_used=Subscription.scans_used + 1
+                )
+            )
+            await db.commit()
+            logger.info(f"Updated subscription for user {user_id}: +{api_calls} queries, +1 scan")
+    except Exception as e:
+        logger.error(f"Error updating subscription usage for {user_id}: {e}")
+
+
 def generate_queries(brand_name: str, keywords: List[str], num_queries: int, industry: str = "") -> List[Dict[str, Any]]:
     """Generate diverse, realistic queries for GEO analysis"""
     queries = []
@@ -423,6 +444,9 @@ async def run_analysis_simplified(analysis_id: str, project: dict, plan_config: 
         
         logger.info(f"Analysis complete: Score={rate_scores['total']}, Grade={rate_scores['grade']}")
         
+        # Calculate total API calls made
+        total_api_calls = len(all_responses)
+        
         # Final update
         await update_analysis(analysis_id, {
             "status": "completed",
@@ -439,6 +463,11 @@ async def run_analysis_simplified(analysis_id: str, project: dict, plan_config: 
             "ai_engines_used": ai_engines,
             "completed_at": datetime.now(timezone.utc)
         })
+        
+        # Update subscription usage
+        user_id = project.get("user_id")
+        if user_id:
+            await update_subscription_usage(user_id, total_api_calls)
         
         logger.info(f"Analysis {analysis_id} COMPLETED with score: {rate_scores['total']}")
         
