@@ -320,3 +320,35 @@ async def get_project_stats(project_id: str, user: dict = Depends(get_current_us
             "best_score": round(best_score, 1),
             "latest_analysis": AnalysisService.to_dict(latest) if latest else None
         }
+
+
+
+@router.get("/{project_id}/analyses")
+async def get_project_analyses(
+    project_id: str, 
+    user: dict = Depends(get_current_user),
+    limit: int = 20,
+    status: str = None
+):
+    """Get all analyses for a project"""
+    async with async_session_maker() as db:
+        project = await ProjectService.get_by_id(db, project_id)
+        
+        if not project:
+            raise HTTPException(status_code=404, detail="Projet non trouvé")
+        
+        if project.user_id != user["user_id"]:
+            raise HTTPException(status_code=403, detail="Accès non autorisé")
+        
+        # Get analyses
+        analyses = await AnalysisService.get_by_project(db, project_id, limit=limit)
+        
+        # Filter by status if specified
+        if status:
+            analyses = [a for a in analyses if a.status.value == status]
+        
+        return {
+            "analyses": [AnalysisService.to_dict(a) for a in analyses],
+            "total": len(analyses),
+            "project_id": project_id
+        }
