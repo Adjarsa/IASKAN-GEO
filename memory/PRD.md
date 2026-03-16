@@ -477,3 +477,42 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - Notifications en temps réel
 - Scans programmés
 - PDF reports
+
+
+### 2026-03-16 - Correction des bugs P0 critiques
+
+#### Bugs corrigés
+1. **GET /api/organizations - Erreur 500 (AttributeError)** ✅ CORRIGÉ
+   - Cause: `AttributeError: 'User' object has no attribute 'plan'`
+   - Fix: Patch `getattr(user, 'plan', 'free')` dans `backend/app/routers/organizations.py` ligne 77
+   - Statut: Vérifié par testing_agent
+
+2. **GET /api/analysis/{id} - Attributs inexistants** ✅ CORRIGÉ
+   - Cause: Le router référençait des attributs inexistants sur le modèle (`indices`, `stability_data`, `analysis_summary`, etc.)
+   - Fix: Suppression des attributs inexistants dans `backend/app/routers/analysis.py`
+   - Statut: Vérifié par testing_agent
+
+3. **Création d'analyse - Status enum** ✅ CORRIGÉ
+   - Cause: `status="pending"` (string) au lieu de `AnalysisStatus.PENDING` (enum)
+   - Fix: Correction dans `server.py` lignes 1272 et 2647 pour utiliser l'enum
+   - Statut: Vérifié par testing_agent
+
+4. **update_analysis - Conversion status** ✅ CORRIGÉ
+   - Fix: Ajout de la conversion automatique string -> enum dans `backend/app/services/analysis_runner.py`
+   - Amélioration du logging pour le débogage
+
+#### Tests effectués
+- Backend: 22/22 tests passés (test_critical_fixes.py)
+- Frontend: 25/25 tests passés (critical-pages + page-rendering)
+- Total: 47 tests passés, 0 échoués
+
+#### Bugs restants à traiter
+- P2: Sidebar scroll bug (CSS semble correct, nécessite investigation supplémentaire)
+- P3: setup-first-admin endpoint 500 error
+- P4: Magic Link authentication 500 error
+
+#### Files modifiés
+- `/app/backend/app/routers/organizations.py` - getattr patch
+- `/app/backend/app/routers/analysis.py` - Suppression attributs inexistants
+- `/app/backend/app/services/analysis_runner.py` - Conversion enum + logging
+- `/app/backend/server.py` - AnalysisStatus.PENDING
