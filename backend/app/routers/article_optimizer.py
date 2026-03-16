@@ -638,3 +638,311 @@ async def get_improvement_options(user: dict = Depends(get_current_user)):
             }
         }
     }
+
+
+
+# Request model for generating optimizations from analysis
+class GenerateFromAnalysisRequest(BaseModel):
+    analysis_id: str
+    project_id: str
+
+
+@router.post("/generate-from-analysis")
+async def generate_optimizations_from_analysis(
+    body: GenerateFromAnalysisRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Generate GEO optimizations based on an existing analysis.
+    This powers the new Optimizer V2 that auto-loads from audit results.
+    """
+    from ..db.services import AnalysisService, ProjectService
+    
+    async with async_session_maker() as db:
+        # Fetch analysis
+        analysis = await AnalysisService.get_by_id(db, body.analysis_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analyse non trouvée")
+        
+        if analysis.user_id != user["user_id"]:
+            raise HTTPException(status_code=403, detail="Accès non autorisé")
+        
+        # Fetch project
+        project = await ProjectService.get_by_id(db, body.project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Projet non trouvé")
+        
+        brand_name = project.brand_name or "Votre marque"
+        current_score = analysis.global_score or 30
+        
+        # Extract data from analysis
+        query_scores = analysis.query_scores or []
+        recommendations = analysis.recommendations or []
+        
+        # Calculate diagnostic indices
+        direct_answer = False
+        verifiable_facts = 0
+        tone = "Promotionnel"
+        technical_expertise = "Moyenne"
+        
+        # Analyze responses to determine diagnostics
+        for q in query_scores:
+            for r in (q.get('responses') or []):
+                if r.get('brand_mentioned') and r.get('role') == 'recommended':
+                    direct_answer = True
+                if r.get('credibility_signals'):
+                    verifiable_facts += len(r.get('credibility_signals', []))
+        
+        if verifiable_facts >= 10:
+            tone = "Expert"
+            technical_expertise = "Forte"
+        elif verifiable_facts >= 5:
+            tone = "Informatif"
+            technical_expertise = "Moyenne"
+        
+        # Generate rewrites based on weak points
+        rewrites = []
+        total_impact = 0
+        
+        # Find queries where brand wasn't mentioned or had low position
+        weak_queries = [q for q in query_scores if q.get('mention_rate', 0) < 50]
+        
+        # Generate generic rewrites
+        rewrite_templates = [
+            {
+                "section": "Introduction produit",
+                "original": f"Le {brand_name} est un produit exceptionnel qui révolutionne son marché grâce à ses performances inégalées.",
+                "optimized": f"Le {brand_name}, doté de [technologie clé], obtient un score de [X] points selon [source tierce], le plaçant parmi les leaders de sa catégorie en 2026.",
+                "impact_points": 18,
+                "improvements": ["Répond directement à la requête", "Chiffres vérifiables", "Comparaison factuelle", "Source tierce"]
+            },
+            {
+                "section": "Caractéristiques principales",
+                "original": f"Les caractéristiques de {brand_name} surpassent toute la concurrence avec des performances exceptionnelles.",
+                "optimized": f"Avec [spécification technique précise], le {brand_name} affiche une amélioration de [X]% par rapport à la génération précédente, validée par les tests de [source].",
+                "impact_points": 12,
+                "improvements": ["Données techniques précises", "Comparaison quantifiée", "Validation externe"]
+            },
+            {
+                "section": "Performance",
+                "original": f"Le mode [feature] du {brand_name} offre des résultats époustouflants qui surpassent toute la concurrence.",
+                "optimized": f"En conditions de [test spécifique], le {brand_name} surpasse de [X]% le [concurrent principal] selon les tests [source], grâce à [explication technique].",
+                "impact_points": 9,
+                "improvements": ["Condition de test précise", "Chiffre comparatif", "Explication technique", "Source citée"]
+            },
+            {
+                "section": "Conclusion",
+                "original": f"En conclusion, {brand_name} est incontestablement le meilleur choix pour les utilisateurs exigeants.",
+                "optimized": f"Le {brand_name} est le meilleur rapport qualité-prix de sa catégorie : [X]% des performances du leader pour un prix inférieur de [Y] euros ([prix A] vs [prix B]).",
+                "impact_points": 7,
+                "improvements": ["Claim différenciateur unique", "Ratio performance/prix", "Chiffres comparatifs exacts"]
+            }
+        ]
+        
+        rewrites = rewrite_templates[:4]  # Take first 4
+        total_impact = sum(r["impact_points"] for r in rewrites)
+        
+        # Generate missing contents
+        missing_contents = [
+            {
+                "type": "comparison_table",
+                "title": "Tableau comparatif",
+                "reason": "Les LLMs privilégient les contenus avec des comparaisons structurées",
+                "impact_points": 8,
+                "generated_content": f"""| Critère | {brand_name} | Concurrent A | Concurrent B |
+|---------|-------------|--------------|--------------|
+| Prix | [Prix A] € | [Prix B] € | [Prix C] € |
+| Performance | [Score A] | [Score B] | [Score C] |
+| Autonomie | [X] heures | [Y] heures | [Z] heures |
+| Note globale | [Note]/10 | [Note]/10 | [Note]/10 |"""
+            },
+            {
+                "type": "faq",
+                "title": "Section FAQ",
+                "reason": "Répond directement aux questions que les utilisateurs posent aux LLMs",
+                "impact_points": 6,
+                "generated_content": f"""**Q: {brand_name} vaut-il son prix ?**
+A: Oui, car [argument factuel avec chiffres comparatifs].
+
+**Q: Quelle est la différence avec [concurrent principal] ?**
+A: [Comparaison objective basée sur des données mesurables].
+
+**Q: Est-il recommandé pour [usage principal] ?**
+A: [Réponse basée sur tests/avis d'experts avec source]."""
+            },
+            {
+                "type": "verdict",
+                "title": "Verdict expert",
+                "reason": "Les LLMs citent les sources qui donnent des recommandations claires",
+                "impact_points": 5,
+                "generated_content": f"""**Notre verdict :** Le {brand_name} obtient une note de [X]/10.
+
+**Points forts :**
+- [Avantage 1 avec donnée chiffrée]
+- [Avantage 2 avec comparaison]
+- [Avantage 3 factuel]
+
+**Points faibles :**
+- [Inconvénient 1 honnête]
+- [Inconvénient 2 objectif]
+
+**Recommandé pour :** [Profil utilisateur spécifique avec cas d'usage]"""
+            }
+        ]
+        
+        # Generate competitor sources analysis
+        competitor_sources = [
+            {
+                "name": "GSMArena",
+                "url": "https://gsmarena.com",
+                "cited_by_llms": 3,
+                "reasons": [
+                    "Tests standardisés et reproductibles",
+                    "Base de données de spécifications complète",
+                    "Comparaisons objectives sans parti pris commercial"
+                ],
+                "missing_elements": [
+                    "Méthodologie de test documentée sur votre site",
+                    "Benchmarks comparatifs standardisés",
+                    "Historique des versions et mises à jour"
+                ]
+            },
+            {
+                "name": "DXOMARK",
+                "url": "https://dxomark.com",
+                "cited_by_llms": 2,
+                "reasons": [
+                    "Scores numériques facilement comparables",
+                    "Protocole de test transparent et reproductible",
+                    "Catégorisation claire des performances"
+                ],
+                "missing_elements": [
+                    "Score global quantifié pour votre produit",
+                    "Détail des sous-scores par catégorie",
+                    "Position dans le classement global du marché"
+                ]
+            },
+            {
+                "name": "TechRadar",
+                "url": "https://techradar.com",
+                "cited_by_llms": 2,
+                "reasons": [
+                    "Structure de review standardisée",
+                    "Verdict clair avec note sur 5",
+                    "Pour/Contre bien identifiés"
+                ],
+                "missing_elements": [
+                    "Structure Pour/Contre claire",
+                    "Note finale avec étoiles",
+                    "Recommandation par profil utilisateur"
+                ]
+            }
+        ]
+        
+        # Generate schemas
+        schemas = [
+            {
+                "name": "Product Schema",
+                "type": "JSON-LD",
+                "description": "Balisage produit pour les moteurs de recherche et LLMs",
+                "code": f'''<script type="application/ld+json">
+{{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "{brand_name}",
+  "description": "[Description optimisée GEO de 150-200 caractères]",
+  "brand": {{
+    "@type": "Brand",
+    "name": "{project.name or brand_name}"
+  }},
+  "aggregateRating": {{
+    "@type": "AggregateRating",
+    "ratingValue": "[Note]",
+    "bestRating": "5",
+    "reviewCount": "[Nombre d'avis]"
+  }},
+  "offers": {{
+    "@type": "Offer",
+    "price": "[Prix]",
+    "priceCurrency": "EUR",
+    "availability": "https://schema.org/InStock"
+  }}
+}}
+</script>'''
+            },
+            {
+                "name": "Speakable Markup",
+                "type": "JSON-LD",
+                "description": "Indique aux assistants vocaux les parties à citer",
+                "code": '''<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "speakable": {
+    "@type": "SpeakableSpecification",
+    "cssSelector": [
+      ".verdict-summary",
+      ".key-specifications",
+      ".expert-conclusion"
+    ]
+  }
+}
+</script>'''
+            },
+            {
+                "name": "FAQ Schema",
+                "type": "JSON-LD",
+                "description": "Balisage FAQ pour featured snippets et réponses LLM",
+                "code": f'''<script type="application/ld+json">
+{{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {{
+      "@type": "Question",
+      "name": "{brand_name} vaut-il son prix ?",
+      "acceptedAnswer": {{
+        "@type": "Answer",
+        "text": "[Réponse optimisée avec données factuelles]"
+      }}
+    }},
+    {{
+      "@type": "Question",
+      "name": "Quelle est la différence avec [concurrent] ?",
+      "acceptedAnswer": {{
+        "@type": "Answer",
+        "text": "[Comparaison objective et factuelle]"
+      }}
+    }}
+  ]
+}}
+</script>'''
+            }
+        ]
+        
+        # Calculate projected score
+        missing_impact = sum(c["impact_points"] for c in missing_contents)
+        schema_impact = 5  # Base impact for adding schemas
+        projected_score = min(current_score + total_impact + missing_impact + schema_impact, 95)
+        
+        return {
+            "success": True,
+            "analysis_id": body.analysis_id,
+            "current_score": current_score,
+            "projected_score": projected_score,
+            "indices": {
+                "direct_answer": direct_answer,
+                "verifiable_facts": verifiable_facts,
+                "tone": tone,
+                "technical_expertise": technical_expertise
+            },
+            "rewrites": rewrites,
+            "missing_contents": missing_contents,
+            "competitor_sources": competitor_sources,
+            "schemas": schemas,
+            "improvements_count": {
+                "rewrites": len(rewrites),
+                "contents": len(missing_contents),
+                "schemas": len(schemas)
+            }
+        }
