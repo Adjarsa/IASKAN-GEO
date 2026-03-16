@@ -40,18 +40,18 @@ print('User ID: ' + userId);
 
 ```bash
 # Test auth endpoint
-curl -X GET "https://brand-radar-15.preview.emergentagent.com/api/auth/me" \
+curl -X GET "https://geo-visibility-hub.preview.emergentagent.com/api/auth/me" \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"
 
 # Test projects endpoint
-curl -X GET "https://brand-radar-15.preview.emergentagent.com/api/projects" \
+curl -X GET "https://geo-visibility-hub.preview.emergentagent.com/api/projects" \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"
 
 # Test subscription plans
-curl -X GET "https://brand-radar-15.preview.emergentagent.com/api/subscription/plans"
+curl -X GET "https://geo-visibility-hub.preview.emergentagent.com/api/subscription/plans"
 
 # Test dashboard stats
-curl -X GET "https://brand-radar-15.preview.emergentagent.com/api/dashboard/stats" \
+curl -X GET "https://geo-visibility-hub.preview.emergentagent.com/api/dashboard/stats" \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"
 ```
 
@@ -68,7 +68,7 @@ await page.context().add_cookies([{
     "secure": true,
     "sameSite": "None"
 }]);
-await page.goto("https://brand-radar-15.preview.emergentagent.com/dashboard");
+await page.goto("https://geo-visibility-hub.preview.emergentagent.com/dashboard");
 ```
 
 ## Quick Debug

@@ -35,7 +35,7 @@ LINKEDIN_CLIENT_SECRET = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
 
 # Email
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@iaskan.com')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://brand-radar-15.preview.emergentagent.com')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://geo-visibility-hub.preview.emergentagent.com')
 
 # CORS
 CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*').split(',')

@@ -2,16 +2,16 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '/app/tests/e2e',
-  outputDir: '/root/.emergent/automation_output/20260313_000536/test-results',
+  outputDir: '/root/.emergent/automation_output/20260316_144114/test-results',
   timeout: 60000,
   retries: 0,
   workers: 1,
   reporter: [
     ['line'],
-    ['json', { outputFile: '/root/.emergent/automation_output/20260313_000536/results.json' }],
+    ['json', { outputFile: '/root/.emergent/automation_output/20260316_144114/results.json' }],
   ],
   use: {
-    baseURL: 'https://brand-radar-15.preview.emergentagent.com',
+    baseURL: 'https://geo-visibility-hub.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,

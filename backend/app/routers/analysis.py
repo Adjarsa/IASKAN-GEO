@@ -248,32 +248,31 @@ async def get_analysis_detail(analysis_id: str, user: dict = Depends(get_current
             raise HTTPException(status_code=403, detail="Accès non autorisé")
         
         # Return full analysis data matching frontend expectations
+        # Note: Using getattr for optional fields that may not exist in the model
+        competitor_analysis = analysis.competitor_analysis or {}
+        
         return {
             "analysis": {
                 "analysis_id": analysis.analysis_id,
                 "project_id": analysis.project_id,
                 "user_id": analysis.user_id,
-                "status": analysis.status.value,
+                "status": analysis.status.value if analysis.status else "pending",
                 "global_score": analysis.global_score,
                 "grade": analysis.grade,
                 "ai_scores": analysis.ai_scores or {},
-                "rate_score": analysis.rate_scores or {},
+                "rate_scores": analysis.rate_scores or {},
                 "query_scores": analysis.query_scores or [],
-                "competitor_comparison": analysis.competitor_analysis.get("discovered", []) if analysis.competitor_analysis else [],
+                "competitor_comparison": competitor_analysis.get("discovered", []) if isinstance(competitor_analysis, dict) else [],
                 "recommendations": analysis.recommendations or [],
-                "indices": analysis.indices or {},
-                "stability_data": analysis.stability_data or {},
                 "total_queries": analysis.total_queries or 0,
                 "queries_processed": analysis.queries_processed or 0,
                 "current_phase": analysis.current_phase or "pending",
-                "queries_with_mention": analysis.queries_with_mention,
+                "queries_with_mention": analysis.queries_with_mention or 0,
                 "mention_rate": analysis.mention_rate,
+                "average_position": analysis.average_position,
+                "stability_score": analysis.stability_score,
                 "ai_engines_used": analysis.ai_engines_used or [],
-                "analysis_summary": analysis.analysis_summary or {},
-                "semantic_analysis": analysis.semantic_analysis,
-                "content_gaps": analysis.content_gaps,
-                "site_enrichment": analysis.site_enrichment or {},
-                "brand_analysis": analysis.brand_analysis or {},
+                "competitor_analysis": competitor_analysis,
                 "error_message": analysis.error_message,
                 "started_at": analysis.started_at.isoformat() if analysis.started_at else None,
                 "completed_at": analysis.completed_at.isoformat() if analysis.completed_at else None,
