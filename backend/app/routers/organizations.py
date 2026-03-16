@@ -74,7 +74,7 @@ async def get_current_user(request: Request) -> dict:
             "user_id": user.user_id,
             "email": user.email,
             "name": user.name,
-            "plan": user.plan
+            "plan": getattr(user, 'plan', 'free')  # Default to 'free' if plan doesn't exist
         }
 
 
