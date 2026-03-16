@@ -22,8 +22,12 @@ async def get_notifications(user: dict = Depends(get_current_user), unread_only:
         notifications = await NotificationService.get_by_user(
             db, user["user_id"], unread_only=unread_only, limit=limit
         )
+        unread_count = await NotificationService.count_unread(db, user["user_id"])
         
-        return [NotificationService.to_dict(n) for n in notifications]
+        return {
+            "notifications": [NotificationService.to_dict(n) for n in notifications],
+            "unread_count": unread_count
+        }
 
 
 @router.get("/unread-count")
@@ -52,6 +56,18 @@ async def mark_all_read(user: dict = Depends(get_current_user)):
     async with async_session_maker() as db:
         count = await NotificationService.mark_all_read(db, user["user_id"])
         return {"success": True, "marked_read": count}
+
+
+@router.delete("/{notification_id}")
+async def delete_notification(notification_id: str, user: dict = Depends(get_current_user)):
+    """Delete a specific notification"""
+    async with async_session_maker() as db:
+        success = await NotificationService.delete_by_id(db, notification_id, user["user_id"])
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Notification non trouvée")
+        
+        return {"success": True, "message": "Notification supprimée"}
 
 
 @router.delete("")

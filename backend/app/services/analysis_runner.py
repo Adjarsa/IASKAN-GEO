@@ -153,7 +153,7 @@ async def send_analysis_complete_notification(
     analysis_id: str,
     recommendations: List[Dict[str, Any]] = None
 ):
-    """Send email notification when analysis is complete"""
+    """Send email and in-app notification when analysis is complete"""
     try:
         user_info = await get_user_info(user_id)
         if not user_info:
@@ -165,6 +165,7 @@ async def send_analysis_complete_notification(
         if recommendations:
             top_recs = [rec.get("title", "") for rec in recommendations[:3] if rec.get("title")]
         
+        # Send email notification
         await email_service.send_scan_complete_email(
             email=user_info["email"],
             user_name=user_info["name"],
@@ -175,7 +176,28 @@ async def send_analysis_complete_notification(
             analysis_id=analysis_id,
             recommendations=top_recs
         )
+        
+        # Create in-app notification
+        from ..db.services import NotificationService
+        async with async_session_maker() as db:
+            await NotificationService.create(
+                db,
+                user_id=user_id,
+                type="scan_complete",
+                title=f"Analyse terminée - Score {int(global_score)}/100",
+                message=f"L'analyse GEO de {brand_name} ({project_name}) est terminée avec la note {grade}.",
+                data={
+                    "analysis_id": analysis_id,
+                    "project_name": project_name,
+                    "brand_name": brand_name,
+                    "score": global_score,
+                    "grade": grade
+                }
+            )
+        
         logger.info(f"Analysis complete notification sent to {user_info['email']}")
+    except Exception as e:
+        logger.error(f"Failed to send analysis complete notification: {e}")
     except Exception as e:
         logger.error(f"Failed to send analysis complete notification: {e}")
 

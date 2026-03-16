@@ -456,6 +456,17 @@ class NotificationService:
         return result.rowcount
     
     @staticmethod
+    async def delete_by_id(db: AsyncSession, notification_id: str, user_id: str) -> bool:
+        """Delete a specific notification"""
+        result = await db.execute(
+            delete(Notification).where(
+                and_(Notification.notification_id == notification_id, Notification.user_id == user_id)
+            )
+        )
+        await db.commit()
+        return result.rowcount > 0
+    
+    @staticmethod
     async def count_unread(db: AsyncSession, user_id: str) -> int:
         """Count unread notifications for a user"""
         result = await db.execute(

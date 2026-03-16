@@ -22,7 +22,7 @@ import logging
 import asyncio
 
 from ..db.database import get_db, async_session_maker
-from ..db.services import UserService, SessionService, SubscriptionService, generate_id
+from ..db.services import UserService, SessionService, SubscriptionService, NotificationService, generate_id
 from ..db.models import User, UserSession, Subscription, EmailVerificationToken, PasswordReset, MagicLink
 from ..core.config import (
     BLOCKED_EMAIL_DOMAINS, 
@@ -320,6 +320,17 @@ async def create_session(request: Request, response: Response):
             
             # Send welcome email
             await email_service.send_welcome_email(email, name)
+            
+            # Create welcome notification
+            await NotificationService.create(
+                db,
+                user_id=user_id,
+                type="welcome",
+                title="Bienvenue sur IAskan ! 🎉",
+                message=f"Bonjour {name or 'utilisateur'}, votre compte a été créé avec succès. Commencez par créer votre premier projet pour analyser votre visibilité IA.",
+                data={"action": "create_project"}
+            )
+            
             logger.info(f"New user registered: email={email}")
         
         # Create session
@@ -508,6 +519,17 @@ async def google_callback(request: Request, response: Response, code: str = None
                 
                 # Send welcome email
                 await email_service.send_welcome_email(email, name)
+                
+                # Create welcome notification
+                await NotificationService.create(
+                    db,
+                    user_id=user_id,
+                    type="welcome",
+                    title="Bienvenue sur IAskan ! 🎉",
+                    message=f"Bonjour {name or 'utilisateur'}, votre compte a été créé avec succès. Commencez par créer votre premier projet pour analyser votre visibilité IA.",
+                    data={"action": "create_project"}
+                )
+                
                 logger.info(f"New user registered via Google: email={email}")
             
             # Create session
@@ -627,6 +649,16 @@ async def microsoft_callback(request: Request, response: Response, code: str = N
             user_id = user.user_id
             await SubscriptionService.create_free(db, user_id)
             await email_service.send_welcome_email(email, name)
+            
+            # Create welcome notification
+            await NotificationService.create(
+                db,
+                user_id=user_id,
+                type="welcome",
+                title="Bienvenue sur IAskan ! 🎉",
+                message=f"Bonjour {name or 'utilisateur'}, votre compte a été créé avec succès.",
+                data={"action": "create_project"}
+            )
         
         session_token = f"sess_{uuid.uuid4().hex}"
         await SessionService.create(db, user_id, session_token, expires_days=30)
@@ -728,6 +760,16 @@ async def linkedin_callback(request: Request, response: Response, code: str = No
             user_id = user.user_id
             await SubscriptionService.create_free(db, user_id)
             await email_service.send_welcome_email(email, name)
+            
+            # Create welcome notification
+            await NotificationService.create(
+                db,
+                user_id=user_id,
+                type="welcome",
+                title="Bienvenue sur IAskan ! 🎉",
+                message=f"Bonjour {name or 'utilisateur'}, votre compte a été créé avec succès.",
+                data={"action": "create_project"}
+            )
         
         session_token = f"sess_{uuid.uuid4().hex}"
         await SessionService.create(db, user_id, session_token, expires_days=30)
@@ -817,6 +859,16 @@ async def request_magic_link(request: Request, body: MagicLinkRequest):
             )
             await SubscriptionService.create_free(db, user.user_id)
             is_new_user = True
+            
+            # Create welcome notification
+            await NotificationService.create(
+                db,
+                user_id=user.user_id,
+                type="welcome",
+                title="Bienvenue sur IAskan ! 🎉",
+                message=f"Bonjour, votre compte a été créé avec succès. Commencez par créer votre premier projet.",
+                data={"action": "create_project"}
+            )
         
         magic_token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
