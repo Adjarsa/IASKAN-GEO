@@ -10,6 +10,7 @@ import {
 // Brand Logo component with fallback
 export const BrandLogo = memo(({ brand, size = "md" }) => {
   const [imgError, setImgError] = useState(false);
+  const [imgIndex, setImgIndex] = useState(0);
   
   const sizes = {
     sm: "w-6 h-6 text-xs",
@@ -17,8 +18,15 @@ export const BrandLogo = memo(({ brand, size = "md" }) => {
     lg: "w-10 h-10 text-base"
   };
   
-  // Try to get logo from Clearbit
-  const logoUrl = `https://logo.clearbit.com/${brand?.toLowerCase().replace(/\s+/g, '')}.com`;
+  // Clean brand name for URL
+  const cleanBrand = brand?.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '') || '';
+  
+  // Multiple logo sources to try
+  const logoSources = [
+    `https://www.google.com/s2/favicons?domain=${cleanBrand}.com&sz=64`,
+    `https://icon.horse/icon/${cleanBrand}.com`,
+    `https://api.faviconkit.com/${cleanBrand}.com/64`
+  ];
   
   // Generate initials for fallback
   const initials = brand?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '?';
@@ -33,9 +41,17 @@ export const BrandLogo = memo(({ brand, size = "md" }) => {
     return colors[hash % colors.length];
   };
   
-  if (imgError) {
+  const handleImageError = () => {
+    if (imgIndex < logoSources.length - 1) {
+      setImgIndex(imgIndex + 1);
+    } else {
+      setImgError(true);
+    }
+  };
+  
+  if (imgError || !cleanBrand) {
     return (
-      <div className={`${sizes[size]} ${getColorFromBrand(brand)} rounded-lg flex items-center justify-center text-white font-bold`}>
+      <div className={`${sizes[size]} ${getColorFromBrand(brand)} rounded-lg flex items-center justify-center text-white font-bold shadow-sm`}>
         {initials}
       </div>
     );
@@ -43,10 +59,10 @@ export const BrandLogo = memo(({ brand, size = "md" }) => {
   
   return (
     <img
-      src={logoUrl}
+      src={logoSources[imgIndex]}
       alt={brand}
       className={`${sizes[size]} rounded-lg object-contain bg-white p-0.5 border border-slate-200`}
-      onError={() => setImgError(true)}
+      onError={handleImageError}
     />
   );
 });
