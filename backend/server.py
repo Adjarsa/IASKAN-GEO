@@ -1220,7 +1220,7 @@ async def run_scheduled_scan(schedule: dict):
     """Execute a scheduled scan for a project - PostgreSQL version"""
     from sqlalchemy import select, update
     from app.db.database import async_session_maker
-    from app.db.models import Project, Subscription, Analysis as AnalysisModel, ScanSchedule
+    from app.db.models import Project, Subscription, Analysis as AnalysisModel, ScanSchedule, AnalysisStatus
     from app.db.services import ProjectService
     from app.services.analysis_runner import run_analysis_simplified
     
@@ -1269,7 +1269,10 @@ async def run_scheduled_scan(schedule: dict):
                 analysis_id=analysis_id,
                 project_id=project_id,
                 user_id=user_id,
-                status="pending"
+                status=AnalysisStatus.PENDING,
+                current_phase="query_generation",
+                total_queries=0,
+                queries_processed=0
             )
             session.add(new_analysis)
             
@@ -2640,11 +2643,15 @@ async def start_analysis(request: Request, user: dict = Depends(get_current_user
             
             # Create analysis record
             analysis_id = f"analysis_{uuid.uuid4().hex[:12]}"
+            from app.db.models import AnalysisStatus
             new_analysis = AnalysisModel(
                 analysis_id=analysis_id,
                 project_id=project_id,
                 user_id=user["user_id"],
-                status="pending"
+                status=AnalysisStatus.PENDING,
+                current_phase="query_generation",
+                total_queries=0,
+                queries_processed=0
             )
             db.add(new_analysis)
             await db.commit()

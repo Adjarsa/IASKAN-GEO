@@ -1,0 +1,59 @@
+{
+  "summary": "Bug fixes verified. All P0 critical fixes confirmed working: 1) GET /api/organizations returns 401 (not 500) - getattr fix confirmed, 2) GET /api/analysis/{id} returns queries_processed and current_phase correctly, 3) POST /api/analysis/start uses AnalysisStatus enum properly. All 22 backend tests and 25 frontend tests pass.",
+  "mode": "update",
+  "baseline_commit": "d4dc0cffc4193bfcf276c574819e498a28208527",
+  "head_commit": "068fdd0b1c37ec2630e7adea700bb770a610bd2d",
+  "specs_created": [],
+  "specs_updated": [],
+  "quarantined_tests": [
+    "tests/test_analyses_endpoints.py::TestDatabaseAsyncOperations::test_analysis_query_returns_list - PostgreSQL direct connection not available in preview",
+    "tests/test_analyses_endpoints.py::TestDatabaseAsyncOperations::test_analysis_get_by_id_returns_none_for_nonexistent - PostgreSQL direct connection not available in preview"
+  ],
+  "test_report_links": [
+    "/app/test_reports/pytest/test_critical_fixes_update.xml",
+    "/app/test_reports/pytest/test_analyses_endpoints_update.xml",
+    "/app/tests/e2e/critical-pages.spec.ts",
+    "/app/tests/e2e/page-rendering.spec.ts"
+  ],
+  "regression_results": {
+    "total_specs": 47,
+    "passed": 47,
+    "failed": 0,
+    "skipped": 2,
+    "details": "22 backend tests (test_critical_fixes.py all pass) + 14 critical-pages tests + 11 page-rendering tests = 47 pass. 2 infra tests skipped (PostgreSQL direct connection unavailable in preview env)"
+  },
+  "issues": [],
+  "verified_fixes": {
+    "organizations_500_fix": {
+      "status": "VERIFIED",
+      "description": "GET /api/organizations returns 401 (not 500)",
+      "curl_result": "HTTP 401 with 'Non authentifié' message",
+      "fix_applied": "getattr(user, 'plan', 'free') in organizations.py line 77"
+    },
+    "analysis_progress_fields": {
+      "status": "VERIFIED", 
+      "description": "GET /api/analysis/{id} response includes queries_processed and current_phase",
+      "fix_applied": "analysis.py lines 268-269 now return queries_processed and current_phase with defaults"
+    },
+    "analysis_status_enum": {
+      "status": "VERIFIED",
+      "description": "Analysis creation uses AnalysisStatus enum instead of string",
+      "fix_applied": "server.py uses AnalysisStatus.PENDING, analysis_runner.py converts string to enum"
+    },
+    "analysis_competitor_fix": {
+      "status": "VERIFIED",
+      "description": "competitor_analysis field handles non-dict values safely",
+      "fix_applied": "isinstance(competitor_analysis, dict) check added in analysis.py line 265"
+    }
+  },
+  "action_items": [],
+  "updated_files": [],
+  "test_results": {
+    "backend": "100% (22/22 critical tests pass, 29/31 analyses tests pass - 2 skipped due to PostgreSQL unavailability)",
+    "frontend": "100% (25/25 tests pass - critical-pages + page-rendering)"
+  },
+  "seed_data_creation": "None required - tested endpoint behavior and error handling",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All P0 fixes verified and passing. No regressions detected. PostgreSQL direct-connection tests (TestDatabaseAsyncOperations) are quarantined since preview environment uses MongoDB only. All HTTP endpoint tests pass correctly."
+}

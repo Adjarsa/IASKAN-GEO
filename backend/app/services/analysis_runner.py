@@ -68,6 +68,8 @@ QUERY_TEMPLATES = {
 
 async def update_analysis(analysis_id: str, updates: dict):
     """Update analysis record in PostgreSQL with retry logic"""
+    from ..db.models import AnalysisStatus
+    
     max_retries = 3
     retry_delay = 1
     
@@ -85,15 +87,25 @@ async def update_analysis(analysis_id: str, updates: dict):
                 
                 valid_updates = {k: v for k, v in updates.items() if v is not None and k in existing_columns}
                 
+                # Convert status string to enum if needed
+                if 'status' in valid_updates and isinstance(valid_updates['status'], str):
+                    status_map = {
+                        'pending': AnalysisStatus.PENDING,
+                        'running': AnalysisStatus.RUNNING,
+                        'completed': AnalysisStatus.COMPLETED,
+                        'failed': AnalysisStatus.FAILED
+                    }
+                    valid_updates['status'] = status_map.get(valid_updates['status'], AnalysisStatus.PENDING)
+                
                 if valid_updates:
-                    logger.info(f"[{analysis_id}] Updating: {list(valid_updates.keys())} (attempt {attempt + 1})")
+                    logger.info(f"[{analysis_id}] Updating: {list(valid_updates.keys())} = {[(k, v) for k, v in valid_updates.items() if k in ('queries_processed', 'current_phase', 'status')]} (attempt {attempt + 1})")
                     result = await db.execute(
                         update(Analysis).where(
                             Analysis.analysis_id == analysis_id
                         ).values(**valid_updates)
                     )
                     await db.commit()
-                    logger.info(f"[{analysis_id}] Update committed successfully")
+                    logger.info(f"[{analysis_id}] Update committed - rows affected: {result.rowcount}")
                     return True
         except Exception as e:
             logger.error(f"[{analysis_id}] Update error (attempt {attempt + 1}/{max_retries}): {e}")

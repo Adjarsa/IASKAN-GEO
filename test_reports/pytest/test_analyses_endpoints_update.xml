@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="31" time="4.978" timestamp="2026-03-16T14:47:04.521452+00:00" hostname="agent-env-7b0009d5-5622-4a9f-9f0d-6e2bb5b217dc"><testcase classname="tests.test_analyses_endpoints.TestAnalysesRouterImports" name="test_analyses_router_import" time="1.973" /><testcase classname="tests.test_analyses_endpoints.TestAnalysesRouterImports" name="test_analysis_router_import" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysesRouterImports" name="test_analysis_service_import" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysesRouterImports" name="test_project_service_import" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysesEndpointWithoutAuth" name="test_analyses_list_requires_auth" time="0.171" /><testcase classname="tests.test_analyses_endpoints.TestAnalysesEndpointWithoutAuth" name="test_analyses_list_with_project_requires_auth" time="0.152" /><testcase classname="tests.test_analyses_endpoints.TestAnalysesEndpointWithoutAuth" name="test_analyses_history_requires_auth" time="0.121" /><testcase classname="tests.test_analyses_endpoints.TestAnalysesEndpointWithoutAuth" name="test_analysis_detail_requires_auth" time="0.114" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisEndpointWithoutAuth" name="test_analysis_start_requires_auth" time="0.150" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisEndpointWithoutAuth" name="test_analysis_status_requires_auth" time="0.118" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisEndpointWithoutAuth" name="test_analysis_results_requires_auth" time="0.182" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisEndpointWithoutAuth" name="test_analysis_cancel_requires_auth" time="0.129" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisEndpointWithoutAuth" name="test_analysis_quota_requires_auth" time="0.114" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisServiceMethods" name="test_analysis_service_get_by_id_async" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisServiceMethods" name="test_analysis_service_get_by_project_async" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisServiceMethods" name="test_analysis_service_get_by_user_async" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisServiceMethods" name="test_analysis_service_create_async" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisServiceMethods" name="test_analysis_service_update_async" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisServiceMethods" name="test_analysis_service_to_dict_static" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisModelsImport" name="test_analysis_model_import" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisModelsImport" name="test_analysis_status_enum_import" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestAnalysisModelsImport" name="test_analysis_model_has_required_fields" time="0.000" /><testcase classname="tests.test_analyses_endpoints.TestRouterEndpointsRegistration" name="test_analyses_routes_available" time="0.163" /><testcase classname="tests.test_analyses_endpoints.TestRouterEndpointsRegistration" name="test_analyses_history_route_available" time="0.178" /><testcase classname="tests.test_analyses_endpoints.TestRouterEndpointsRegistration" name="test_analysis_detail_route_available" time="0.111" /><testcase classname="tests.test_analyses_endpoints.TestRouterEndpointsRegistration" name="test_analysis_start_route_available" time="0.115" /><testcase classname="tests.test_analyses_endpoints.TestRouterEndpointsRegistration" name="test_analysis_quota_route_available" time="0.141" /><testcase classname="tests.test_analyses_endpoints.TestDatabaseAsyncOperations" name="test_session_maker_context_manager" time="0.001" /><testcase classname="tests.test_analyses_endpoints.TestDatabaseAsyncOperations" name="test_analysis_query_returns_list" time="0.004"><failure message="OSError: Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 5432), [Errno 99] Cannot assign requested address">tests/test_analyses_endpoints.py:246: in test_analysis_query_returns_list
+    result = asyncio.run(query_analyses())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_analyses_endpoints.py:243: in query_analyses
+    analyses = await AnalysisService.get_by_user(db, "non_existent_user_xyz")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/db/services.py:316: in get_by_user
+    result = await db.execute(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:449: in execute
+    result = await greenlet_spawn(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2351: in execute
+    return self._execute_internal(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2239: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2108: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:2: in _connection_for_bind
+    ???
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3293: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3317: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:448: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1272: in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:712: in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:306: in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:389: in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:674: in __init__
+    self.__connect()
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:900: in __connect
+    with util.safe_reraise():
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:121: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:896: in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/create.py:667: in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:630: in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:955: in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:2443: in connect
+    return await connect_utils._connect(
+/root/.venv/lib/python3.11/site-packages/asyncpg/connect_utils.py:1249: in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+/root/.venv/lib/python3.11/site-packages/asyncpg/connect_utils.py:1218: in _connect
+    conn = await _connect_addr(
+/root/.venv/lib/python3.11/site-packages/asyncpg/connect_utils.py:1054: in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/asyncpg/connect_utils.py:1099: in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/asyncpg/connect_utils.py:969: in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+/usr/local/lib/python3.11/asyncio/base_events.py:1094: in create_connection
+    raise OSError('Multiple exceptions: {}'.format(
+E   OSError: Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 5432), [Errno 99] Cannot assign requested address</failure></testcase><testcase classname="tests.test_analyses_endpoints.TestDatabaseAsyncOperations" name="test_analysis_get_by_id_returns_none_for_nonexistent" time="0.003"><failure message="OSError: Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 5432), [Errno 99] Cannot assign requested address">tests/test_analyses_endpoints.py:259: in test_analysis_get_by_id_returns_none_for_nonexistent
+    result = asyncio.run(query_analysis())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_analyses_endpoints.py:256: in query_analysis
+    analysis = await AnalysisService.get_by_id(db, "non_existent_analysis_xyz")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/db/services.py:299: in get_by_id
+    result = await db.execute(select(Analysis).where(Analysis.analysis_id == analysis_id))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:449: in execute
+    result = await greenlet_spawn(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2351: in execute
+    return self._execute_internal(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2239: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2108: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:2: in _connection_for_bind
+    ???
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3293: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3317: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:448: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1272: in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:712: in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/impl.py:306: in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:389: in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:674: in __init__
+    self.__connect()
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:900: in __connect
+    with util.safe_reraise():
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:121: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:896: in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/create.py:667: in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:630: in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:955: in connect
+    await_only(creator_fn(*arg, **kw)),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:2443: in connect
+    return await connect_utils._connect(
+/root/.venv/lib/python3.11/site-packages/asyncpg/connect_utils.py:1249: in _connect
+    raise last_error or exceptions.TargetServerAttributeNotMatched(
+/root/.venv/lib/python3.11/site-packages/asyncpg/connect_utils.py:1218: in _connect
+    conn = await _connect_addr(
+/root/.venv/lib/python3.11/site-packages/asyncpg/connect_utils.py:1054: in _connect_addr
+    return await __connect_addr(params, True, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/asyncpg/connect_utils.py:1099: in __connect_addr
+    tr, pr = await connector
+             ^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/asyncpg/connect_utils.py:969: in _create_ssl_connection
+    tr, pr = await loop.create_connection(
+/usr/local/lib/python3.11/asyncio/base_events.py:1094: in create_connection
+    raise OSError('Multiple exceptions: {}'.format(
+E   OSError: Multiple exceptions: [Errno 111] Connect call failed ('127.0.0.1', 5432), [Errno 99] Cannot assign requested address</failure></testcase><testcase classname="tests.test_analyses_endpoints.TestHealthEndpoint" name="test_health_endpoint_returns_healthy" time="0.104" /></testsuite></testsuites>
