@@ -698,6 +698,38 @@ Nouveau router `/api/structured-data/*` pour générer du markup Schema.org JSON
 
 ### Sprint C - Algorithme (À faire)
 - [ ] Upgrader détection marque avec embeddings
+
+### 2026-04-05 - Sprint E : UX Refonte ✅
+
+#### Navigation groupée (11 → 4 sections)
+
+| Section | Icône | Pages incluses |
+|---------|-------|----------------|
+| **Audit GEO** | Search | Vue d'ensemble, Lancer une analyse, Audit de contenu |
+| **Concurrence** | Swords | Visibilité comparative, Benchmark concurrents, Évolution des scores |
+| **Actions GEO** | Zap | Optimiseur de contenu (Pro), Générateur IA, Recommandations |
+| **Suivi** | Bell | Organisation, Paramètres |
+
+#### Onboarding simplifié (6 → 3 étapes)
+
+| Étape | Titre | Action |
+|-------|-------|--------|
+| 1 | Bienvenue | Présentation valeur (30s) |
+| 2 | Configurez votre marque | → Créer projet |
+| 3 | Lancez votre analyse | → Page analyse |
+
+#### Fichiers créés/modifiés
+- `/app/frontend/src/components/layout/DashboardLayout.jsx` - Navigation groupée avec sections collapsibles
+- `/app/frontend/src/components/QuickOnboardingModal.jsx` - Nouvel onboarding 3 étapes
+- `/app/frontend/src/pages/ProjectSelectorPage.jsx` - Utilise QuickOnboardingModal
+
+#### Bug corrigé
+- `navItems is not defined` → Remplacé par `navSections.flatMap(s => s.items)` ligne 351
+
+#### Tests
+- 36 tests frontend passent (Sprint E + critical-pages + sprint-a)
+- 40 tests backend Sprint D passent
+
 - [ ] Recommandations contextualisées par LLM
 - [ ] Génération dynamique de queries par LLM
 
@@ -707,7 +739,9 @@ Nouveau router `/api/structured-data/*` pour générer du markup Schema.org JSON
 - [x] Source Seeding Strategy
 - [x] GEO Content Engine (amélioration avec score réel)
 
-### Sprint E - UX Refonte (À faire)
-- [ ] Refondre navigation en 4 écrans
+### Sprint E - UX Refonte ✅ TERMINÉ
+- [x] Refondre navigation 11 écrans → 4 sections (Audit GEO, Concurrence, Actions GEO, Suivi)
+- [x] Onboarding en 3 clics (QuickOnboardingModal)
+- [ ] Intégrer React Query + Zustand (optionnel, pour une future itération)
 - [ ] Onboarding en 3 clics
 - [ ] Intégrer React Query + Zustand

@@ -348,7 +348,7 @@ const DashboardLayout = ({ children }) => {
             {/* Breadcrumb / Title */}
             <div className="hidden lg:flex items-center gap-2">
               <h2 className="text-lg font-semibold text-slate-900">
-                {navItems.find(item => isActive(item.path))?.label || "Dashboard"}
+                {navSections.flatMap(s => s.items).find(item => isActive(item.path))?.label || "Dashboard"}
               </h2>
               {currentProject && (
                 <>
