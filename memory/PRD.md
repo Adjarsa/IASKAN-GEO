@@ -589,6 +589,64 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 
 ## ROADMAP
 
+
+### 2026-04-05 - Sprint C : Amélioration des Algorithmes ✅
+
+#### Détection de marque améliorée
+
+**Avant (basique):** `brand_mentioned = brand in response`
+
+**Après (avancé):** `_detect_brand_advanced()` génère et recherche des variantes:
+
+| Type de variante | Exemple | Description |
+|------------------|---------|-------------|
+| `exact` | Salesforce | Nom exact |
+| `lowercase` | salesforce | Minuscules |
+| `uppercase` | SALESFORCE | Majuscules |
+| `titlecase` | Salesforce | Première lettre majuscule |
+| `no_space` | hubspot | Sans espaces (Hub Spot) |
+| `camelcase` | HubSpot | CamelCase combiné |
+| `acronym` | SF, CRM | Première lettre de chaque mot |
+| `typo_double` | gogle | Lettres doubles manquantes (google) |
+| `no_suffix` | iaskan | Sans .com, .fr, .ai |
+| `phonetic` | fone | Substitutions ph/f, c/k |
+
+#### Fichiers modifiés
+- `/app/backend/app/services/llm_connector.py` - Méthodes `_detect_brand_advanced()` et `_generate_brand_variants()`
+
+#### Tests
+- 101/101 tests passent (45 Sprint C + 34 Sprint B + 22 Sprint A)
+- Tests créés: `test_sprint_c_brand_detection.py`
+
+
+### 2026-04-05 - Sprint D : GEO Action Engine (Début) ✅
+
+#### Structured Data Generator implémenté
+
+Nouveau router `/api/structured-data/*` pour générer du markup Schema.org JSON-LD :
+
+| Schema | Endpoint | Usage |
+|--------|----------|-------|
+| Organization | `/api/structured-data/organization` | Pages À propos, Contact |
+| Product | `/api/structured-data/product` | Fiches produit |
+| FAQPage | `/api/structured-data/faq` | Sections FAQ |
+| Article | `/api/structured-data/article` | Articles de blog |
+| HowTo | `/api/structured-data/howto` | Tutoriels, guides |
+| LocalBusiness | `/api/structured-data/local-business` | Entreprises locales |
+
+#### Fichiers créés
+- `/app/backend/app/routers/structured_data.py`
+
+#### Exemple de sortie
+```json
+{
+  "schema": { "@context": "https://schema.org", "@type": "FAQPage", ... },
+  "json_ld": "<script type=\"application/ld+json\">...</script>",
+  "type": "FAQPage",
+  "validation_url": "https://validator.schema.org/"
+}
+```
+
 ### Sprint B - Architecture ✅ TERMINÉ
 - [x] Migrer routes de server.py vers /routers (4 nouveaux routers créés)
 - [x] Corriger formule geo_score factice (calculate_real_geo_score)
@@ -601,9 +659,9 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - [ ] Recommandations contextualisées par LLM
 - [ ] Génération dynamique de queries par LLM
 
-### Sprint D - GEO Action Engine (À faire)
-- [ ] GEO Content Engine
-- [ ] Structured Data Generator
+### Sprint D - GEO Action Engine (En cours)
+- [x] Structured Data Generator (Schema.org)
+- [ ] GEO Content Engine (amélioration)
 - [ ] Monitoring continu + Alertes
 - [ ] Source Seeding Strategy
 
