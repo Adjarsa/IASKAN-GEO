@@ -4535,12 +4535,16 @@ from app.routers import contact as contact_router
 
 # Sprint D: GEO Action Engine
 from app.routers import structured_data as structured_data_router
+from app.routers import monitoring as monitoring_router
+from app.routers import source_strategy as source_strategy_router
 
 app.include_router(visibility_router.router)    # Visibility tracking
 app.include_router(content_audit_router.router) # Content citability audit
 app.include_router(content_router.router)       # GEO content generation (with REAL geo_score)
 app.include_router(contact_router.router)       # Contact form
 app.include_router(structured_data_router.router) # Schema.org generator (Sprint D)
+app.include_router(monitoring_router.router)      # Monitoring & Alerts (Sprint D)
+app.include_router(source_strategy_router.router) # Source Seeding Strategy (Sprint D)
 
 # Include legacy router (server.py routes - being deprecated)
 app.include_router(api_router)
