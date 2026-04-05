@@ -24,6 +24,7 @@ import {
   X,
   CreditCard,
   ChevronDown,
+  ChevronRight,
   ArrowLeftRight,
   Users,
   TrendingUp,
@@ -34,7 +35,11 @@ import {
   Building2,
   Loader2,
   CheckCircle2,
-  Shield
+  Shield,
+  Search,
+  Swords,
+  Zap,
+  Bell
 } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
@@ -42,6 +47,12 @@ const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    audit: true,
+    concurrence: false,
+    actions: false,
+    suivi: false
+  });
   
   // Check for pending payment and redirect if needed
   usePendingPaymentCheck();
@@ -56,18 +67,59 @@ const DashboardLayout = ({ children }) => {
     navigate("/projects");
   };
 
-  const navItems = [
-    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/analysis", label: "Analyses", icon: BarChart3 },
-    { path: "/visibility", label: "Visibilite", icon: Eye },
-    { path: "/content-audit", label: "Audit Contenu", icon: FileText },
-    { path: "/article-optimizer", label: "Optimiseur GEO", icon: Sparkles, highlight: true },
-    { path: "/content-generator", label: "Generateur", icon: Wand2 },
-    { path: "/competitors", label: "Benchmark", icon: Users },
-    { path: "/history", label: "Evolution", icon: TrendingUp },
-    { path: "/recommendations", label: "Recommandations", icon: Target },
-    { path: "/organizations", label: "Organisation", icon: Building2 },
-    { path: "/settings", label: "Parametres", icon: Settings },
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  // New grouped navigation structure (Sprint E: 11 → 4 sections)
+  const navSections = [
+    {
+      id: "audit",
+      label: "Audit GEO",
+      icon: Search,
+      description: "Analyser votre visibilité",
+      items: [
+        { path: "/dashboard", label: "Vue d'ensemble", icon: LayoutDashboard },
+        { path: "/analysis", label: "Lancer une analyse", icon: BarChart3 },
+        { path: "/content-audit", label: "Audit de contenu", icon: FileText },
+      ]
+    },
+    {
+      id: "concurrence",
+      label: "Concurrence",
+      icon: Swords,
+      description: "Benchmark et positionnement",
+      items: [
+        { path: "/visibility", label: "Visibilité comparative", icon: Eye },
+        { path: "/competitors", label: "Benchmark concurrents", icon: Users },
+        { path: "/history", label: "Évolution des scores", icon: TrendingUp },
+      ]
+    },
+    {
+      id: "actions",
+      label: "Actions GEO",
+      icon: Zap,
+      description: "Optimiser votre contenu",
+      highlight: true,
+      items: [
+        { path: "/article-optimizer", label: "Optimiseur de contenu", icon: Sparkles, highlight: true },
+        { path: "/content-generator", label: "Générateur IA", icon: Wand2 },
+        { path: "/recommendations", label: "Recommandations", icon: Target },
+      ]
+    },
+    {
+      id: "suivi",
+      label: "Suivi",
+      icon: Bell,
+      description: "Alertes et paramètres",
+      items: [
+        { path: "/organizations", label: "Organisation", icon: Building2 },
+        { path: "/settings", label: "Paramètres", icon: Settings },
+      ]
+    }
   ];
 
   const isActive = (path) => {
@@ -75,6 +127,10 @@ const DashboardLayout = ({ children }) => {
       return location.pathname === "/dashboard";
     }
     return location.pathname.startsWith(path);
+  };
+
+  const isSectionActive = (section) => {
+    return section.items.some(item => isActive(item.path));
   };
 
   return (
@@ -183,39 +239,72 @@ const DashboardLayout = ({ children }) => {
             </div>
           )}
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 space-y-1 overflow-y-auto min-h-0">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive(item.path)
-                    ? 'nav-active bg-violet-50 text-violet-700 font-medium'
-                    : item.highlight 
-                      ? 'text-violet-600 hover:text-violet-700 hover:bg-violet-50 bg-violet-50/50'
-                      : 'text-slate-600 hover:text-violet-700 hover:bg-slate-50'
-                }`}
-                data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <item.icon className={`w-5 h-5 ${item.highlight ? 'text-violet-500' : ''}`} />
-                <span>{item.label}</span>
-                {item.highlight && (
-                  <span className="ml-auto text-xs px-1.5 py-0.5 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full">New</span>
+          {/* Navigation - Sprint E: Grouped into 4 sections */}
+          <nav className="flex-1 px-4 space-y-2 overflow-y-auto min-h-0 pb-4">
+            {navSections.map((section) => (
+              <div key={section.id} className="space-y-1">
+                {/* Section Header */}
+                <button
+                  onClick={() => toggleSection(section.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all ${
+                    isSectionActive(section) 
+                      ? 'bg-violet-100 text-violet-700' 
+                      : section.highlight 
+                        ? 'bg-gradient-to-r from-violet-50 to-cyan-50 text-violet-600 hover:from-violet-100 hover:to-cyan-100'
+                        : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                  data-testid={`nav-section-${section.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <section.icon className={`w-5 h-5 ${section.highlight ? 'text-violet-500' : ''}`} />
+                    <div className="text-left">
+                      <span className="font-medium">{section.label}</span>
+                      <p className="text-xs opacity-70">{section.description}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className={`w-4 h-4 transition-transform ${expandedSections[section.id] ? 'rotate-90' : ''}`} />
+                </button>
+
+                {/* Section Items */}
+                {expandedSections[section.id] && (
+                  <div className="ml-3 pl-3 border-l-2 border-slate-200 space-y-1">
+                    {section.items.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm ${
+                          isActive(item.path)
+                            ? 'bg-violet-50 text-violet-700 font-medium'
+                            : item.highlight 
+                              ? 'text-violet-600 hover:text-violet-700 hover:bg-violet-50'
+                              : 'text-slate-600 hover:text-violet-700 hover:bg-slate-50'
+                        }`}
+                        data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <item.icon className={`w-4 h-4 ${item.highlight ? 'text-violet-500' : ''}`} />
+                        <span>{item.label}</span>
+                        {item.highlight && (
+                          <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-gradient-to-r from-violet-500 to-cyan-500 text-white rounded-full">Pro</span>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
                 )}
-              </Link>
+              </div>
             ))}
             
             {/* Change Project Link */}
-            <button
-              onClick={handleSwitchProject}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-600 hover:text-violet-700 hover:bg-slate-50 w-full"
-              data-testid="nav-projects"
-            >
-              <FolderKanban className="w-5 h-5" />
-              <span>Changer de projet</span>
-            </button>
+            <div className="pt-2 border-t border-slate-100">
+              <button
+                onClick={handleSwitchProject}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-slate-600 hover:text-violet-700 hover:bg-slate-50 w-full text-sm"
+                data-testid="nav-projects"
+              >
+                <FolderKanban className="w-4 h-4" />
+                <span>Changer de projet</span>
+              </button>
+            </div>
           </nav>
 
           {/* Subscription Info */}

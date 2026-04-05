@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Logo from "@/components/Logo";
-import OnboardingModal from "@/components/OnboardingModal";
+import QuickOnboardingModal from "@/components/QuickOnboardingModal"; // Sprint E: Simplified 3-step onboarding
 import { usePendingPaymentCheck } from "@/components/PaymentGuard";
 import {
   Dialog,
@@ -435,8 +435,8 @@ const ProjectSelectorPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Onboarding Modal */}
-      <OnboardingModal
+      {/* Quick Onboarding Modal - Sprint E: Simplified 3-step process */}
+      <QuickOnboardingModal
         isOpen={showOnboarding}
         onClose={() => setShowOnboarding(false)}
         onComplete={() => {
