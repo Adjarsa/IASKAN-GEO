@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 import logging
 from pathlib import Path
@@ -22,6 +25,9 @@ from authlib.integrations.starlette_client import OAuth
 from app.services.llm_abstraction import LlmChat, UserMessage
 from app.services.stripe_abstraction import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 import resend
+
+# Rate limiting configuration
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 # Import new modular routers
 from app.routers import (
@@ -81,6 +87,10 @@ if RESEND_API_KEY:
 
 # Create the main app
 app = FastAPI(title="IAskan API", version="1.0.0")
+
+# Configure rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Add session middleware for OAuth state management
 # Use a fixed secret key from environment to persist sessions across restarts

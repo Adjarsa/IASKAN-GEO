@@ -54,85 +54,25 @@ const ContentAuditPage = () => {
       setAuditData(response.data);
     } catch (error) {
       console.error("Content audit error:", error);
-      // Use mock data if endpoint not yet implemented
-      setAuditData(getMockAuditData());
+      // Show error state instead of mock data
+      toast.error("Impossible de charger l'audit de contenu. Veuillez réessayer.");
+      setAuditData(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const getMockAuditData = () => {
-    return {
-      global_citability_score: 58,
-      pages_analyzed: 12,
-      structure_score: 65,
-      content_gaps: 8,
-      schema_coverage: 42,
-      pages: [
-        {
-          url: "/produit",
-          title: "Page Produit",
-          citability_score: 72,
-          structure_score: 80,
-          has_schema: true,
-          content_length: 2500,
-          headings_count: 12,
-          lists_count: 5,
-          issues: ["Manque de FAQ", "Pas de comparatif"],
-          strengths: ["Bonne structure H1-H6", "Donnees structurees presentes"]
-        },
-        {
-          url: "/tarifs",
-          title: "Page Tarifs",
-          citability_score: 45,
-          structure_score: 55,
-          has_schema: false,
-          content_length: 800,
-          headings_count: 4,
-          lists_count: 2,
-          issues: ["Contenu trop court", "Pas de schema.org", "Structure faible"],
-          strengths: ["Prix clairs"]
-        },
-        {
-          url: "/blog/guide-complet",
-          title: "Guide Complet",
-          citability_score: 85,
-          structure_score: 90,
-          has_schema: true,
-          content_length: 5000,
-          headings_count: 25,
-          lists_count: 12,
-          issues: ["Mise a jour necessaire"],
-          strengths: ["Contenu exhaustif", "Tres bien structure", "Schema Article"]
-        },
-        {
-          url: "/a-propos",
-          title: "A propos",
-          citability_score: 38,
-          structure_score: 40,
-          has_schema: false,
-          content_length: 400,
-          headings_count: 2,
-          lists_count: 0,
-          issues: ["Contenu insuffisant", "Pas de donnees structurees", "Pas d'elements de confiance"],
-          strengths: []
-        }
-      ],
-      gaps: [
-        { topic: "Comparatif avec concurrents", priority: "high", potential_impact: 25 },
-        { topic: "FAQ detaillee", priority: "high", potential_impact: 20 },
-        { topic: "Temoignages clients", priority: "medium", potential_impact: 15 },
-        { topic: "Cas d'utilisation", priority: "medium", potential_impact: 15 },
-        { topic: "Guide de demarrage", priority: "low", potential_impact: 10 }
-      ],
-      structure_recommendations: [
-        { type: "schema", title: "Ajouter Schema.org Product", pages: 3 },
-        { type: "faq", title: "Ajouter section FAQ", pages: 5 },
-        { type: "heading", title: "Ameliorer structure des titres", pages: 2 },
-        { type: "list", title: "Ajouter listes a puces", pages: 4 }
-      ]
-    };
-  };
+  // Empty state when no data
+  const getEmptyAuditData = () => ({
+    global_citability_score: 0,
+    pages_analyzed: 0,
+    structure_score: 0,
+    content_gaps: 0,
+    schema_coverage: 0,
+    pages: [],
+    gaps: [],
+    structure_recommendations: []
+  });
 
   const getScoreColor = (score) => {
     if (score >= 70) return "text-emerald-600";
@@ -165,7 +105,42 @@ const ContentAuditPage = () => {
     );
   }
 
-  const data = auditData || getMockAuditData();
+  const data = auditData || getEmptyAuditData();
+
+  // Show empty state if no data
+  if (!auditData || (data.pages.length === 0 && !loading)) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-8" data-testid="content-audit-page">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <FileText className="w-8 h-8 text-violet-600" />
+                <h1 className="text-3xl font-bold text-slate-900">Audit de Contenu</h1>
+              </div>
+              <p className="text-slate-600 mt-1">
+                Analysez la citabilite de vos pages par les moteurs IA generatifs
+              </p>
+            </div>
+          </div>
+          <Card className="p-12 text-center bg-slate-50 border-slate-200">
+            <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">Aucun audit disponible</h3>
+            <p className="text-slate-600 mb-6 max-w-md mx-auto">
+              Lancez un audit de contenu pour analyser la citabilite de vos pages web par les moteurs IA.
+            </p>
+            <Button 
+              onClick={fetchAuditData}
+              className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Lancer l'audit
+            </Button>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

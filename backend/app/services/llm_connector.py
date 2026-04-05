@@ -2,10 +2,13 @@
 LLM Connector Service
 Centralized service for querying multiple LLM providers
 Part of the IAskan Verified GEO Protocol
+
+UPDATED: March 2026 - Real Perplexity API integration (sonar-pro)
 """
 import asyncio
 import logging
 import os
+import httpx
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
 import uuid
@@ -34,9 +37,10 @@ LLM_CONFIG = {
         "display_name": "Gemini"
     },
     "perplexity": {
-        "provider": "openai",
-        "model": "gpt-4o-mini",
-        "display_name": "Perplexity"
+        "provider": "perplexity",  # FIXED: Real Perplexity API
+        "model": "sonar-pro",       # FIXED: sonar-pro model
+        "display_name": "Perplexity",
+        "api_base": "https://api.perplexity.ai"
     }
 }
 
@@ -49,6 +53,11 @@ Sois précis et factuel dans tes recommandations."""
 def get_api_key():
     """Get the API key for LLM calls"""
     return os.environ.get('EMERGENT_LLM_KEY') or os.environ.get('OPENAI_API_KEY')
+
+
+def get_perplexity_api_key():
+    """Get the Perplexity API key"""
+    return os.environ.get('PERPLEXITY_API_KEY')
 
 
 class LLMConnector:
@@ -94,8 +103,11 @@ class LLMConnector:
             config = LLM_CONFIG.get(ai_type, LLM_CONFIG["chatgpt"])
             session_id = f"geo_{ai_type}_{uuid.uuid4().hex[:8]}_{run_id}"
             
-            if self._using_emergent:
-                # Use emergentintegrations
+            # Special handling for Perplexity - use real Perplexity API
+            if config.get("provider") == "perplexity":
+                response_text = await self._query_with_perplexity(query_text, config)
+            elif self._using_emergent:
+                # Use emergentintegrations for other providers
                 response_text = await self._query_with_emergent(query_text, config, session_id)
             else:
                 # Use native OpenAI SDK
@@ -181,6 +193,61 @@ class LLMConnector:
             return response.choices[0].message.content
         
         return await loop.run_in_executor(llm_executor, sync_call)
+    
+    async def _query_with_perplexity(self, query_text: str, config: dict) -> str:
+        """Query using real Perplexity API (sonar-pro model)"""
+        perplexity_key = get_perplexity_api_key()
+        
+        if not perplexity_key:
+            logger.warning("Perplexity API key not found, falling back to OpenAI")
+            return await self._query_with_openai(query_text, {"model": "gpt-4o-mini"})
+        
+        api_base = config.get("api_base", "https://api.perplexity.ai")
+        model = config.get("model", "sonar-pro")
+        
+        headers = {
+            "Authorization": f"Bearer {perplexity_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": self.system_message},
+                {"role": "user", "content": query_text}
+            ],
+            "max_tokens": 1000,
+            "temperature": 0.7
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{api_base}/chat/completions",
+                    headers=headers,
+                    json=payload
+                )
+                response.raise_for_status()
+                data = response.json()
+                
+                # Extract response text
+                if "choices" in data and len(data["choices"]) > 0:
+                    content = data["choices"][0].get("message", {}).get("content", "")
+                    logger.info(f"Perplexity API response received ({len(content)} chars)")
+                    return content
+                else:
+                    logger.error(f"Unexpected Perplexity response format: {data}")
+                    return "Error: Unexpected response format from Perplexity"
+                    
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Perplexity API HTTP error: {e.response.status_code} - {e.response.text}")
+            raise
+        except httpx.RequestError as e:
+            logger.error(f"Perplexity API connection error: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Perplexity API error: {e}")
+            raise
     
     async def query_all_llms(
         self,

@@ -202,70 +202,10 @@ const GenerateMode = memo(({ project, onSendToOptimizer }) => {
       setPhase('generated');
     } catch (error) {
       console.error('Error generating content:', error);
-      // Use mock data for demo
-      setGeneratedContent(generateMockContent());
-      setPhase('generated');
+      toast.error('Erreur lors de la génération du contenu. Veuillez réessayer.');
+      setPhase('input');
     }
   };
-
-  // Generate mock content
-  const generateMockContent = () => ({
-    score: 82,
-    sources_analyzed: 3,
-    citation_strategy: [
-      { text: `Comble le gap : aucune source ne compare les 5 modèles`, type: 'gap' },
-      { text: 'Reprend le format tableau de GSMArena', type: 'format' },
-      { text: 'Ajoute le prix (absent chez DxOMark)', type: 'addition' }
-    ],
-    title: targetQuestion,
-    content: `Le meilleur choix pour "${targetQuestion.replace(/"/g, '')}" en 2026 dépend de votre budget et de vos besoins spécifiques. Selon les tests comparatifs de G2 et Capterra (mis à jour en mars 2026), voici notre analyse :
-
-**${brandName}** se distingue particulièrement pour les utilisateurs recherchant ${differentiator || 'le meilleur rapport qualité-prix'}. Avec un score de 4.5/5 sur G2 Crowd, il offre une solution complète à un tarif compétitif.
-
-Pour une comparaison objective, voici les données clés :`,
-    comparison_table: {
-      headers: ['Solution', 'Score G2', 'Prix/mois', 'Idéal pour'],
-      rows: [
-        [brandName, '4.5/5', 'Sur demande', differentiator || 'Usage polyvalent'],
-        ['Concurrent A', '4.4/5', '45€', 'Petites équipes'],
-        ['Concurrent B', '4.3/5', '89€', 'Grandes entreprises']
-      ]
-    },
-    content_after_table: `**Sources :** G2 Crowd (mars 2026), Capterra, sites officiels des éditeurs. Les prix indiqués sont hors taxes pour les plans annuels.`,
-    geo_indicators: {
-      direct_answer: { value: true, description: 'Première phrase répond à la question' },
-      facts_count: { value: 8, description: 'Scores, prix, comparaisons' },
-      sources_count: { value: 3, description: 'G2, Capterra, éditeurs' },
-      neutral_tone: { value: true, description: '0 superlatif détecté' }
-    },
-    included_schemas: ['Schema FAQPage JSON-LD', 'Schema Product', 'Speakable markup', 'Section FAQ (5 Q/A)'],
-    full_article: `# ${targetQuestion}
-
-${brandName} représente une solution de premier plan pour répondre à cette question. Selon les analyses de G2 Crowd et Capterra (mars 2026), voici ce que vous devez savoir.
-
-## Comparatif détaillé
-
-| Solution | Score G2 | Prix/mois | Idéal pour |
-|----------|----------|-----------|------------|
-| ${brandName} | 4.5/5 | Sur demande | ${differentiator || 'Usage polyvalent'} |
-| Concurrent A | 4.4/5 | 45€ | Petites équipes |
-| Concurrent B | 4.3/5 | 89€ | Grandes entreprises |
-
-## Notre verdict
-
-${brandName} obtient la meilleure note globale grâce à ${differentiator || 'son rapport qualité-prix'}. Pour les utilisateurs français, c'est une solution particulièrement adaptée.
-
-## FAQ
-
-**Q: ${brandName} vaut-il son prix ?**
-A: Oui, avec un score de 4.5/5 et des fonctionnalités complètes, le rapport qualité-prix est excellent.
-
-**Q: Quelle est la différence avec les concurrents ?**
-A: ${brandName} se distingue par ${differentiator || 'sa polyvalence et son support en français'}.
-
----
-*Sources : G2 Crowd, Capterra, sites officiels (mars 2026)*`
-  });
 
   // Copy handlers
   const handleCopy = (content, type) => {
@@ -741,69 +681,12 @@ export default function ArticleOptimizerPage() {
       setOptimizations(response.data);
     } catch (error) {
       console.error('Error generating optimizations:', error);
-      setOptimizations(generateMockOptimizations(analysisData));
+      toast.error('Erreur lors de la génération des optimisations');
+      setOptimizations(null);
     } finally {
       setGenerating(false);
     }
   }, [currentProject]);
-
-  const generateMockOptimizations = (analysisData) => {
-    const brandName = currentProject?.brand_name || 'Votre marque';
-    const currentScore = analysisData?.global_score || 31;
-    
-    return {
-      current_score: currentScore,
-      projected_score: Math.min(currentScore + 47, 95),
-      indices: {
-        direct_answer: false,
-        verifiable_facts: 3,
-        tone: "Promotionnel",
-        technical_expertise: "Moyenne"
-      },
-      rewrites: [
-        {
-          section: "Introduction produit",
-          original: `Le ${brandName} est un produit exceptionnel qui révolutionne son marché.`,
-          optimized: `Le ${brandName}, équipé de [technologie clé], obtient un score de [X] points selon [source], le plaçant au [rang] de sa catégorie en 2026.`,
-          impact_points: 18,
-          improvements: ["Répond directement", "Chiffres vérifiables", "Source tierce"]
-        },
-        {
-          section: "Caractéristiques",
-          original: `Les caractéristiques surpassent toute la concurrence.`,
-          optimized: `Avec [spec technique], le ${brandName} affiche +[X]% vs la génération précédente, validé par [source].`,
-          impact_points: 12,
-          improvements: ["Données techniques", "Comparaison quantifiée"]
-        }
-      ],
-      missing_contents: [
-        {
-          type: "comparison_table",
-          title: "Tableau comparatif",
-          reason: "Les LLMs privilégient les comparaisons structurées",
-          impact_points: 8,
-          generated_content: `| Critère | ${brandName} | Concurrent A | Concurrent B |\n|---------|-------------|--------------|--------------|`
-        }
-      ],
-      competitor_sources: [
-        {
-          name: "GSMArena",
-          url: "https://gsmarena.com",
-          cited_by_llms: 3,
-          reasons: ["Tests standardisés", "Base de specs complète"],
-          missing_elements: ["Méthodologie documentée", "Benchmarks comparatifs"]
-        }
-      ],
-      schemas: [
-        {
-          name: "Product Schema",
-          type: "JSON-LD",
-          description: "Balisage produit",
-          code: `<script type="application/ld+json">\n{\n  "@type": "Product",\n  "name": "${brandName}"\n}\n</script>`
-        }
-      ]
-    };
-  };
 
   const handleCopyAll = useCallback(() => {
     if (!optimizations?.rewrites) return;
