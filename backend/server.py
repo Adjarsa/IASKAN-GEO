@@ -3960,107 +3960,12 @@ async def get_project_comparisons(project_id: str, user: dict = Depends(get_curr
         return {"comparisons": comparisons}
 
 # ================== VISIBILITY TRACKING ==================
+# MIGRATED TO /app/routers/visibility.py - Sprint B
 
-@api_router.get("/visibility/{project_id}")
-async def get_visibility_data(project_id: str, user: dict = Depends(get_current_user)):
-    """Get visibility tracking data for a project"""
-    # Migrated to PostgreSQL - return default data for now
-    # TODO: Implement PostgreSQL version with ProjectService and AnalysisService
-    
-    from sqlalchemy import select
-    from app.db.database import async_session_maker
-    from app.db.models import Project, Analysis
-    
-    try:
-        async with async_session_maker() as session:
-            # Verify project belongs to user
-            project_result = await session.execute(
-                select(Project).where(
-                    Project.project_id == project_id,
-                    Project.user_id == user["user_id"]
-                )
-            )
-            project = project_result.scalar_one_or_none()
-            
-            if not project:
-                raise HTTPException(status_code=404, detail="Projet non trouvé")
-            
-            # Get latest completed analysis
-            analysis_result = await session.execute(
-                select(Analysis).where(
-                    Analysis.project_id == project_id,
-                    Analysis.status == "completed"
-                ).order_by(Analysis.created_at.desc()).limit(1)
-            )
-            latest_analysis = analysis_result.scalar_one_or_none()
-            
-            if not latest_analysis:
-                # Return default data if no analysis
-                return {
-                    "global_visibility_score": 0,
-                    "ai_engines": {},
-                    "position_distribution": {"first": 0, "second": 0, "third": 0, "other": 0, "absent": 100},
-                    "thematic_visibility": [],
-                    "recent_queries": [],
-                    "has_data": False
-                }
-            
-            # Parse analysis results
-            ai_scores = latest_analysis.ai_scores or {}
-            query_scores = latest_analysis.query_scores or []
-            
-            # Build AI engines data
-            ai_engines = {}
-            for ai_name, score in ai_scores.items():
-                ai_engines[ai_name] = {
-                    "score": round(score) if isinstance(score, (int, float)) else 0,
-                    "position_avg": 3.0,
-                    "mention_rate": 50,
-                    "trend": "stable"
-                }
-            
-            # Position distribution
-            positions = {"first": 0, "second": 0, "third": 0, "other": 0, "absent": 0}
-            for query in query_scores:
-                for resp in query.get("responses", []):
-                    if not resp.get("brand_mentioned"):
-                        positions["absent"] += 1
-                    else:
-                        pos_ratio = resp.get("position_ratio", 1)
-                        if pos_ratio < 0.15:
-                            positions["first"] += 1
-                        elif pos_ratio < 0.30:
-                            positions["second"] += 1
-                        elif pos_ratio < 0.50:
-                            positions["third"] += 1
-                        else:
-                            positions["other"] += 1
-            
-            total_responses = sum(positions.values())
-            if total_responses > 0:
-                for key in positions:
-                    positions[key] = round(positions[key] / total_responses * 100)
-            
-            return {
-                "global_visibility_score": round(latest_analysis.global_score or 0),
-                "ai_engines": ai_engines,
-                "position_distribution": positions,
-                "thematic_visibility": [],
-                "recent_queries": [],
-                "has_data": True
-            }
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Return empty data on error
-        return {
-            "global_visibility_score": 0,
-            "ai_engines": {},
-            "position_distribution": {"first": 0, "second": 0, "third": 0, "other": 0, "absent": 100},
-            "thematic_visibility": [],
-            "recent_queries": [],
-            "has_data": False
-        }
+# @api_router.get("/visibility/{project_id}")
+# async def get_visibility_data(project_id: str, user: dict = Depends(get_current_user)):
+#     """Get visibility tracking data for a project - MIGRATED"""
+#     pass
 
 
 # ================== CONTENT AUDIT ==================
@@ -4622,7 +4527,18 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Include router
+# Sprint B: Migrated routers (from server.py monolith) - INCLUDED FIRST for priority
+from app.routers import visibility as visibility_router
+from app.routers import content_audit as content_audit_router
+from app.routers import content as content_router
+from app.routers import contact as contact_router
+
+app.include_router(visibility_router.router)    # Visibility tracking
+app.include_router(content_audit_router.router) # Content citability audit
+app.include_router(content_router.router)       # GEO content generation (with REAL geo_score)
+app.include_router(contact_router.router)       # Contact form
+
+# Include legacy router (server.py routes - being deprecated)
 app.include_router(api_router)
 
 # Include modular routers
@@ -4643,6 +4559,8 @@ app.include_router(analysis_router.router)     # Celery-powered analysis pipelin
 app.include_router(analyses_router.router)     # Analyses listing (frontend compatibility)
 app.include_router(strategy_router.router)     # GEO Strategy Engine
 app.include_router(semantic_router.router)     # Semantic Search with pgvector
+
+# Note: Sprint B routers are included at the top of router includes for priority
 
 @app.on_event("startup")
 async def startup_event():
