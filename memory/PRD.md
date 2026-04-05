@@ -516,3 +516,57 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - `/app/backend/app/routers/analysis.py` - Suppression attributs inexistants
 - `/app/backend/app/services/analysis_runner.py` - Conversion enum + logging
 - `/app/backend/server.py` - AnalysisStatus.PENDING
+
+
+---
+
+## CHANGELOG
+
+### 2026-04-05 - Sprint A : Corrections Critiques de Crédibilité ✅
+
+#### Corrections appliquées et vérifiées
+
+| Correction | Status | Impact |
+|------------|--------|--------|
+| **Perplexity API réelle** | ✅ VÉRIFIÉ | Utilise désormais sonar-pro via httpx au lieu de gpt-4o-mini |
+| **Rate Limiting** | ✅ VÉRIFIÉ | SlowAPI configuré (200/minute) |
+| **CORS sécurisé** | ✅ VÉRIFIÉ | Origines spécifiques au lieu de '*' |
+| **Mock data supprimées** | ✅ VÉRIFIÉ | ContentAuditPage et ArticleOptimizerPage affichent des états vides |
+
+#### Fichiers modifiés
+- `/app/backend/app/services/llm_connector.py` - Nouvelle méthode `_query_with_perplexity()`
+- `/app/backend/server.py` - SlowAPI rate limiting
+- `/app/backend/.env` - CORS_ORIGINS configuré
+- `/app/frontend/src/pages/ContentAuditPage.jsx` - Mock data supprimées
+- `/app/frontend/src/pages/ArticleOptimizerPage.jsx` - Mock data supprimées
+
+#### Tests
+- 78/78 tests passent (44 backend + 34 frontend)
+- Tests créés: `test_sprint_a_corrections.py`, `sprint-a-corrections.spec.ts`
+
+---
+
+## ROADMAP
+
+### Sprint B - Architecture (À faire)
+- [ ] Migrer routes de server.py vers /routers
+- [ ] Implémenter cache Redis pour LLM
+- [ ] Supprimer code MongoDB résiduel
+- [ ] Améliorer gestion exceptions
+
+### Sprint C - Algorithme (À faire)
+- [ ] Supprimer formule geo_score factice
+- [ ] Upgrader détection marque avec embeddings
+- [ ] Recommandations contextualisées par LLM
+- [ ] Génération dynamique de queries par LLM
+
+### Sprint D - GEO Action Engine (À faire)
+- [ ] GEO Content Engine
+- [ ] Structured Data Generator
+- [ ] Monitoring continu + Alertes
+- [ ] Source Seeding Strategy
+
+### Sprint E - UX Refonte (À faire)
+- [ ] Refondre navigation en 4 écrans
+- [ ] Onboarding en 3 clics
+- [ ] Intégrer React Query + Zustand
