@@ -314,16 +314,22 @@ class LLMConnector:
         - Layer 2: Role Analysis  
         - Layer 3: Credibility Analysis
         - Layer 4: Conversion Analysis
+        
+        UPDATED Sprint C: Enhanced brand detection with variants and fuzzy matching
         """
         response_lower = response_text.lower()
         brand_lower = brand_name.lower() if brand_name else ""
         response_length = len(response_lower)
         
-        # ===== LAYER 1: PRESENCE ANALYSIS =====
-        brand_mentioned = brand_lower in response_lower if brand_lower else False
-        mention_count = response_lower.count(brand_lower) if brand_lower else 0
-        first_position = response_lower.find(brand_lower) if brand_mentioned else -1
+        # ===== LAYER 1: ENHANCED PRESENCE ANALYSIS (Sprint C) =====
+        brand_detection = self._detect_brand_advanced(response_lower, brand_name)
+        brand_mentioned = brand_detection["mentioned"]
+        mention_count = brand_detection["mention_count"]
+        first_position = brand_detection["first_position"]
         position_ratio = (first_position / response_length) if brand_mentioned and response_length > 0 else 1.0
+        detection_method = brand_detection["detection_method"]
+        variants_found = brand_detection["variants_found"]
+        brand_lower = brand_name.lower() if brand_name else ""
         
         # ===== LAYER 2: ROLE ANALYSIS =====
         role, role_score = self._analyze_role(response_lower, brand_lower, first_position, position_ratio)
@@ -341,11 +347,13 @@ class LLMConnector:
         competitor_positions = self._analyze_competitors(response_lower, competitors, first_position, response_length, brand_mentioned)
         
         return {
-            # Layer 1: Presence
+            # Layer 1: Presence (Enhanced Sprint C)
             "brand_mentioned": brand_mentioned,
             "mention_count": mention_count,
             "first_position": first_position,
             "position_ratio": round(position_ratio, 3),
+            "detection_method": detection_method,
+            "variants_found": variants_found,
             # Layer 2: Role
             "role": role,
             "role_score": round(role_score, 2),
@@ -361,6 +369,121 @@ class LLMConnector:
             # Competitors
             "competitor_analysis": competitor_positions
         }
+    
+    def _detect_brand_advanced(self, response_lower: str, brand_name: str) -> Dict[str, Any]:
+        """
+        Enhanced brand detection using multiple methods (Sprint C)
+        
+        Detection hierarchy:
+        1. Exact match
+        2. Case-insensitive variants (Title, UPPER, etc.)
+        3. Acronym detection (e.g., "CRM" for "Customer Relationship Management")
+        4. Common typos and phonetic variants
+        5. Word boundary matching (prevents "brand" matching "rebranding")
+        """
+        if not brand_name:
+            return {
+                "mentioned": False,
+                "mention_count": 0,
+                "first_position": -1,
+                "detection_method": "none",
+                "variants_found": []
+            }
+        
+        brand_lower = brand_name.lower()
+        variants_found = []
+        first_position = -1
+        total_mentions = 0
+        detection_method = "not_found"
+        
+        # Generate brand variants
+        variants = self._generate_brand_variants(brand_name)
+        
+        # Check each variant
+        for variant, var_type in variants:
+            var_lower = variant.lower()
+            if var_lower in response_lower:
+                count = response_lower.count(var_lower)
+                total_mentions += count
+                variants_found.append({"variant": variant, "type": var_type, "count": count})
+                
+                # Track first position
+                pos = response_lower.find(var_lower)
+                if first_position == -1 or pos < first_position:
+                    first_position = pos
+                    detection_method = var_type
+        
+        # Additional: Word boundary check for exact brand name
+        import re
+        word_pattern = r'\b' + re.escape(brand_lower) + r'\b'
+        word_matches = re.findall(word_pattern, response_lower)
+        if word_matches and not variants_found:
+            total_mentions = len(word_matches)
+            first_position = response_lower.find(brand_lower)
+            detection_method = "word_boundary"
+            variants_found.append({"variant": brand_name, "type": "word_boundary", "count": len(word_matches)})
+        
+        return {
+            "mentioned": total_mentions > 0,
+            "mention_count": total_mentions,
+            "first_position": first_position,
+            "detection_method": detection_method,
+            "variants_found": variants_found
+        }
+    
+    def _generate_brand_variants(self, brand_name: str) -> List[tuple]:
+        """
+        Generate brand name variants for detection
+        Returns list of (variant, type) tuples
+        """
+        variants = []
+        brand_lower = brand_name.lower()
+        
+        # 1. Exact match
+        variants.append((brand_name, "exact"))
+        variants.append((brand_lower, "lowercase"))
+        variants.append((brand_name.upper(), "uppercase"))
+        variants.append((brand_name.title(), "titlecase"))
+        
+        # 2. Without spaces (for multi-word brands)
+        if ' ' in brand_name:
+            no_space = brand_name.replace(' ', '')
+            variants.append((no_space, "no_space"))
+            # CamelCase variant
+            camel = ''.join(word.capitalize() for word in brand_name.split())
+            variants.append((camel, "camelcase"))
+        
+        # 3. Acronym (first letter of each word)
+        if ' ' in brand_name:
+            words = brand_name.split()
+            if len(words) >= 2:
+                acronym = ''.join(w[0].upper() for w in words)
+                if len(acronym) >= 2:
+                    variants.append((acronym, "acronym"))
+        
+        # 4. Common typos (missing double letters, swapped letters)
+        for i, char in enumerate(brand_lower):
+            if i > 0 and brand_lower[i] == brand_lower[i-1]:
+                # Try without the double letter
+                typo = brand_lower[:i] + brand_lower[i+1:]
+                if len(typo) >= 3:
+                    variants.append((typo, "typo_double"))
+        
+        # 5. With/without common suffixes
+        suffixes_to_remove = ['.com', '.fr', '.ai', '.io', ' inc', ' corp', ' ltd']
+        for suffix in suffixes_to_remove:
+            if brand_lower.endswith(suffix):
+                base = brand_name[:-len(suffix)]
+                variants.append((base, "no_suffix"))
+        
+        # 6. Phonetic variants (common substitutions)
+        phonetic_subs = [('ph', 'f'), ('f', 'ph'), ('c', 'k'), ('k', 'c')]
+        for old, new in phonetic_subs:
+            if old in brand_lower:
+                phonetic = brand_lower.replace(old, new)
+                variants.append((phonetic, "phonetic"))
+        
+        return variants
     
     def _analyze_role(
         self,

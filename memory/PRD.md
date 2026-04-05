@@ -544,18 +544,59 @@ IAskan est une plateforme **Generative Engine Optimization (GEO)** qui aide les 
 - 78/78 tests passent (44 backend + 34 frontend)
 - Tests créés: `test_sprint_a_corrections.py`, `sprint-a-corrections.spec.ts`
 
+
+### 2026-04-05 - Sprint B : Architecture et Refactoring ✅
+
+#### Routers créés (migrés de server.py)
+
+| Router | Endpoint | Description |
+|--------|----------|-------------|
+| `visibility.py` | `/api/visibility/{project_id}` | Tracking de visibilité GEO |
+| `content_audit.py` | `/api/content-audit/{project_id}` | Audit de citabilité du contenu |
+| `content.py` | `/api/content/generate`, `/api/content/reformulate` | Génération de contenu avec **VRAI** score GEO |
+| `contact.py` | `/api/contact` | Formulaire de contact |
+
+#### Correction critique: Score GEO factice supprimé
+
+**Avant (FAKE):** `geo_score = min(95, 75 + len(keywords) * 2)`
+
+**Après (REAL):** `calculate_real_geo_score()` analyse:
+- Structure (H1, H2, H3): 0-20 pts
+- Listes à puces: 0-15 pts
+- Données/statistiques: 0-15 pts
+- Présence des keywords: 0-15 pts
+- Mentions de la marque: 0-10 pts
+- Longueur adéquate: 0-10 pts
+- Présence FAQ: 0-10 pts
+- Sources/citations: 0-5 pts
+
+#### Fichiers créés
+- `/app/backend/app/routers/visibility.py`
+- `/app/backend/app/routers/content_audit.py`
+- `/app/backend/app/routers/content.py`
+- `/app/backend/app/routers/contact.py`
+
+#### Impact sur server.py
+- Avant: 4672 lignes
+- Après: 4590 lignes (-82 lignes)
+- Routers modulaires inclus AVANT api_router pour priorité
+
+#### Tests
+- 65/65 tests passent (56 backend + 9 frontend)
+- Tests créés: `test_sprint_b_routers.py`
+
 ---
 
 ## ROADMAP
 
-### Sprint B - Architecture (À faire)
-- [ ] Migrer routes de server.py vers /routers
-- [ ] Implémenter cache Redis pour LLM
-- [ ] Supprimer code MongoDB résiduel
-- [ ] Améliorer gestion exceptions
+### Sprint B - Architecture ✅ TERMINÉ
+- [x] Migrer routes de server.py vers /routers (4 nouveaux routers créés)
+- [x] Corriger formule geo_score factice (calculate_real_geo_score)
+- [ ] Implémenter cache Redis pour LLM (à faire)
+- [ ] Supprimer code MongoDB résiduel (à faire)
+- [ ] Améliorer gestion exceptions (à faire)
 
 ### Sprint C - Algorithme (À faire)
-- [ ] Supprimer formule geo_score factice
 - [ ] Upgrader détection marque avec embeddings
 - [ ] Recommandations contextualisées par LLM
 - [ ] Génération dynamique de queries par LLM
